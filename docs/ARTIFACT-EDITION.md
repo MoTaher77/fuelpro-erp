@@ -4,7 +4,7 @@ A second way to run FuelPro: a private claude.ai Artifact that opens on phone an
 laptop system**. It runs on demo data only, never on the station's data.
 
 Live pages (both private to the owner):
-- Demo: https://claude.ai/artifact/CgLf1pmqcani77JBGVL56N (`web/dist`, demo seed).
+- Demo: (deleted 2026-11-23 at the owner's request) (`web/dist`, demo seed).
 - Station copy «FuelPro المحطة»: https://claude.ai/artifact/Dbe4L4cWnvRSbeswvYAENF — the owner's OK (2026-11-23) to load the real-data snapshot. Built with `node scripts/dev-admin.js --db <tmp>` (throwaway admin, renamed to `admin@fuelpro.local` with a new password given to the owner in chat only; real users' passwords stay disabled) then `node web/build.js --seed-db <tmp> --out web/dist-station`. It is a copy of `dev-data/fuelpro-snapshot.db`: no sync with the laptop in either direction. "Create account" is blocked on this page (`window.__FP_NO_REGISTER`): on 2026-11-23 it was used by mistake and made an empty second organisation, so the owner saw no data; the saved copy was cleared and the page restarted from the snapshot. Never share it; republishing keeps saved data (the seed is used only while storage is empty).
 
 ## How it works (no imitation)

@@ -104,3 +104,8 @@ src/pg/{worker,sync,dialect}.js + test/pg-sync.test.js (live tests need FUELPRO_
 
 ## 2026-11-23 — 0.24.0 report PDFs on WhatsApp
 public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books-ui: pdfShare + reportPdf (F.reportPdf); sales register button. more-ui: daily report (fuel + expenses + boxes + tanks) and collections PDFs. Checked on a station-data copy: day 2 pages, sales register 2, collections 4, each ~0.7 s, layouts reviewed, no page errors. sw v39.
+
+## 2026-11-23 — 0.24.0 merged, demo page removed, handoff to laptop
+- PR #10 merged: daily report / sales register / collections as PDF to WhatsApp (`F.reportPdf`, multi-section `stmt-pdf.js`). 77 tests, CI green.
+- Demo Artifact deleted at the owner's request; station page republished (v15).
+- Resume: `docs/NEXT-TASK.md` → "Handoff 2026-11-23".
