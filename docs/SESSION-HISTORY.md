@@ -71,3 +71,6 @@ Profiled all 33 report routes on the station snapshot in the page engine. Fixes:
 
 ## 2026-11-23 — 0.15.0 WhatsApp
 `public/books-ui.js`: waNumber (local → international by station currency), waDialog (wa.me link as a real <a target=_blank>, copy, Web Share), statement message builder; customer/supplier statements get a WhatsApp button (cfg.whatsapp). `public/more-ui.js`: payment reminder per customer on #col. Browser-checked on demo data (number 9677…, message text, no page errors). Tests 73. sw v32.
+
+## 2026-11-23 — 0.15.1 page open speed
+Owner: page very slow. Cause: every open downloaded seed.js (~5 MB) and read 137 blocks one by one. Fix in web/runtime.js: lazy seed, IndexedDB device copy, parallel block reads (12) and writes (8). Chromium with 150 ms storage latency: reopen same device 21.6 s → 0.4 s, other device 21.6 s → 2.4 s, first save → 4.5 s. Tests 73.

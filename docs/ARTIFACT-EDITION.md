@@ -17,6 +17,8 @@ Live pages (both private to the owner):
 | Front end | `public/*` | `public/*` copied as is; only the service-worker line is removed and the one `confirm()` in `bank-ui.js` becomes an in-page dialog |
 | Storage | `data/fuelpro.db` file | the database file saved in the Artifact's `db` storage: content-addressed 128 KB gzip blocks (`fpblk/<hash>`) + one state document (`fpstate/main`: generation, block list, size) |
 
+Opening (0.15.1): one read of `fpstate/main`; if this device's IndexedDB copy (`fuelpro-page`/`db`) has the same generation and block list it is used directly, otherwise the blocks are fetched 12 at a time (reusing any block the device already holds). `seed.js` is loaded only when storage is empty. Saves write changed blocks 8 at a time.
+
 Save cycle: after each successful change (and after sign-in, because sessions are rows too) the page waits 1.2 s,
 exports the database, writes only the blocks that changed, then switches `fpstate/main` to the new generation and
 deletes blocks nobody uses. A half-finished save never corrupts the data: the old state document still points at
