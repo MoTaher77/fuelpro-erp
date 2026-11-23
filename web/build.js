@@ -50,6 +50,7 @@ for (const f of appFiles) {
 }
 fs.copyFileSync(path.join(__dirname, 'runtime.js'), path.join(OUT, 'runtime.js'));
 fs.writeFileSync(path.join(OUT, 'index.html'), fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8').replace('__APP_FILES__', JSON.stringify(appFiles.filter(f => f.endsWith('.js')))).replace('__BUILD__', JSON.stringify(require('../package.json').version))
+  .replace('window.__FP_BUILD = ', SEED_DB ? 'window.__FP_NO_REGISTER = true; window.__FP_BUILD = ' : 'window.__FP_BUILD = ')
   .replace('<title>FuelPro تجريبي</title>', SEED_DB ? '<title>FuelPro المحطة</title>' : '<title>FuelPro تجريبي</title>')
   .replace('نسخة تجريبية تعمل بالكود الحقيقي للنظام وبيانات تجريبية، وتُحفظ عملياتك في تخزين هذه الصفحة.', SEED_DB ? 'نسخة من بيانات المحطة تعمل بالكود الحقيقي للنظام، وتُحفظ عملياتك في تخزين هذه الصفحة. لا تشاركها مع أحد.' : 'نسخة تجريبية تعمل بالكود الحقيقي للنظام وبيانات تجريبية، وتُحفظ عملياتك في تخزين هذه الصفحة.'));
 

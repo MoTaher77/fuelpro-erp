@@ -130,6 +130,9 @@
       if (!url.pathname.startsWith('/api/') && url.pathname !== '/healthz') return orig(input, init);
       const method = (init.method || 'GET').toUpperCase(), headers = {};
       new Headers(init.headers || {}).forEach((v, k) => { headers[k] = v; });
+      if (window.__FP_NO_REGISTER && /\/auth\/register$/.test(url.pathname)) {   // the station page holds one organisation: no new accounts there
+        return new Response(JSON.stringify({ error: { code: 'FORBIDDEN', message: 'إنشاء حساب جديد غير متاح في صفحة المحطة. ادخل بحساب المحطة.' } }), { status: 403, headers: { 'content-type': 'application/json; charset=utf-8' } });
+      }
       const sid = ls.get('fp.sid') || window.__FP_SID; if (sid) headers.cookie = 'sid=' + sid;
       const r = await core.request(method, url.pathname + url.search, { headers, body: init.body });
       const sc = r.headers['Set-Cookie']; if (sc) { const v = /^sid=([^;]*)/.exec(sc); if (v) { window.__FP_SID = v[1] || null; ls.set('fp.sid', v[1] || null); } }
