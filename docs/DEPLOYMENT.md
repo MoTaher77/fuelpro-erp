@@ -27,7 +27,10 @@ Env vars: see `.env.example` — `PORT`, `HOST`, `DB_PATH`, `APP_URL`, `APP_SECR
 ## Rollback
 Migrations only add. To roll back code: reinstall the previous zip **together with** a DB backup taken before the upgrade (an old version may not understand a newer schema). Take a backup before every update.
 
-## Cloud (when the owner asks)
+## Cloud (authorised 2026-11-23, ADR-19)
+Steps for the owner (needs his Render account; the agent cannot reach it): 1) render.com → New → Blueprint → connect `MoTaher77/fuelpro-erp`, branch `main`, file `render.yaml`; 2) in `fuelpro-demo` set `APP_URL` to its https address; 3) open the service Shell and run `DB_PATH=/app/data/demo.db node scripts/seed-demo.js --days 365` (prints a random password once); 4) verify: `node scripts/smoke-online.js https://<service>.onrender.com demo@fuelpro.demo <password> --write`. `fuelpro-production` stays empty until the owner approves moving real data. Render gives HTTPS automatically.
+
+## Cloud (reference)
 Render: Blueprint from `render.yaml` → set `APP_URL`, `APP_SECRET`, SMTP → demo seed from the demo service shell (`scripts/seed-demo.js` refuses non-DEMO DBs). Persistent disks need a paid plan — check current prices. Health check `/healthz`.
 
 ## Online through a Cloudflare Tunnel (0.11.0, owner's choice 2026-11-23)

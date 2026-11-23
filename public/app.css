@@ -399,6 +399,10 @@ table.tb td.desc{min-width:240px}
   #print .wide-doc table.stmt{font-size:9.5pt;table-layout:auto}
   #print .wide-doc table.stmt td,#print .wide-doc table.stmt th{padding:3px 4px}
   #print table.stmt tr.grp-row td{background:#eef5f1!important;font-weight:900}
+  #print .wide-doc table.stmt td.pumps{text-align:start}
+  #print .tw-print.keep{break-inside:avoid}#print .xh{break-after:avoid}
+  #print .wide-doc table.stmt td.nowrap,#print .wide-doc table.stmt td.fuel{padding-inline:8px}
+  #print .wide-doc table.stmt td.fuel{white-space:nowrap}
 }
 /* ---------- vouchers / entries / P&L ---------- */
 .vhead{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px}
@@ -440,11 +444,13 @@ input.yr{max-width:120px}
   #print .pt span{font-size:8.5pt;color:#555}#print .pt b{font-size:12.5pt;font-variant-numeric:tabular-nums}
   #print .pt.gold{border-color:#d4a73c;background:#fdf8ea!important}#print .pt.cr b{color:#0b5a44}
   #print .pt.main{background:#0b5a44!important;color:#fff;border-color:#0b5a44}#print .pt.main span{color:#d7ebe2}
-  #print .p-cols th{border:1px solid #0b5a44;background:#0b5a44!important;color:#fff!important;font-size:9.5pt;font-weight:900;padding:5px 4px;white-space:nowrap}
+  #print .p-cols th{border:1px solid #0b5a44;background:#0b5a44!important;color:#fff!important;font-size:9.5pt;font-weight:900;padding:5px 4px;white-space:normal;line-height:1.2}
   #print .cl-tbl tbody td{border:1px solid #9fb5aa;padding:3px 5px;font-size:9.8pt;vertical-align:middle}
   #print .cl-tbl tbody:not(.cl-sum):not(.p-endrow) tr:nth-child(even) td{background:#f4f8f6!important}
   #print .cl-tbl td.c{text-align:center}#print .cl-tbl td.nw{white-space:nowrap}#print .cl-tbl td.idx{color:#888;font-size:8.5pt}#print .cl-tbl td.k{font-size:9pt;color:#0b5a44}
   #print .cl-tbl td.n{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}#print .cl-tbl td.cr{color:#0b5a44}
+  #print .cl-tbl td.c,#print .cl-tbl td.k{white-space:nowrap}
+  #print .cl-tbl td.d{width:42%;unicode-bidi:plaintext;overflow-wrap:anywhere}
   #print .cl-tbl td.d{text-align:right}#print .cl-tbl td.b{font-weight:900}#print .cl-tbl .z{color:#aaa}
   #print .cl-tbl tr{break-inside:avoid}#print .cl-tbl tr.voided td{text-decoration:line-through;color:#888}
   #print .p-open td{background:#fdf8ea!important;font-weight:900}

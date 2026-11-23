@@ -16,5 +16,5 @@ description: Use when shipping a FuelPro update to the owner's Windows laptop, t
 
 ## Never
 - Replace or edit `data\fuelpro.db`, or drop a `data\fuelpro-new.db` (that swaps the real DB).
-- Deploy to the cloud without the owner's explicit request; keep demo and production DBs separate.
+- Copy real production data to a cloud host without the owner's OK for that move (cloud deployment itself is authorised, ADR-19); keep demo and production DBs separate.
 - Print or store secrets (`APP_SECRET`, SMTP passwords, user passwords).

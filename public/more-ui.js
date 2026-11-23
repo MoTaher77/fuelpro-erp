@@ -15,7 +15,7 @@
   const signs = (...ks) => h('div', { class: 'signs' }, ks.map(k => h('div', null, T(k))));
   const tile = (k, v, cls) => h('div', { class: 'xtile ' + (cls || '') }, h('span', null, k), h('b', null, v));
   /** A bordered statement-style table: cols = [[label, numeric?]], rows = arrays of cells, foot = array of cells (or null). */
-  const grid = (cols, rows, footRow, forPrint, rowCls) => h('div', { class: forPrint ? 'tw-print' : 'tw' }, h('table', { class: 'stmt' },
+  const grid = (cols, rows, footRow, forPrint, rowCls) => h('div', { class: forPrint ? 'tw-print' + (rows.length <= 14 ? ' keep' : '') : 'tw' }, h('table', { class: 'stmt' },
     h('thead', null, h('tr', null, cols.map(([c, n]) => h('th', { class: n ? 'num' : '' }, c)))),
     h('tbody', null, rows.length ? rows.map((r, i) => h('tr', { class: rowCls ? rowCls(i) || '' : '' }, r.map((c, j) => h('td', { class: cols[j] && cols[j][1] ? 'num' : '' }, c ?? '')))) : h('tr', null, h('td', { colspan: cols.length, class: 'muted' }, T('noData')))),
     footRow ? h('tfoot', null, h('tr', null, footRow.map(c => Array.isArray(c) && c.colspan ? h('td', { colspan: c.colspan }, c[0]) : h('td', { class: 'num' }, c ?? '')))) : null));
