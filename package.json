@@ -1,7 +1,7 @@
 {
   "name": "fuelpro",
-  "version": "0.21.0",
-  "description": "Multi-tenant fuel station management server (zero dependencies, Node 22+)",
+  "version": "0.22.0",
+  "description": "Multi-tenant fuel station management server (Node 22+; the SQLite mode needs no installed package)",
   "private": true,
   "license": "UNLICENSED",
   "engines": {
@@ -13,6 +13,19 @@
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js",
     "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js",
     "seed:demo": "node --disable-warning=ExperimentalWarning scripts/seed-demo.js",
-    "reset-2fa": "node --disable-warning=ExperimentalWarning scripts/reset-2fa.js"
+    "reset-2fa": "node --disable-warning=ExperimentalWarning scripts/reset-2fa.js",
+    "lint": "eslint .",
+    "test:artifact": "node --disable-warning=ExperimentalWarning --import ./web/sqljs-hook.mjs --test --test-skip-pattern=\"[Bb]ackup\" test/*.test.js",
+    "build:artifact": "node --disable-warning=ExperimentalWarning web/build.js"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
+    "playwright": "^1.65.1",
+    "sql.js": "1.10.3"
   }
 }

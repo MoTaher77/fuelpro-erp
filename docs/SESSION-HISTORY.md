@@ -95,3 +95,6 @@ Owner wanted the PDF, not text. New `public/stmt-pdf.js`: canvas-drawn A4 pages 
 
 ## 2026-11-23 — Phase 2 assessment (docs only)
 Owner said start Phase 2. Measured instead of rewriting: see docs/PHASE2-POSTGRES.md and ADR-21 (recommendation: postpone; needs an approved always-on host, a driver decision and several sessions). No code changed. Resume: owner decides.
+
+## 2026-11-23 — libraries and tools installed (ADR-22)
+Owner asked to install external libraries and dev tools instead of hand-writing them. Removed the half-written src/pg client. `npm i`: pg 8 (dependency), eslint 10 + @eslint/js + globals, sql.js 1.10.3 (exact), playwright (dev). `eslint.config.js` (0 errors, 28 warnings; real finds: duplicate i18n keys KI-12). CI: npm ci + lint + test; artifact job uses npm run test:artifact/build:artifact. Dockerfile runs npm ci --omit=dev. A local PostgreSQL 16 server is runnable in the sandbox (initdb + pg_ctl as user postgres, port 5433) for the next stage.
