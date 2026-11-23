@@ -91,10 +91,11 @@
   const UNITS = { L: { ml: 1000, k: 'uL', n: 'nL' }, galUS: { ml: 3785.411784, k: 'uGalUS', n: 'nGalUS' }, galUK: { ml: 4546.09, k: 'uGalUK', n: 'nGalUK' } };
 
   /* ---------- preferences (per browser) ---------- */
+  const PALETTES = ['royal', 'emerald', 'bordeaux', 'onyx'];   // luxury colour sets (app.css, data-palette)
   const P = (() => {
     let o = {}; try { o = JSON.parse(localStorage.getItem('prefs') || '{}'); } catch {}
     const nav = (navigator.language || 'en').slice(0, 2);
-    return { lang: LANGS.includes(o.lang) ? o.lang : (LANGS.includes(nav) ? nav : 'en'), unit: UNITS[o.unit] ? o.unit : 'L', cal: o.cal === 'islamic-umalqura' ? o.cal : 'gregory', nums: o.nums === 'arab' ? 'arab' : 'latn', theme: ['light', 'dark'].includes(o.theme) ? o.theme : 'system' };
+    return { lang: LANGS.includes(o.lang) ? o.lang : (LANGS.includes(nav) ? nav : 'en'), unit: UNITS[o.unit] ? o.unit : 'L', cal: o.cal === 'islamic-umalqura' ? o.cal : 'gregory', nums: o.nums === 'arab' ? 'arab' : 'latn', theme: ['light', 'dark'].includes(o.theme) ? o.theme : 'system', palette: PALETTES.includes(o.palette) ? o.palette : 'royal' };
   })();
   const savePrefs = () => { try { localStorage.setItem('prefs', JSON.stringify(P)); } catch {} };
   const li = () => LANGS.indexOf(P.lang);
@@ -181,6 +182,8 @@
   function applyPrefs() {
     const r = document.documentElement; r.lang = P.lang; r.dir = P.lang === 'ar' ? 'rtl' : 'ltr';
     if (P.theme === 'system') delete r.dataset.theme; else r.dataset.theme = P.theme;
+    r.dataset.palette = P.palette;
+    const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = getComputedStyle(r).getPropertyValue('--side1').trim() || tc.content;
     savePrefs();
   }
   const isDark = () => P.theme === 'dark' || (P.theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
@@ -197,8 +200,14 @@
   function prefsDialog() {
     const lang = sel('pLang', [['ar', 'العربية'], ['en', 'English'], ['fr', 'Français']], P.lang), unit = sel('pUnit', Object.entries(UNITS).map(([k, v]) => [k, T(v.n)]), P.unit),
       cal = sel('pCal', [['gregory', T('greg')], ['islamic-umalqura', T('hijri')]], P.cal), nums = sel('pNums', [['latn', T('latn')], ['arab', T('arab')]], P.nums), theme = sel('pTheme', [['system', T('thSystem')], ['light', T('thLight')], ['dark', T('thDark')]], P.theme);
-    const m = modal(T('prefs'), h('form', { onsubmit: (e) => { e.preventDefault(); P.lang = lang.value; P.unit = unit.value; P.cal = cal.value; P.nums = nums.value; P.theme = theme.value; applyPrefs(); m.remove(); S.user ? render() : authScreen(); } },
-      h('div', { class: 'grid' }, field(T('lang'), lang), field(T('unit'), unit), field(T('cal'), cal), field(T('nums'), nums), field(T('theme'), theme)), h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('save')))));
+    /* palette: preview live while choosing; Save keeps it, closing restores the previous one */
+    let pal = P.palette; const was = P.palette;
+    const sws = PALETTES.map(k => h('button', { type: 'button', class: 'swatch', 'aria-pressed': String(k === pal), onclick: () => { pal = k; document.documentElement.dataset.palette = k; sws.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === k))); } }, h('i', { class: k }), T('pal.' + k)));
+    sws.forEach((b, i) => { b.dataset.p = PALETTES[i]; });
+    const m = modal(T('prefs'), h('form', { onsubmit: (e) => { e.preventDefault(); P.lang = lang.value; P.unit = unit.value; P.cal = cal.value; P.nums = nums.value; P.theme = theme.value; P.palette = pal; applyPrefs(); m.remove(); S.user ? render() : authScreen(); } },
+      h('div', null, h('label', null, T('palette')), h('div', { class: 'swatches' }, sws)),
+      h('div', { class: 'grid', style: 'margin-top:14px' }, field(T('lang'), lang), field(T('unit'), unit), field(T('cal'), cal), field(T('nums'), nums), field(T('theme'), theme)), h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('save')))));
+    const mo = new MutationObserver(() => { if (m.isConnected) return; mo.disconnect(); if (P.palette === was) document.documentElement.dataset.palette = P.palette; }); mo.observe(document.body, { childList: true });
   }
   const copyBtn = (text) => h('button', { class: 'btn ghost sm', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(text); toast(T('copied')); } catch { toast(text); } } }, T('copy'));
   const otpInput = (id) => h('input', { id, class: 'otp', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: 11, spellcheck: 'false' });
