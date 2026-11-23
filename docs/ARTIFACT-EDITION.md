@@ -24,6 +24,9 @@ exports the database, writes only the blocks that changed, then switches `fpstat
 deletes blocks nobody uses. A half-finished save never corrupts the data: the old state document still points at
 complete old blocks. If another device saved a newer generation, the page refuses to overwrite it and asks for a reload.
 
+## Refreshing the station page from the laptop (0.17)
+On the laptop: `npm run backup`, then open the station page in the laptop's browser → status chip → «تحديث البيانات من نسخة اللابتوب…» → pick the newest `data\\backups\\*.db`. The page checks the file (SQLite header, FuelPro tables, `PRAGMA quick_check`, at least one active user with a password), shows sales count, last sale date and customers, asks to confirm, drops sessions, saves it as the new generation and reloads. Sign in with the laptop account. One-way only: nothing goes back to the laptop, and entries made only in the page are replaced.
+
 ## What works and is stored
 Sign-in (scrypt hashes, sessions, lockout, roles and station scoping), sales by pump meter, voids with reason,
 customers and payments, suppliers and purchases, tanks and stock moves, shifts and cash boxes, vouchers and manual

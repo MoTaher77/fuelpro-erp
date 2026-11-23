@@ -77,3 +77,6 @@ Owner: page very slow. Cause: every open downloaded seed.js (~5 MB) and read 137
 
 ## 2026-11-23 — 0.16.0 statement PDF to WhatsApp
 Owner wanted the PDF, not text. New `public/stmt-pdf.js`: canvas-drawn A4 pages (browser shapes Arabic RTL) → JPEG → minimal PDF writer. books-ui `sendPdf`: navigator.share({files}) when supported (Android/iOS/Windows share sheet → WhatsApp), else download (ASCII file name) + wa.me dialog to attach. Checked in Chromium: 3-page PDF of a 59-row demo statement in ~0.2 s, layout reviewed, no page errors. Tests 73. sw v33.
+
+## 2026-11-23 — 0.17.0 station page refresh from a laptop backup
+`web/runtime.js` importDb (station builds only, `window.__FP_STATION`): file picker → checks → confirm → save(true, bytes) → reload. Chromium e2e with the demo DB as the 'backup': confirm text correct, reload, sign-in with the file's account, integrity ok, old page admin gone. Tests 73.
