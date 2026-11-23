@@ -1,5 +1,11 @@
 # NEXT-TASK — where to resume
 
+## Handoff 2026-11-23 (after 0.24.0, PR #10 merged) — continue on the owner's laptop
+- State: `main` = 0.24.0, 77 tests green, CI green. Demo Artifact page **deleted** (owner's request); only the private station page remains: https://claude.ai/artifact/Dbe4L4cWnvRSbeswvYAENF (build: `node web/build.js --seed-db <snapshot> --out web/dist-station`).
+- Laptop: `git pull`, then `npm run backup`, restart FuelPro (sw `fuelpro-shell-v39`).
+- Owner's open choices: (a) more report PDFs (tanks, cash box) via `F.reportPdf` in `public/books-ui.js`; (b) Phase 2 stage B: port the 9 triggers + migration v3 to PostgreSQL, add `FUELPRO_DB=postgres` (`docs/PHASE2-POSTGRES.md`).
+- Waiting on owner: customer phones, KI-06, backup-copy folder, WhatsApp Business API decision.
+
 ## Next candidates (owner chose the setup wizard first; 0.20.0 done)
 1. Off-site automatic backups (KI-10) — needs the owner's choice of destination.
 2. Customer phone numbers: 0 of 148 in the real data (add from #col reminders queue).
@@ -8,9 +14,6 @@
 ## Task AF — owner refreshes the station page from his laptop (0.17)
 `npm run backup` on the laptop → station page → chip → «تحديث البيانات من نسخة اللابتوب…». Then decide: keep entering data on the laptop only (recommended; the page is for viewing and WhatsApp), or plan a real two-way sync (needs a server both can reach).
 
-## Task AE — confirm the Artifact edition on the owner's devices (0.12.0)
-Owner opens https://claude.ai/artifact/CgLf1pmqcani77JBGVL56N on phone and laptop, signs in (demo@fuelpro.demo, password given in chat), posts a sale/expense, reopens. Then a session checks `fpstate/main` with ArtifactData. Rebuild/republish steps: `docs/ARTIFACT-EDITION.md`.
-Updated 2026-11-23 (after 0.8.0).
 
 ## Task 0 (first) — carry the M7 history into the live DB (needs the owner's OK)
 0.8.0 adds the code; the live `data\fuelpro.db` does not have it yet. With the owner's OK: stop FuelPro, `npm run backup`,
