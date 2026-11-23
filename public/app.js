@@ -305,6 +305,7 @@
   const closeMenu = () => { document.querySelector('.side')?.classList.remove('open'); document.querySelector('.scrim')?.classList.remove('open'); };
   async function render() {
     applyPrefs(); const main = h('main', { id: 'main' });
+    const sideTop = document.querySelector('.side')?.scrollTop || 0;      // keep the menu where it was when a screen is opened
     const tabs = allowedTabs(); if (!tabs.includes(S.tab)) S.tab = tabs[0] || 'dash';
     if (location.hash !== '#' + S.tab) history.replaceState(null, '', '#' + S.tab);
     const link = (k) => h('a', { href: '#' + k, 'aria-current': S.tab === k ? 'page' : null, onclick: closeMenu }, icon(k), h('span', null, T(k)));
@@ -338,6 +339,7 @@
     side.append(h('div', { class: 'grp' }, T('account')), h('a', { href: '#', onclick: (e) => { e.preventDefault(); closeMenu(); accountDialog(); } }, icon('users'), h('span', null, S.user.name)), h('a', { href: '#', onclick: (e) => { e.preventDefault(); closeMenu(); prefsDialog(); } }, icon('setup'), h('span', null, T('prefs'))));
     const skel = h('main', { class: 'skel', 'aria-busy': 'true' }, h('div', { class: 'sk h1' }), h('div', { class: 'row4' }, h('div', { class: 'sk' }), h('div', { class: 'sk' }), h('div', { class: 'sk' }), h('div', { class: 'sk' })), h('div', { class: 'sk big' }));
     root.replaceChildren(h('div', { class: 'layout' }, side, h('div', { class: 'content' }, top, skel)), scrim, bottom);
+    side.scrollTop = sideTop;
     try { await VIEWS[S.tab](main); } catch (e) { toast(e.message); }
     if (!skel.isConnected) return;                        // another navigation replaced this screen meanwhile
     skel.replaceWith(main); animateIn(main);
