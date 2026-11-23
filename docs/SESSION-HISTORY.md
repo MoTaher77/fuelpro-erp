@@ -74,3 +74,6 @@ Profiled all 33 report routes on the station snapshot in the page engine. Fixes:
 
 ## 2026-11-23 — 0.15.1 page open speed
 Owner: page very slow. Cause: every open downloaded seed.js (~5 MB) and read 137 blocks one by one. Fix in web/runtime.js: lazy seed, IndexedDB device copy, parallel block reads (12) and writes (8). Chromium with 150 ms storage latency: reopen same device 21.6 s → 0.4 s, other device 21.6 s → 2.4 s, first save → 4.5 s. Tests 73.
+
+## 2026-11-23 — 0.16.0 statement PDF to WhatsApp
+Owner wanted the PDF, not text. New `public/stmt-pdf.js`: canvas-drawn A4 pages (browser shapes Arabic RTL) → JPEG → minimal PDF writer. books-ui `sendPdf`: navigator.share({files}) when supported (Android/iOS/Windows share sheet → WhatsApp), else download (ASCII file name) + wa.me dialog to attach. Checked in Chromium: 3-page PDF of a 59-row demo statement in ~0.2 s, layout reviewed, no page errors. Tests 73. sw v33.
