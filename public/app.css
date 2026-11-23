@@ -400,6 +400,7 @@ table.tb td.desc{min-width:240px}
   #print .wide-doc table.stmt td,#print .wide-doc table.stmt th{padding:3px 4px}
   #print table.stmt tr.grp-row td{background:#eef5f1!important;font-weight:900}
   #print .wide-doc table.stmt td.pumps{text-align:start}
+  #print .tw-print.keep{break-inside:avoid}#print .xh{break-after:avoid}
   #print .wide-doc table.stmt td.nowrap,#print .wide-doc table.stmt td.fuel{padding-inline:8px}
   #print .wide-doc table.stmt td.fuel{white-space:nowrap}
 }
