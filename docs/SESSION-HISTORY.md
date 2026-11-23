@@ -54,3 +54,6 @@ NOT done: browser check of the discount field and bank screen; docs (MODULES/API
 Cloud env saved (Default: setup script + DB_PATH/BACKUP_AUTO). Rendered day report, sales register and customer statement to PDF from a throwaway demo DB. Statement: type column and long descriptions wrapped (14 rows/page); CSS-only fix in `public/app.css` (`.cl-tbl td.c/.k` nowrap, `td.d` bidi plaintext, header cells wrap) -> 22 rows/page, 3 pages instead of 4. sw v28.
 Not done: sales register still has a wide centred Pumps column and tight Fuel/Date columns; Dubai font + real Chrome preview need the owner's printout (KI-07). Resume: NEXT-TASK Task A.
 Follow-up: re-rendered on a throwaway copy of the real-data snapshot (dev-admin.js). Sales register Pumps column aligned (`td.pumps`, `td.fuel`), sw v29. Daily report tank table splits after 1 row (not fixed). Tests 70 pass.
+
+## 2026-11-23 — 0.11.2 cloud hosting authorised
+Owner authorised cloud deployment (ADR-19). CLAUDE.md + fuelpro-deployment skill relaxed; `.dockerignore`; `scripts/smoke-online.js` (local demo run: all checks pass incl. post/list/void expense). NOT deployed: the agent has no Render/Railway account access; owner steps are in docs/DEPLOYMENT.md. Resume: after the PR merges, owner connects the Blueprint; then run the smoke test on the URL.

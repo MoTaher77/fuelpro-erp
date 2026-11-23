@@ -36,7 +36,7 @@ Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 14).
 - Before any risky change: copy the DB with `npm run backup` (VACUUM INTO) — never copy a live WAL file by hand.
 - Never print/store passwords. `بيانات-الدخول.txt` and `.env` hold secrets: do not read or copy them.
 - Customer/supplier names and balances are private: never publish, upload, or paste them into docs.
-- Do not deploy to Render/Railway without the owner's explicit request.
+- **Cloud hosting is allowed (owner's explicit authorisation, 2026-11-23, ADR-19):** the full app (Node server + SQLite on a persistent disk) may be deployed to Render/Railway via `render.yaml`/`Dockerfile`, with HTTPS, `COOKIE_SECURE=1`, `TRUST_PROXY=1`, a random `APP_SECRET`. Demo and production databases stay on separate disks. **Copying real production data to a host still needs the owner's separate OK each time** (backup first, then `--dry-run`); until then a hosted service holds demo data only. Never commit or print passwords, keys, `APP_SECRET`, SMTP credentials or real customer/financial data; verify a deployment with `node scripts/smoke-online.js <url> <email> <password>`.
 - Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v27`) or users keep the old UI.
 
 ## 6. Commands (verified 2026-11-23)
