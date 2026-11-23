@@ -244,6 +244,43 @@
   const curWord = () => { const c = S.st ? S.st.currency : ''; return P.lang === 'ar' ? ({ YER: 'ريال', SAR: 'ريال سعودي', USD: 'دولار', AED: 'درهم' })[c] || c : c; };
   F.waDialog = waDialog; F.waIcon = waIcon; F.curWord = curWord; F.waNumber = waNumber;
 
+  /* ================================ PDF → WHATSAPP (statements and every report) ================================ */
+  /* one dialog for any PDF: share sheet straight to WhatsApp where the device allows it (outside Claude), otherwise save it
+     (inside Claude through its download prompt) and open the chat to attach it. Every button acts from its own click. */
+  function pdfShare({ blob, title, subtitle, fileName, asciiName, text, phone }) {
+    const file = new File([blob], fileName.replace(/[\\/:*?"<>|]+/g, '-'), { type: 'application/pdf' });
+    const inClaude = !!(window.claude && window.claude.use);
+    const canShare = !inClaude && navigator.canShare && navigator.canShare({ files: [file] });
+    const save = async () => {
+      if (inClaude) {
+        const dl = await window.claude.use('downloads').catch(() => null);
+        if (!dl) { toast(T('dlUnavailable')); return; }
+        try { await dl.save({ filename: asciiName, data: blob }); } catch (e) { if (e && e.code !== 'declined') toast(T('dlFailed') + (e && e.code ? ' (' + e.code + ')' : '')); }
+        return;
+      }
+      const a = h('a', { href: URL.createObjectURL(blob), download: asciiName }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000);
+    };
+    const shareBtn = canShare ? h('button', { class: 'btn wa-btn', type: 'button', onclick: () => navigator.share({ files: [file], title, text }).then(() => m.remove(), () => {}) }, waIcon(), ' ', T('waSharePdf')) : null;
+    const saveBtn = h('button', { class: 'btn ' + (canShare ? 'ghost' : 'gold'), type: 'button', onclick: save }, '⬇ ', T('dlPdf'));
+    const chat = h('button', { class: 'btn ghost', type: 'button', onclick: () => { m.remove(); waDialog(phone || '', text + '\n' + T('waAttach'), T('waPdfHint'), phone ? null : 'fp.waOwner'); } }, waIcon(), ' ', T('waOpen'));
+    const kb = Math.max(1, Math.round(blob.size / 1024));
+    const m = modal(T('pdfReady'), h('div', { class: 'stack', style: 'gap:12px' },
+      h('p', { style: 'margin:0' }, h('b', null, title), subtitle ? ' · ' + subtitle : '', ` · ${kb} KB`),
+      h('div', { class: 'row', style: 'margin-top:0' }, shareBtn, saveBtn, chat),
+      h('p', { class: 'hint', style: 'margin:0' }, canShare ? T('pdfShareHint') : T('pdfSaveHint'))));
+    return m;
+  }
+  /** a report as an A4 PDF (same look as the statement): cols [{k,w,num?,center?,bold?}], rows [[cells]] or [{cells,...}], total [cells] */
+  async function reportPdf({ title, periodText, summary, cols, rows, total, note, key, text, phone, sections, tableTitle }) {
+    if (!window.FPPDF) return;
+    if (!S.brand) await loadBrand();
+    const b = S.brand || {}; toast(T('pdfMaking'));
+    const blob = await window.FPPDF.statement({ brand: { name: b.name || (S.st && S.st.name) || 'FuelPro', activity: b.activity, phones: b.phones, address: b.address, logo: b.logo },
+      title, periodText, summary, cols, rows, total, note, sections, tableTitle, stamp: dmy(todayIso()), labels: { words: T('amountWords') } });
+    return pdfShare({ blob, title, subtitle: periodText, fileName: `${title} - ${periodText}.pdf`, asciiName: `FuelPro-${key}-${todayIso()}.pdf`, text: text || `${title} — ${periodText}`, phone });
+  }
+  F.reportPdf = reportPdf;
+
   /* ================================ STATEMENT SCREEN (any account, customer or supplier) ================================ */
   const addDay = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
   const nf = (v) => { const d = dec(), dd = Math.min(d, S.st.disp_dec ?? d); return new Intl.NumberFormat('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(v / 10 ** d); };
@@ -663,10 +700,16 @@
         r.by_fuel.length > 1 ? h('div', { class: 'chips' }, r.by_fuel.map(f => h('span', { class: 'chip' }, h('b', null, f.fuel_name), ': ', vol(f.qty_ml, 0), ' · ', money(f.amount), ' · ', T('grossProfit'), ' ', money(f.amount - f.cogs)))) : null,
         tbl(false), r.bills.length >= 2000 ? h('p', { class: 'hint' }, T('first2000')) : null);
     });
+    const sregPdf = () => { if (!r) return; const t = r.totals, per = `${from.value.split('-').reverse().join('-')} — ${to.value.split('-').reverse().join('-')}`;
+      return reportPdf({ title: T('sreg'), periodText: per, key: 'sales-register',
+        summary: [{ k: T('volSold'), v: vol(t.qty_ml, 0) }, { k: T('cashSales'), v: nf(t.cash) }, { k: T('creditSales'), v: nf(t.credit) }, { k: T('sales'), v: nf(t.amount), main: true }],
+        cols: [{ k: T('billNo'), w: 11, center: true }, { k: T('date'), w: 12, center: true }, { k: T('fuel'), w: 10 }, { k: T('qty'), w: 11, num: true }, { k: T('price', { u: F.uLbl() }), w: 9, num: true }, { k: T('cashSales'), w: 15, num: true }, { k: T('creditSales'), w: 15, num: true }, { k: T('total'), w: 15, num: true, bold: true }],
+        rows: r.bills.map(b => ({ cells: [String(b.bill), dmy(b.date), b.fuel_name, volNum(b.qty_ml, 2), priceShow(b.price_e4), nf(b.cash), b.credit ? nf(b.credit) : '', nf(b.amount)], color: [null, null, null, null, null, null, '#0b5a44', null] })),
+        total: [String(r.bills.length), '', T('total'), volNum(t.qty_ml, 2), '', nf(t.cash), nf(t.credit), nf(t.amount)] }); };
     const doPrint = async () => { if (!r) return; if (!S.brand) await loadBrand(); printDoc(`${T('sreg')} ${from.value} - ${to.value}`, h('div', { class: 'a4 wide-doc' }, letterhead(T('sreg'), `${from.value.replace(/-/g, '/')} — ${to.value.replace(/-/g, '/')}`), tbl(true), printFooter())); };
     q.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
     main.append(sec(T('sreg'), h('div', { class: 'row' }, field(T('from'), from), field(T('to'), to), field(T('fuel'), fu), field(T('payType'), pt), field(T('customer'), cu), field(T('search'), q),
-      h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')))), out);
+      h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')), h('button', { class: 'btn wa-btn', onclick: guard(sregPdf) }, waIcon(), ' ', T('waPdf')))), out);
     await run();
   };
   async function billModal(bill) {

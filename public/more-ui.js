@@ -70,10 +70,26 @@
       if (r.tanks.length) { L.push('', `${T('tankLevels')}:`); for (const k of r.tanks) L.push(`• ${k.tank_name}: ${volNum(k.closing_ml, 0)}`); }
       F.waDialog('', L.join('\n'), T('waDayHint'), 'fp.waOwner');
     };
+    const dayPdf = () => {
+      if (!r || !F.reportPdf) return; const t = r.totals, dd = String(r.date).split('-').reverse().join('-');
+      const rows = r.fuels.map(f => [f.fuel_name, volNum(f.qty_ml, 2), priceShow(f.price_e4), nf(f.cash), f.credit ? nf(f.credit) : '', nf(f.amount), nf(f.amount - (f.cogs || 0))]);
+      const sections = [];
+      if (r.expenses.length) sections.push({ title: T('exp'), cols: [{ k: T('category'), w: 30 }, { k: T('note'), w: 50 }, { k: T('amount'), w: 20, num: true }], rows: r.expenses.map(e => [T('cat.' + e.category), e.memo || '', nf(e.amount)]), total: [T('total'), '', nf(t.expenses)] });
+      const bx = r.boxes.filter(b => b.closing || b.debit || b.credit);
+      if (bx.length) sections.push({ title: T('box'), cols: [{ k: T('boxCol'), w: 34 }, { k: T('openingBal'), w: 17, num: true }, { k: T('moneyIn'), w: 16, num: true }, { k: T('moneyOut'), w: 16, num: true }, { k: T('closingBal'), w: 17, num: true, bold: true }],
+        rows: bx.map(x => ({ cells: [x.name_ar, nf(x.opening), x.debit ? nf(x.debit) : '', x.credit ? nf(x.credit) : '', nf(x.closing)], color: [null, null, null, null, x.closing < 0 ? '#b4372c' : null] })) });
+      if (r.tanks.length) sections.push({ title: T('tankLevels'), cols: [{ k: T('tank'), w: 30 }, { k: T('fuel'), w: 16 }, { k: T('openingQty'), w: 14, num: true }, { k: T('received'), w: 13, num: true }, { k: T('soldQty'), w: 13, num: true }, { k: T('closingQty'), w: 14, num: true, bold: true }],
+        rows: r.tanks.map(k => [k.tank_name, k.fuel_name, volNum(k.opening_ml, 0), k.in_ml ? volNum(k.in_ml, 0) : '', k.out_ml ? volNum(k.out_ml, 0) : '', volNum(k.closing_ml, 0)]) });
+      return F.reportPdf({ title: T('dayReport'), periodText: dd, key: 'day',
+        summary: [{ k: T('volSold'), v: vol(t.qty_ml, 0) }, { k: T('cashSales'), v: nf(t.cash) }, { k: T('creditSales'), v: nf(t.credit) }, { k: T('sales'), v: nf(t.amount), main: true }],
+        tableTitle: T('salesByFuel'), sections,
+        cols: [{ k: T('fuel'), w: 16 }, { k: T('qty'), w: 12, num: true }, { k: T('price', { u: F.uLbl() }), w: 10, num: true }, { k: T('cashSales'), w: 16, num: true }, { k: T('creditSales'), w: 15, num: true }, { k: T('total'), w: 17, num: true, bold: true }, { k: T('grossProfit'), w: 14, num: true }],
+        rows, total: [T('total'), volNum(t.qty_ml, 2), '', nf(t.cash), nf(t.credit), nf(t.amount), nf(t.gross_profit)], text: `${T('dayReport')} — ${dd}\n${T('sales')}: ${nf(t.amount)} · ${T('grossProfit')}: ${nf(t.gross_profit)}` });
+    };
     const step = (n) => () => { const v = addDay(d.value || todayIso(), n); if (v > todayIso()) return; d.value = v; run(); };
     const doPrint = async () => { if (!r) return; await brand(); F.printDoc(`${T('dayReport')} ${r.date}`, h('div', { class: 'a4 xdoc' }, F.letterhead(T('dayReport'), slash(r.date)), ...body(true), signs('cashierSig', 'accountantSig', 'managerSig'), foot())); };
     main.append(sec(T('day'), h('div', { class: 'row' }, h('button', { class: 'btn ghost sm', onclick: step(-1) }, '→ ', T('prevDay')), field(T('date'), d), h('button', { class: 'btn ghost sm', onclick: step(1) }, T('nextDay'), ' ←'),
-      h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')), F.waDialog ? h('button', { class: 'btn wa-btn', onclick: waDay }, F.waIcon(), ' ', T('waSend')) : null)), out);
+      h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')), F.waDialog ? h('button', { class: 'btn wa-btn', onclick: waDay }, F.waIcon(), ' ', T('waSend')) : null, F.reportPdf ? h('button', { class: 'btn wa-btn', onclick: guard(dayPdf) }, F.waIcon(), ' ', T('waPdf')) : null)), out);
     await run();
   };
 
@@ -159,11 +175,19 @@
       document.querySelectorAll('.modal').forEach(x => x.remove());
       modal(T('waQueue'), h('div', { class: 'stack', style: 'gap:10px' }, h('p', { class: 'hint', style: 'margin:0' }, T('waQueueHint', { n, m: list.length })), h('div', { class: 'qlist' }, items.length ? items : h('p', { class: 'muted' }, T('noData')))));
     };
+    const colPdf = () => {
+      if (!r || !F.reportPdf) return; const list = rows().filter(c => c.balance > 0).sort((a, b) => b.balance - a.balance), asOf = String(r.as_of).split('-').reverse().join('-');
+      return F.reportPdf({ title: T('colReport'), periodText: T('asOf') + ' ' + asOf, key: 'collections',
+        summary: [{ k: T('band1'), v: nf(r.bands.b1) }, { k: T('band2'), v: nf(r.bands.b2) }, { k: T('band4'), v: nf(r.bands.b4) }, { k: T('totalOwed'), v: nf(r.total), main: true }],
+        cols: [{ k: '#', w: 4, center: true }, { k: T('acctNo'), w: 10, center: true }, { k: T('customer'), w: 28 }, { k: T('balance'), w: 16, num: true, bold: true }, { k: T('lastPay'), w: 13, center: true }, { k: T('lastPayAmt'), w: 17, num: true }, { k: T('daysSince'), w: 9, center: true }],
+        rows: list.map((c, i) => ({ cells: [String(i + 1), c.ref || '', c.name, nf(c.balance), c.last_credit ? String(c.last_credit).slice(0, 10).split('-').reverse().join('-') : T('neverPaid'), c.last_credit_amount ? nf(c.last_credit_amount) : '', c.days_since_payment != null ? String(c.days_since_payment) : '—'], color: [null, null, null, c.over_limit ? '#b4372c' : null] })),
+        total: [String(list.length), '', T('total'), nf(list.reduce((s, c) => s + c.balance, 0)), '', '', ''] });
+    };
     const doPrint = async () => { if (!r) return; await brand(); F.printDoc(`${T('colReport')} ${r.as_of}`, h('div', { class: 'a4 wide-doc xdoc' }, F.letterhead(T('colReport'), T('asOf') + ' ' + slash(r.as_of) + (r.days ? ' · ' + T('noPayFor') + ' ' + r.days : '')), tbl(true), signs('accountantSig', 'managerSig'), foot())); };
     const exp = () => r && csv(`collections-${r.as_of}.csv`, ['ref', 'name', 'phone', 'balance', 'credit_limit', 'last_sale', 'last_payment', 'last_payment_amount', 'days_since'],
       rows().map(c => [c.ref || '', c.name, c.phone || '', (c.balance / 10 ** dec()).toFixed(2), (c.credit_limit / 10 ** dec()).toFixed(2), c.last_debit || '', c.last_credit || '', (c.last_credit_amount / 10 ** dec()).toFixed(2), c.days_since_payment ?? '']));
     main.append(sec(T('col'), h('p', { class: 'hint' }, T('colHelp')), h('div', { class: 'row' }, field(T('noPayFor'), dd), h('button', { class: 'btn', onclick: run }, T('run')), field(T('search'), q), h('label', { class: 'chk' }, ov, ' ', T('overLimit')),
-      h('button', { class: 'btn ghost sm', onclick: exp }, 'CSV'), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')), F.waDialog ? h('button', { class: 'btn wa-btn', onclick: queue }, F.waIcon(), ' ', T('waQueue')) : null)), out);
+      h('button', { class: 'btn ghost sm', onclick: exp }, 'CSV'), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')), F.waDialog ? h('button', { class: 'btn wa-btn', onclick: queue }, F.waIcon(), ' ', T('waQueue')) : null, F.reportPdf ? h('button', { class: 'btn wa-btn', onclick: guard(colPdf) }, F.waIcon(), ' ', T('waPdf')) : null)), out);
     await run();
   };
 

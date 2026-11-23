@@ -101,3 +101,6 @@ Owner asked to install external libraries and dev tools instead of hand-writing 
 
 ## 2026-11-23 — 0.23.0 Phase 2 stage A (PostgreSQL bridge)
 src/pg/{worker,sync,dialect}.js + test/pg-sync.test.js (live tests need FUELPRO_TEST_PG; CI has a postgres:16 service). Local test server: initdb + pg_ctl as user postgres on port 5433, databases fp (SQL_ASCII, bridge tests) and fp8 (UTF8, schema probe). Schema probe: 127/129 statements port; v3 table rebuild + 9 triggers by hand. SQLite stays the default; nothing changes for the laptop. Resume: stage B in docs/PHASE2-POSTGRES.md.
+
+## 2026-11-23 — 0.24.0 report PDFs on WhatsApp
+public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books-ui: pdfShare + reportPdf (F.reportPdf); sales register button. more-ui: daily report (fuel + expenses + boxes + tanks) and collections PDFs. Checked on a station-data copy: day 2 pages, sales register 2, collections 4, each ~0.7 s, layouts reviewed, no page errors. sw v39.
