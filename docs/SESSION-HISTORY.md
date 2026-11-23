@@ -57,3 +57,6 @@ Follow-up: re-rendered on a throwaway copy of the real-data snapshot (dev-admin.
 
 ## 2026-11-23 — 0.11.2 cloud hosting authorised
 Owner authorised cloud deployment (ADR-19). CLAUDE.md + fuelpro-deployment skill relaxed; `.dockerignore`; `scripts/smoke-online.js` (local demo run: all checks pass incl. post/list/void expense). NOT deployed: the agent has no Render/Railway account access; owner steps are in docs/DEPLOYMENT.md. Resume: after the PR merges, owner connects the Blueprint; then run the smoke test on the URL.
+
+## 2026-11-23 — 0.12.0 Claude Artifact edition (ADR-20)
+New `web/` (bundle of unchanged src + shims + sql.js engine + runtime with save/load to Artifact db). Published private page https://claude.ai/artifact/CgLf1pmqcani77JBGVL56N (demo data). Tests: npm test 72 (70 pass + 2 skip without sql.js); on sql.js 70/70 non-backup pass incl. 2 new artifact tests; Chromium e2e on the built page with a storage stand-in: sign-in, expense, save (41 blocks), reload, data + session back, integrity OK, no page errors. NOT verified: the live page's real claude storage (needs the owner to open it and do one operation). Resume: owner opens the page; then read `fpstate` with ArtifactData to confirm the save.

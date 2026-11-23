@@ -1,0 +1,31 @@
+<title>FuelPro تجريبي</title>
+<link rel="stylesheet" href="app.css">
+<style>
+/* FuelPro Artifact edition shell: boot screen, save-status chip, in-page dialogs. The app keeps its own app.css theme. */
+:root{--fp-boot-bg:#f6f3ea;--fp-boot-ink:#10241f;--fp-boot-accent:#0b5a44;--fp-chip-ok:#0b5a44;--fp-chip-warn:#8a611a;--fp-chip-bad:#b4372c;--fp-chip-bg:#ffffff;--fp-scrim:rgba(8,20,16,.45)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--fp-boot-bg:#0f1a17;--fp-boot-ink:#e7efe9;--fp-boot-accent:#3cc59a;--fp-chip-ok:#3cc59a;--fp-chip-warn:#e0b45a;--fp-chip-bad:#f08a7e;--fp-chip-bg:#16241f;--fp-scrim:rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{--fp-boot-bg:#0f1a17;--fp-boot-ink:#e7efe9;--fp-boot-accent:#3cc59a;--fp-chip-ok:#3cc59a;--fp-chip-warn:#e0b45a;--fp-chip-bad:#f08a7e;--fp-chip-bg:#16241f;--fp-scrim:rgba(0,0,0,.6)}
+body{background:var(--fp-boot-bg)}
+#fpBoot{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--fp-boot-bg);color:var(--fp-boot-ink);font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:16px;text-align:center}
+#fpBoot b{font-size:26px;color:var(--fp-boot-accent)}#fpBoot small{opacity:.75;max-width:420px;line-height:1.6}
+#fpBoot i{width:38px;height:38px;border-radius:50%;border:4px solid color-mix(in srgb,var(--fp-boot-accent) 25%,transparent);border-top-color:var(--fp-boot-accent);animation:fpspin 1s linear infinite}
+@keyframes fpspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#fpBoot i{animation:none}}
+.fp-chip{position:fixed;inset-inline-start:calc(12px + env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:9000;padding:6px 12px;border-radius:999px;font:700 12.5px/1.4 'Segoe UI',Tahoma,sans-serif;background:var(--fp-chip-bg);border:1.5px solid currentColor;box-shadow:0 4px 14px rgba(0,0,0,.12);cursor:pointer;max-width:calc(100vw - 24px)}
+.fp-chip:focus-visible{outline:3px solid var(--fp-boot-accent);outline-offset:2px}
+.fp-chip.ok{color:var(--fp-chip-ok)}.fp-chip.saving,.fp-chip.warn{color:var(--fp-chip-warn)}.fp-chip.bad{color:var(--fp-chip-bad)}
+.fp-menu{position:fixed;inset-inline-start:calc(12px + env(safe-area-inset-left,0px));bottom:calc(52px + env(safe-area-inset-bottom,0px));z-index:9001;display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--fp-chip-bg);color:var(--fp-boot-ink);box-shadow:0 10px 30px rgba(0,0,0,.2);max-width:min(340px,calc(100vw - 24px));font:13px/1.6 'Segoe UI',Tahoma,sans-serif}
+.fp-menu p{margin:0 0 4px}
+.fp-dlg{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;background:var(--fp-scrim);padding:16px}
+.fp-dlg>div{background:var(--fp-chip-bg);color:var(--fp-boot-ink);border-radius:16px;padding:18px;max-width:420px;width:100%;display:flex;flex-direction:column;gap:14px;font:14px/1.7 'Segoe UI',Tahoma,sans-serif}
+.fp-dlg .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+@media (max-width:900px){.fp-chip{bottom:calc(env(safe-area-inset-bottom,0px) + 92px)}.fp-menu{bottom:calc(env(safe-area-inset-bottom,0px) + 132px)}}
+@media print{.fp-chip,.fp-menu,.fp-dlg{display:none!important}}
+</style>
+<div id="fpBoot"><i></i><b>FuelPro</b><span id="fpBootMsg">جارٍ التشغيل…</span><small>نسخة تجريبية تعمل بالكود الحقيقي للنظام وبيانات تجريبية، وتُحفظ عملياتك في تخزين هذه الصفحة.</small></div>
+<div id="root"></div>
+<div id="toast" class="toast" hidden></div>
+<script>window.__FP_APP_FILES = __APP_FILES__; window.__FP_BUILD = __BUILD__;</script>
+<script src="seed.js"></script>
+<script src="fuelpro-core.js"></script>
+<script src="runtime.js"></script>
