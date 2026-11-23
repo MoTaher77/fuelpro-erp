@@ -45,3 +45,7 @@ Owner uploaded `M7-SAT.DMP`; new `scripts/exp2sqlite.js` reads it (<1 s). All 20
 Owner rejected a separate archive screen; history now goes into audit/users/exchange_rates (+ m7_results, m7_stock_month, migration v13) via `scripts/import-m7-history.js`.
 Screens: journal «سجل القيد», audit filters (dates/origin, paging), users «تفعيل», «الأرباح الشهرية» earlier years, «الجرد الشهري» old values. sw v20. Tests 63/63.
 Finding: M7 has no detailed movements before 2026, so prior-year journals are impossible (ADR-14). Live DB NOT changed. Resume: NEXT-TASK Task 0, then dashboard → xlsx → bank rec + discounts.
+
+## 2026-11-23 — 0.9.0 analytics, Excel, discounts, bank reconciliation (tests VERIFIED; browser checked for analytics + Excel only)
+New: src/analytics.js + public/analytics-ui.js (#ana), public/xlsx.js (topbar Excel, opened in real Excel), sale discount (4050 sales_disc, perm sale.discount), src/bankrec.js + public/bank-ui.js (#bank, perm bank.reconcile), migration v14, sw v23. Tests 68/68.
+NOT done: browser check of the discount field and bank screen; docs (MODULES/API/ACCOUNTING-RULES/ADR) not yet updated for 0.9.0; live DB still without M7 history (NEXT-TASK Task 0).

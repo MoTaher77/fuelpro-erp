@@ -18,6 +18,7 @@ const CHART = [
   ['capital', '3010', 'equity', 'رأس المال والأرصدة الافتتاحية', 'Capital & opening balances'],
   ['drawings', '3200', 'equity', 'مسحوبات المالك', 'Owner drawings'],
   ['retained', '3900', 'equity', 'الأرباح المحتجزة', 'Retained earnings'],
+  ['sales_disc', '4050', 'income', 'خصومات المبيعات', 'Sales discounts'],
   ['sales', '4010', 'income', 'مبيعات الوقود', 'Fuel sales'],
   ['other_income', '4900', 'income', 'إيرادات أخرى (زيادات المخزون والصندوق)', 'Other income (stock & cash surpluses)'],
   ['cogs', '5010', 'expense', 'تكلفة الوقود المباع', 'Cost of fuel sold'],
@@ -39,7 +40,9 @@ const expenseKey = (cat) => 'exp_' + (EXPENSE_KEYS.has(cat) ? cat : 'other');
 
 function ensureChart(db, orgId) {
   const ins = db.prepare('INSERT OR IGNORE INTO accounts(org_id,code,type,name_ar,name_en,sys) VALUES(?,?,?,?,?,?)');
-  for (const [sys, code, type, ar, en] of CHART) ins.run(orgId, code, type, ar, en, sys);
+  const has = db.prepare('SELECT 1 FROM accounts WHERE org_id=? AND sys=?');
+  /* a system account whose code is already used by an imported chart gets the next free code (4050 → 40501, 40502 …) */
+  for (const [sys, code, type, ar, en] of CHART) for (let k = 0; k < 10 && !has.get(orgId, sys); k++) ins.run(orgId, k ? code + k : code, type, ar, en, sys);
   try { db.prepare("UPDATE accounts SET box=sys WHERE org_id=? AND sys IN('cash','bank') AND box IS NULL").run(orgId); } catch { /* before migration v4 */ }
 }
 function acct(db, orgId, sys) {

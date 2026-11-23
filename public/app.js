@@ -286,7 +286,7 @@
     inv: 'M5 6c0-1.7 3.1-3 7-3s7 1.3 7 3v12c0 1.7-3.1 3-7 3s-7-1.3-7-3zM5 6c0 1.7 3.1 3 7 3s7-1.3 7-3M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3',
     cust: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8', supp: 'M3 21V9l6 4V9l6 4V5h6v16zM7 17h2M13 17h2M17 17h2',
     exp: 'M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4', acct: 'M4 4h11a3 3 0 0 1 3 3v14H7a3 3 0 0 1-3-3zM4 18a3 3 0 0 1 3-3h11M8 8h6',
-    fin: 'M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0zM8 21h8', rep: 'M3 3v18h18M7 15l4-4 3 3 5-6', vch: 'M4 5h16v14H4zM4 9h16M8 13h4M8 16h6M16 13h1', prc: 'M20 12l-8 8-9-9V3h8zM7.5 7.5h.01', cnt: 'M9 3h6v3H9zM6 5h12v16H6zM9 11l2 2 4-4M9 17h6', cur: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.3 1.8 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6v2M12 16v2', fa: 'M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6', sreg: 'M4 3h16v18l-3-2-2 2-3-2-3 2-2-2-3 2zM8 8h8M8 12h8M8 16h5', pur: 'M3 4h2l2.4 11h11l2-8H6.3M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z', stm: 'M7 3h10l4 4v14H7zM17 3v4h4M10 11h7M10 15h7M3 7v14h4', mtr: 'M12 21a9 9 0 1 1 9-9M12 12l4-4M7 12h1M12 7v1M17 17l3 3',
+    ana: 'M4 20V10M10 20V4M16 20v-7M22 20H2', bank: 'M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18', fin: 'M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0zM8 21h8', rep: 'M3 3v18h18M7 15l4-4 3 3 5-6', vch: 'M4 5h16v14H4zM4 9h16M8 13h4M8 16h6M16 13h1', prc: 'M20 12l-8 8-9-9V3h8zM7.5 7.5h.01', cnt: 'M9 3h6v3H9zM6 5h12v16H6zM9 11l2 2 4-4M9 17h6', cur: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.3 1.8 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6v2M12 16v2', fa: 'M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6', sreg: 'M4 3h16v18l-3-2-2 2-3-2-3 2-2-2-3 2zM8 8h8M8 12h8M8 16h5', pur: 'M3 4h2l2.4 11h11l2-8H6.3M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z', stm: 'M7 3h10l4 4v14H7zM17 3v4h4M10 11h7M10 15h7M3 7v14h4', mtr: 'M12 21a9 9 0 1 1 9-9M12 12l4-4M7 12h1M12 7v1M17 17l3 3',
     setup: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4',
     users: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM12 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM8 16a4 4 0 0 1 8 0', audit: 'M9 6h12M9 12h12M9 18h12M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2',
     day: 'M4 5h16v15H4zM4 9h16M8 3v4M16 3v4M8 13h3M8 16h6', col: 'M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', box: 'M3 7h18v12H3zM3 11h18M7 15h3M16 4l-4 3-4-3', jbook: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11M9 8h6', yc: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4M12 15v2',
@@ -295,10 +295,10 @@
   const icon = (k, size = 20) => { const v = document.createElementNS(NS, 'svg'); v.setAttribute('viewBox', '0 0 24 24'); v.setAttribute('width', size); v.setAttribute('height', size); v.setAttribute('aria-hidden', 'true');
     const p = document.createElementNS(NS, 'path'); p.setAttribute('d', PATHS[k] || PATHS.menu); p.setAttribute('fill', 'none'); p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', '1.8'); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); v.append(p); return v; };
   const NAV = [
-    ['gOps', [['dash', ['read']], ['sales', ['sale.create']], ['shift', ['shift.open', 'shift.approve']], ['day', ['report.read']], ['sreg', ['report.read']], ['mtr', ['report.read']]]],
+    ['gOps', [['dash', ['read']], ['ana', ['report.read']], ['sales', ['sale.create']], ['shift', ['shift.open', 'shift.approve']], ['day', ['report.read']], ['sreg', ['report.read']], ['mtr', ['report.read']]]],
     ['gStock', [['inv', ['read']], ['stock', ['delivery.create', 'adjust.create', 'report.read']], ['pur', ['report.read']], ['cnt', ['report.read']], ['prc', ['read']]]],
     ['gParties', [['cust', ['read']], ['col', ['report.read']], ['supp', ['supplier.manage', 'supplier.pay', 'report.read']]]],
-    ['gFinance', [['exp', ['expense.create']], ['vch', ['journal.read']], ['box', ['report.read']], ['stm', ['report.read']], ['acct', ['journal.read']], ['jbook', ['journal.read']], ['cur', ['report.read']], ['fa', ['report.read']], ['fin', ['report.read']], ['rep', ['report.read']], ['yc', ['period.lock']]]],
+    ['gFinance', [['exp', ['expense.create']], ['vch', ['journal.read']], ['box', ['report.read']], ['bank', ['report.read']], ['stm', ['report.read']], ['acct', ['journal.read']], ['jbook', ['journal.read']], ['cur', ['report.read']], ['fa', ['report.read']], ['fin', ['report.read']], ['rep', ['report.read']], ['yc', ['period.lock']]]],
     ['gAdmin', [['setup', ['config.edit', 'users.manage']], ['users', ['users.manage']], ['audit', ['audit.read']]]]
   ];
   const allowedTabs = () => NAV.flatMap(([, items]) => items.filter(([k, ps]) => VIEWS[k] && cd(...ps)).map(([k]) => k));
@@ -313,11 +313,22 @@
       NAV.map(([g, items]) => { const ks = items.map(([k]) => k).filter(k => tabs.includes(k)); return ks.length ? [h('div', { class: 'grp' }, T(g)), ks.map(link)] : null; }));
     const scrim = h('div', { class: 'scrim', onclick: closeMenu });
     const openMenu = () => { side.classList.add('open'); scrim.classList.add('open'); };
+    /* every table on the screen -> one .xlsx workbook, one sheet per table, named after its heading */
+    const exportScreen = () => {
+      const X = window.FPXLSX, tables = [...document.querySelectorAll('#main table')].filter(t => t.rows.length > 1 && t.offsetParent !== null);
+      if (!X || !tables.length) { toast(T('xlsxNone')); return; }
+      const sheets = tables.map((t, i) => { const box = t.closest('.an-card, section, .sec, .card, .modal') || document.getElementById('main');
+        const head = box.querySelector('h2, h3'); const { rows, header } = X.tableRows(t);
+        return { name: (head ? head.innerText.split(String.fromCharCode(10))[0] : T(S.tab)) || 'Sheet' + (i + 1), rows, header, rtl: P.lang === 'ar' }; });
+      const bytes = X.build({ sheets, title: T(S.tab) });
+      const a2 = h('a', { href: URL.createObjectURL(new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })), download: `${T(S.tab)} ${todayIso()}.xlsx` });
+      document.body.append(a2); a2.click(); setTimeout(() => { URL.revokeObjectURL(a2.href); a2.remove(); }, 1000); };
     const top = h('div', { class: 'top' },
       h('button', { class: 'iconbtn menubtn', 'aria-label': T('menu'), onclick: openMenu }, icon('menu')),
       h('h1', null, T(S.tab), h('span', { class: 'muted small' }, ' · ', S.st ? S.st.name : '')),
       h('div', { class: 'tools' },
         S.stations.length > 1 && h('select', { id: 'stSel', class: 'compact', 'aria-label': T('station'), onchange: guard(async (e) => { S.sid = +e.target.value; await loadBase(); render(); }) }, S.stations.map(s => h('option', { value: s.id, selected: s.id === S.sid }, s.name))),
+        h('button', { class: 'btn ghost sm', title: T('xlsxHelp'), onclick: exportScreen }, '⇩ Excel'),
         h('button', { class: 'iconbtn theme', 'aria-label': T('theme'), title: T('theme'), onclick: toggleTheme }, icon('theme')),
         h('button', { class: 'btn ghost sm wide', onclick: prefsDialog }, T('prefs')),
         h('button', { class: 'btn ghost sm wide', onclick: accountDialog }, S.user.name),
@@ -387,19 +398,23 @@
       const pump = h('select', { id: 'sPump' }, S.pumps.map(p => h('option', { value: p.id }, `${p.name} — ${p.fuel_name}`)));
       const open = h('input', { id: 'sOpen', readonly: true }), close = h('input', { id: 'sClose', inputmode: 'decimal' }), qty = h('input', { id: 'sQty', inputmode: 'decimal' }), preview = h('div', { class: 'hint', id: 'sPrev' });
       const type = sel('sType', [['cash', T('cash')], ['credit', T('credit')]], 'cash'), cust = h('select', { id: 'sCust' }, S.customers.map(c => h('option', { value: c.id }, c.name))); const custW = field(T('customer'), cust); custW.hidden = true;
+      const disc = h('input', { id: 'sDisc', inputmode: 'decimal', placeholder: T('discHint') }); const discW = cd('sale.discount') ? field(T('discount'), disc) : null;
+      const discOf = (amount) => { const v = disc.value.trim(); if (!v || !discW) return {}; if (/%$/.test(v)) { const p = Number(v.slice(0, -1).replace(',', '.')); return p > 0 ? { discount_bp: Math.round(p * 100), off: Math.round(amount * p / 100) } : {}; } const m = parseDec(v, dec()); return m > 0 ? { discount: m, off: m } : {}; };
       const cur = () => S.pumps.find(x => x.id === +pump.value);
       const sync = () => { open.value = priceFree(cur().meter_ml); upd(); };
-      const upd = () => { const f = S.fuels.find(x => x.id === cur().fuel_id); let ml = null; if (close.value.trim()) { const c = volMl(close.value); ml = c == null ? null : c - cur().meter_ml; } else if (qty.value.trim()) ml = volMl(qty.value); preview.textContent = ml > 0 && f && f.price_e4 ? `${vol(ml, 3)} × ${priceShow(f.price_e4)} ≈ ${money(Math.round(ml * f.price_e4 / 1e7))}` : ''; };
-      pump.onchange = () => { close.value = ''; qty.value = ''; sync(); }; type.onchange = () => (custW.hidden = type.value !== 'credit'); close.oninput = () => { qty.value = ''; upd(); }; qty.oninput = () => { close.value = ''; upd(); };
+      const upd = () => { const f = S.fuels.find(x => x.id === cur().fuel_id); let ml = null; if (close.value.trim()) { const c = volMl(close.value); ml = c == null ? null : c - cur().meter_ml; } else if (qty.value.trim()) ml = volMl(qty.value); const amt = ml > 0 && f && f.price_e4 ? Math.round(ml * f.price_e4 / 1e7) : 0, d = amt ? discOf(amt) : {};
+        preview.textContent = amt ? `${vol(ml, 3)} × ${priceShow(f.price_e4)} ≈ ${money(amt)}` + (d.off ? ` − ${T('discount')} ${money(d.off)} = ${money(amt - d.off)}` : '') : ''; };
+      pump.onchange = () => { close.value = ''; qty.value = ''; sync(); }; type.onchange = () => (custW.hidden = type.value !== 'credit'); close.oninput = () => { qty.value = ''; upd(); }; qty.oninput = () => { close.value = ''; upd(); }; disc.oninput = () => upd();
       let cid = crypto.randomUUID();
       const form = h('form', { class: 'card', autocomplete: 'off', onsubmit: guard(async (e) => {
         e.preventDefault(); const p = cur();
         const body = { client_id: cid, pump_id: p.id, expected_open_ml: p.meter_ml, pay_type: type.value, ...(type.value === 'credit' ? { customer_id: +cust.value } : {}) };
         if (S.salesDate !== todayIso()) body.date = S.salesDate;
         if (close.value.trim()) body.close_ml = num(close.value, volMl); else body.quantity_ml = num(qty.value, volMl);
+        { const d = discOf(1); if (d.discount) body.discount = d.discount; if (d.discount_bp) body.discount_bp = d.discount_bp; }
         try { await api('POST', sp('/sales'), body); } catch (er) { if (er.code === 'METER_MISMATCH') await loadBase(); throw er; }
-        cid = crypto.randomUUID(); toast(T('saved')); await refresh();
-      }) }, h('h2', null, T('newSale')), h('div', { class: 'grid' }, field(T('pump'), pump), field(T('prevMeter', { u: uLbl() }), open), field(T('closeMeter', { u: uLbl() }), close), field(T('qtyOr', { u: uLbl() }), qty), field(T('payType'), type), custW), preview, h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('save'))));
+        cid = crypto.randomUUID(); disc.value = ''; toast(T('saved')); await refresh();
+      }) }, h('h2', null, T('newSale')), h('div', { class: 'grid' }, field(T('pump'), pump), field(T('prevMeter', { u: uLbl() }), open), field(T('closeMeter', { u: uLbl() }), close), field(T('qtyOr', { u: uLbl() }), qty), field(T('payType'), type), custW, discW), preview, h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('save'))));
       const list = sec(null); main.append(form, list); sync(); await salesList(list);
     },
     async stock(main) {
@@ -583,7 +598,7 @@
     const rows = await api('GET', sp(`/sales?date=${S.salesDate}&limit=200`)); const live = rows.filter(r => !r.voided_at);
     box.replaceChildren(h('div', { class: 'row' }, h('h2', null, T('sales') + ' — ' + fdate(S.salesDate)), field(T('day'), day)),
       rows.length ? table([T('time'), T('pump'), T('fuel'), T('qty') + ` (${uLbl()})`, T('price', { u: uLbl() }), T('vat'), T('total'), T('payType'), ''], rows.map(s => [ftime(s.created_at), s.pump_name, s.fuel_name, volNum(s.quantity_ml), priceShow(s.price_e4), money(s.vat),
-        s.voided_at ? h('span', { class: 'struck' }, money(s.gross)) : h('b', null, money(s.gross)), s.voided_at ? h('span', { class: 'muted' }, T('voided')) : h('span', { class: 'pill ' + s.pay_type }, T(s.pay_type) + (s.customer_name ? ' · ' + s.customer_name : '')), h('div', { class: 'row' }, h('button', { class: 'btn ghost sm', onclick: () => printReceipt(s) }, T('receipt')), !s.voided_at && cd('sale.void') ? voidBtn(() => `/sales/${s.id}/void`) : '')])) : h('p', { class: 'muted' }, T('noData')),
+        s.voided_at ? h('span', { class: 'struck' }, money(s.gross)) : h('b', null, money(s.gross), s.discount ? h('small', { class: 'muted' }, ' (' + T('discount') + ' ' + money(s.discount) + ')') : ''), s.voided_at ? h('span', { class: 'muted' }, T('voided')) : h('span', { class: 'pill ' + s.pay_type }, T(s.pay_type) + (s.customer_name ? ' · ' + s.customer_name : '')), h('div', { class: 'row' }, h('button', { class: 'btn ghost sm', onclick: () => printReceipt(s) }, T('receipt')), !s.voided_at && cd('sale.void') ? voidBtn(() => `/sales/${s.id}/void`) : '')])) : h('p', { class: 'muted' }, T('noData')),
       rows.length ? h('p', { class: 'hint' }, T('total'), ': ', h('b', null, money(live.reduce((a, r) => a + r.gross, 0))), ' · ', vol(live.reduce((a, r) => a + r.quantity_ml, 0))) : '');
   }
 

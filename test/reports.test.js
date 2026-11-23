@@ -111,3 +111,24 @@ test('cash-flow statement (direct method) splits box movements into operating, i
   assert.equal((await s.c.get(`/api/accounting/cash-flow?station_id=999999&from=2000-01-01&to=2099-12-31`)).status, 404);
   await integrity(s.c);
 });
+
+test('analytics dashboard agrees with the sales and the books, compares periods, and is station-scoped', async () => {
+  const s = await org();
+  const cust = ok(await s.c.post(`${s.p}/customers`, { name: 'Fleet' }), 201).id;
+  ok(await s.c.post(`${s.p}/sales`, { client_id: 'an1-' + Date.now(), pump_id: s.pump, quantity_ml: 100_000, pay_type: 'cash' }), 201);                       // 100 L, 50,000
+  ok(await s.c.post(`${s.p}/sales`, { client_id: 'an2-' + Date.now(), pump_id: s.pump, quantity_ml: 200_000, pay_type: 'credit', customer_id: cust }), 201);  // 200 L, 100,000
+  const a = ok(await s.c.get(`${s.p}/analytics`));
+  assert.equal(a.current.litres_ml, 300_000); assert.equal(a.current.sales_count, 2); assert.equal(a.current.sales_gross, 150_000);
+  const is = ok(await s.c.get(`/api/accounting/income-statement?station_id=${s.p.split('/').pop()}&from=${a.from}&to=${a.to}`));
+  assert.equal(a.current.revenue, is.revenue); assert.equal(a.current.net_profit, is.net_profit);
+  assert.equal(a.current.fuel_margin, a.current.sales_net - a.fuels.reduce((t, f) => t + f.cogs, 0));
+  assert.equal(a.fuels.reduce((t, f) => t + f.litres_ml, 0), 300_000);
+  assert.equal(a.trend.reduce((t, x) => t + x.litres_ml, 0), 300_000); assert.equal(a.granularity, 'day');
+  assert.equal(a.top_customers[0].id, cust); assert.equal(a.top_customers[0].balance, 100_000);
+  assert.equal(a.pay_mix.find(p => p.pay_type === 'credit').amount, 100_000);
+  assert.equal(a.previous.litres_ml, 0); assert.equal(a.last_year.litres_ml, 0);
+  assert.equal(a.tanks[0].sold_per_day_ml, 10_000); assert.equal(a.tanks[0].days_cover, Math.floor(9_700_000 / 10_000)); assert.equal(a.tanks[0].status, 'good');
+  assert.ok(a.years.some(y => y.source === 'fuelpro'));
+  assert.equal(ok(await s.c.get(`${s.p}/analytics?from=2025-01-01&to=2026-12-31`)).granularity, 'month');
+  const o = await org(); assert.equal((await o.c.get(`${s.p}/analytics`)).status, 404);
+});

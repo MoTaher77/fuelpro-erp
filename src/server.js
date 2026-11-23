@@ -9,6 +9,8 @@ const O = require('./ops');
 const B = require('./books');
 const R = require('./reports');
 const M7 = require('./m7archive');
+const AN = require('./analytics');
+const BR = require('./bankrec');
 const auth = require('./auth');
 const { HttpError, unauthorized, notFound } = require('./errors');
 
@@ -148,6 +150,15 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
   route('GET', '/api/stations/:sid/reports/boxes', (c) => ({ body: R.boxReport(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/reports/collections', (c) => ({ body: R.collections(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/reports/daily', (c) => ({ body: R.dailyReport(db, c.user, st(c), c.q) }));
+  /* bank reconciliation */
+  route('GET', '/api/stations/:sid/bank-recs', (c) => ({ body: BR.overview(db, c.user, st(c)) }));
+  route('POST', '/api/stations/:sid/bank-recs', (c) => ({ status: 201, body: BR.create(db, c.user, st(c), c.body) }));
+  route('GET', '/api/stations/:sid/bank-recs/:id', (c) => ({ body: BR.detail(db, c.user, st(c), id(c.p.id)) }));
+  route('PATCH', '/api/stations/:sid/bank-recs/:id', (c) => ({ body: BR.update(db, c.user, st(c), id(c.p.id), c.body) }));
+  route('POST', '/api/stations/:sid/bank-recs/:id/finalize', (c) => ({ body: BR.finalize(db, c.user, st(c), id(c.p.id)) }));
+  route('POST', '/api/stations/:sid/bank-recs/:id/reopen', (c) => ({ body: BR.reopen(db, c.user, st(c), id(c.p.id)) }));
+  route('DELETE', '/api/stations/:sid/bank-recs/:id', (c) => ({ body: BR.remove(db, c.user, st(c), id(c.p.id)) }));
+  route('GET', '/api/stations/:sid/analytics', (c) => ({ body: AN.dashboard(db, c.user, st(c), c.q) }));
   /* history carried over from the old M7 system */
   route('GET', '/api/stations/:sid/reports/old-results', (c) => ({ body: M7.oldResults(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/stock/old-values', (c) => ({ body: M7.oldStockValues(db, c.user, st(c), c.q) }));

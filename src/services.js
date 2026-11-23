@@ -291,6 +291,9 @@ function createSale(db, user, sid, b) {
   const expOpen = V.int(b.expected_open_ml, 'expected_open_ml', { min: 0, optional: true });
   if ((closeMl === undefined) === (qtyIn === undefined)) throw bad('VALIDATION', 'Send exactly one of close_ml or quantity_ml');
   const custIn = V.int(b.customer_id, 'customer_id', { min: 1, optional: true });
+  const discIn = V.int(b.discount, 'discount', { min: 0, optional: true }), discBp = V.int(b.discount_bp, 'discount_bp', { min: 0, max: 10000, optional: true });
+  if (discIn !== undefined && discBp !== undefined) throw bad('VALIDATION', 'Send either discount or discount_bp, not both');
+  if ((discIn || discBp) && !auth.can(user.role, 'sale.discount')) throw forbidden('You are not allowed to give discounts');
 
   return tx(db, () => {
     const dup = db.prepare('SELECT * FROM sales WHERE station_id=? AND client_id=?').get(sid, clientId);
@@ -316,7 +319,11 @@ function createSale(db, user, sid, b) {
     const shift = openShift(db, st, true);
 
     const amount = amountMinor(qty, fuel.price_e4);
-    const { net, vat, gross } = vatSplit(amount, st.vat_bp, !!st.vat_included);
+    /* a discount comes off the amount at list price; VAT is on what the customer actually pays */
+    const discount = discBp !== undefined ? Number((BigInt(amount) * BigInt(discBp) + 5000n) / 10000n) : (discIn || 0);
+    if (discount >= amount && discount > 0) throw bad('DISCOUNT_TOO_LARGE', 'The discount must be less than the sale amount', { amount });
+    const list = vatSplit(amount, st.vat_bp, !!st.vat_included);
+    const { net, vat, gross } = vatSplit(amount - discount, st.vat_bp, !!st.vat_included);
     let custId = null;
     if (payType === 'credit') {
       if (custIn === undefined) throw bad('VALIDATION', 'customer_id is required for credit sales');
@@ -325,15 +332,15 @@ function createSale(db, user, sid, b) {
       if (c.credit_limit > 0) { const bal = customerBalance(db, c.id); if (bal + gross > c.credit_limit) throw conflict('CREDIT_LIMIT', 'This sale exceeds the customer credit limit', { balance: bal, credit_limit: c.credit_limit, sale: gross }); }
       custId = c.id;
     }
-    const id = Number(db.prepare(`INSERT INTO sales(station_id,client_id,pump_id,fuel_id,tank_id,business_date,quantity_ml,price_e4,cost_e4,net,vat,gross,vat_bp,vat_included,pay_type,customer_id,open_ml,close_ml,user_id,shift_id,cogs)
-      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)`).run(sid, clientId, pump.id, fuel.id, tank.id, date, qty, fuel.price_e4, tank.avg_cost_e4, net, vat, gross, st.vat_bp, st.vat_included, payType, custId, open, close, user.id, shift ? shift.id : null).lastInsertRowid);
+    const id = Number(db.prepare(`INSERT INTO sales(station_id,client_id,pump_id,fuel_id,tank_id,business_date,quantity_ml,price_e4,cost_e4,net,vat,gross,vat_bp,vat_included,pay_type,customer_id,open_ml,close_ml,user_id,shift_id,cogs,discount)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?)`).run(sid, clientId, pump.id, fuel.id, tank.id, date, qty, fuel.price_e4, tank.avg_cost_e4, net, vat, gross, st.vat_bp, st.vat_included, payType, custId, open, close, user.id, shift ? shift.id : null, discount).lastInsertRowid);
     db.prepare('UPDATE pumps SET meter_ml=? WHERE id=?').run(close, pump.id);
     const cogs = -L.stockMove(db, tank.id, { qty: -Math.min(qty, tank.level_ml), kind: 'sale', ref_type: 'sale', ref_id: id, date, user_id: user.id });
     db.prepare('UPDATE sales SET cogs=? WHERE id=?').run(cogs, id);
     L.post(db, { org_id: user.org_id, station_id: sid, date, source: 'sale', source_id: id, user_id: user.id, lines: [
       { a: payType === 'cash' ? 'cash' : 'ar', dr: gross, party_type: custId ? 'customer' : null, party_id: custId },
-      { a: 'sales', cr: net }, { a: 'vat_out', cr: vat }, { a: 'cogs', dr: cogs }, { a: 'inventory', cr: cogs }] });
-    audit(db, user, sid, 'sale.create', 'sale', id, { qty_ml: qty, gross, pay_type: payType });
+      { a: 'sales', cr: list.net }, { a: 'sales_disc', dr: list.net - net }, { a: 'vat_out', cr: vat }, { a: 'cogs', dr: cogs }, { a: 'inventory', cr: cogs }] });
+    audit(db, user, sid, 'sale.create', 'sale', id, { qty_ml: qty, gross, pay_type: payType, ...(discount ? { discount } : {}) });
     return db.prepare('SELECT * FROM sales WHERE id=?').get(id);
   });
 }

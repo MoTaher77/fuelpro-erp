@@ -370,6 +370,21 @@ CREATE TABLE m7_stock_month(
 );
 CREATE INDEX audit_entity ON audit(org_id, entity, entity_id);
 CREATE INDEX audit_time ON audit(org_id, created_at);
+`,
+/* v14: sale discounts (amount taken off the price; posted to 4050 «خصومات المبيعات») and bank reconciliation.
+   Reconciliation marks journal lines as cleared in a side table — posted lines themselves stay untouched. */
+`
+ALTER TABLE sales ADD COLUMN discount INTEGER NOT NULL DEFAULT 0 CHECK(discount>=0);
+CREATE TABLE bank_recs(
+  id INTEGER PRIMARY KEY, org_id INTEGER NOT NULL REFERENCES orgs(id), station_id INTEGER NOT NULL REFERENCES stations(id),
+  account_id INTEGER NOT NULL REFERENCES accounts(id), statement_date TEXT NOT NULL, statement_balance INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN('draft','final')), note TEXT,
+  created_by INTEGER REFERENCES users(id), created_at TEXT NOT NULL DEFAULT (datetime('now')), finalized_by INTEGER REFERENCES users(id), finalized_at TEXT
+);
+CREATE UNIQUE INDEX bank_recs_one_draft ON bank_recs(station_id, account_id) WHERE status='draft';
+CREATE INDEX bank_recs_acct ON bank_recs(station_id, account_id, statement_date);
+CREATE TABLE bank_cleared(line_id INTEGER PRIMARY KEY REFERENCES journal_lines(id), rec_id INTEGER NOT NULL REFERENCES bank_recs(id));
+CREATE INDEX bank_cleared_rec ON bank_cleared(rec_id);
 `
 ];
 

@@ -99,10 +99,10 @@ const PERMS = {
   admin:      new Set(['*']),
   manager:    new Set([...OPS, 'report.read', 'audit.read', 'sale.void', 'sale.backdate', 'delivery.create', 'delivery.void', 'expense.create', 'expense.void',
                        'payment.void', 'adjust.create', 'transfer.create', 'transfer.void', 'config.edit', 'price.edit', 'supplier.manage', 'supplier.pay',
-                       'customer.edit', 'cash.move', 'shift.approve', 'journal.read', 'voucher.create', 'voucher.void']),
+                       'customer.edit', 'cash.move', 'shift.approve', 'journal.read', 'voucher.create', 'voucher.void', 'sale.discount', 'bank.reconcile']),
   accountant: new Set(['read', 'report.read', 'audit.read', 'customer.create', 'customer.edit', 'payment.create', 'payment.void', 'expense.create', 'expense.void',
-                       'supplier.manage', 'supplier.pay', 'shift.approve', 'journal.read', 'journal.create', 'journal.post', 'journal.reverse', 'period.lock', 'account.edit', 'voucher.create', 'voucher.void']),
-  supervisor: new Set([...OPS, 'report.read', 'sale.void', 'delivery.create', 'expense.create', 'adjust.create', 'cash.move']),
+                       'supplier.manage', 'supplier.pay', 'shift.approve', 'journal.read', 'journal.create', 'journal.post', 'journal.reverse', 'period.lock', 'account.edit', 'voucher.create', 'voucher.void', 'bank.reconcile']),
+  supervisor: new Set([...OPS, 'report.read', 'sale.void', 'sale.discount', 'delivery.create', 'expense.create', 'adjust.create', 'cash.move']),
   cashier:    new Set(OPS),
   viewer:     new Set(['read', 'report.read'])
 };
