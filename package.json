@@ -1,6 +1,6 @@
 {
   "name": "fuelpro",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "description": "Multi-tenant fuel station management server (zero dependencies, Node 22+)",
   "private": true,
   "license": "UNLICENSED",

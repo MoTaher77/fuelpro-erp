@@ -1,5 +1,10 @@
 # NEXT-TASK — where to resume
 
+## Next candidates (owner chose the setup wizard first; 0.20.0 done)
+1. Off-site automatic backups (KI-10) — needs the owner's choice of destination.
+2. Customer phone numbers: 0 of 148 in the real data (add from #col reminders queue).
+3. KI-06 negative boxes: owner to confirm the right opening balances.
+
 ## Task AF — owner refreshes the station page from his laptop (0.17)
 `npm run backup` on the laptop → station page → chip → «تحديث البيانات من نسخة اللابتوب…». Then decide: keep entering data on the laptop only (recommended; the page is for viewing and WhatsApp), or plan a real two-way sync (needs a server both can reach).
 
