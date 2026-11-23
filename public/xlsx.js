@@ -72,6 +72,6 @@
     for (const tr of table.rows) { const r = []; for (const c of tr.cells) { if (c.closest('.noxl')) continue; const v = cellValue(c.innerText); r.push(tr.parentNode.tagName === 'THEAD' ? (c.innerText || '').trim() : v); for (let k = 1; k < (c.colSpan || 1); k++) r.push(null); } rows.push(r); }
     return { rows, header: head };
   }
-  const api = { build, cellValue, tableRows, crc32 };
+  const api = { build, cellValue, tableRows, crc32, zip };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FPXLSX = api;
 })(typeof window !== 'undefined' ? window : globalThis);

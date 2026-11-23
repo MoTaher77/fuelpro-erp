@@ -315,11 +315,27 @@
       const name = `${cfg.title} - ${r.name} - ${r.to}.pdf`.replace(/[\\/:*?"<>|]+/g, '-');
       const file = new File([blob], name, { type: 'application/pdf' });
       const text = `${cfg.title}: ${r.name}\n${T('closingBal')}: ${amt(r.balance)} ${cw} ${nature(r.balance)}`;
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: cfg.title, text }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
-      }
-      const a = h('a', { href: URL.createObjectURL(blob), download: `FuelPro-statement-${String(r.ref || '').replace(/[^\w-]+/g, '')}-${r.to}.pdf` }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000);
-      waDialog(r.phone, text + '\n' + T('waAttach'), T('waPdfHint'));
+      const dlName = `FuelPro-statement-${String(r.ref || '').replace(/[^\w-]+/g, '')}-${r.to}.pdf`;
+      /* every action below runs from its own click, so the browser (or Claude's download prompt) always accepts it */
+      const inClaude = !!(window.claude && window.claude.use);
+      const canShare = !inClaude && navigator.canShare && navigator.canShare({ files: [file] });
+      const save = async () => {
+        if (inClaude) {
+          const dl = await window.claude.use('downloads').catch(() => null);
+          if (!dl) { toast(T('dlUnavailable')); return; }
+          try { await dl.save({ filename: dlName, data: blob }); } catch (e) { if (e && e.code !== 'declined') toast(T('dlFailed') + (e && e.code ? ' (' + e.code + ')' : '')); }
+          return;
+        }
+        const a = h('a', { href: URL.createObjectURL(blob), download: dlName }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000);
+      };
+      const shareBtn = canShare ? h('button', { class: 'btn wa-btn', type: 'button', onclick: () => navigator.share({ files: [file], title: cfg.title, text }).then(() => m.remove(), () => {}) }, waIcon(), ' ', T('waSharePdf')) : null;
+      const saveBtn = h('button', { class: 'btn ' + (canShare ? 'ghost' : 'gold'), type: 'button', onclick: save }, '⬇ ', T('dlPdf'));
+      const chat = h('button', { class: 'btn ghost', type: 'button', onclick: () => { m.remove(); waDialog(r.phone, text + '\n' + T('waAttach'), T('waPdfHint')); } }, waIcon(), ' ', T('waOpen'));
+      const kb = Math.max(1, Math.round(blob.size / 1024));
+      const m = modal(T('pdfReady'), h('div', { class: 'stack', style: 'gap:12px' },
+        h('p', { style: 'margin:0' }, h('b', null, r.name), ' · ', `${live.length} ${T('rowsN')} · ${kb} KB`),
+        h('div', { class: 'row', style: 'margin-top:0' }, shareBtn, saveBtn, chat),
+        h('p', { class: 'hint', style: 'margin:0' }, canShare ? T('pdfShareHint') : T('pdfSaveHint'))));
     });
     const draw = () => {
       const term = q.value.trim(); shown = term ? r.rows.filter(e => (e.desc + ' ' + (e.ref || '')).includes(term)) : r.rows;

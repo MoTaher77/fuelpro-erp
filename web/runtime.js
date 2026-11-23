@@ -49,7 +49,7 @@
     (async () => {
       const dl = window.claude && window.claude.use ? await window.claude.use('downloads').catch(() => null) : null;
       if (!dl) { notice('التنزيل غير متاح في هذا العرض.'); return; }
-      try { const blob = await (await fetch(href)).blob(); await dl.save({ filename: name, data: blob }); } catch (e) { if (e && e.code !== 'declined') notice('لم يتم التنزيل.'); }
+      try { const blob = await (await fetch(href)).blob(); await dl.save({ filename: name, data: blob }); } catch (e) { if (e && e.code !== 'declined') notice('لم يتم التنزيل (' + ((e && e.code) || 'خطأ') + ')'); }
     })();
   };
 
@@ -67,7 +67,7 @@
     m.append(info);
     const btn = (t, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.className = 'btn ' + (cls || 'ghost') + ' sm'; b.onclick = () => { m.remove(); fn(); }; m.append(b); };
     if (store) btn('حفظ الآن', () => save(true));
-    btn('تنزيل نسخة من قاعدة البيانات', downloadDb);
+    btn('تنزيل نسخة من قاعدة البيانات (zip)', downloadDb);
     if (store && window.__FP_STATION) btn('تحديث البيانات من نسخة اللابتوب…', importDb);
     if (store) btn('إعادة البيانات إلى نقطة البداية', resetDemo, 'danger');
     btn('إغلاق', () => {});
@@ -145,13 +145,18 @@
      The file is checked first (SQLite, FuelPro tables, integrity, someone can sign in); sessions are dropped; nothing goes back to the laptop. */
   let SQLref = null;
   function importDb() {
-    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.db,.sqlite,application/octet-stream,application/vnd.sqlite3';
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.db,.sqlite,.zip,application/octet-stream,application/vnd.sqlite3,application/zip';
     inp.onchange = async () => {
       const f = inp.files && inp.files[0]; if (!f) return;
       let t = null;
       try {
         status('saving', 'فحص الملف…');
-        const raw = new Uint8Array(await f.arrayBuffer());
+        let raw = new Uint8Array(await f.arrayBuffer());
+        /* a .zip made by «تنزيل نسخة» holds the database stored uncompressed: take the first entry */
+        if (raw[0] === 0x50 && raw[1] === 0x4b && raw[2] === 3 && raw[3] === 4) {
+          const v = new DataView(raw.buffer, raw.byteOffset); if (v.getUint16(8, true) !== 0) throw new Error('ملف zip مضغوط غير مدعوم؛ اختر ملف .db');
+          const size = v.getUint32(18, true), start = 30 + v.getUint16(26, true) + v.getUint16(28, true); raw = raw.subarray(start, start + size);
+        }
         if (new TextDecoder().decode(raw.subarray(0, 15)) !== 'SQLite format 3') throw new Error('الملف ليس قاعدة بيانات FuelPro');
         t = new SQLref.Database(raw);
         const one = (q) => { const r = t.exec(q); return r.length ? r[0].values[0][0] : null; };
@@ -178,10 +183,12 @@
   }
 
   async function downloadDb() {
-    const bytes = core.engine.bytes(); const name = `fuelpro-artifact-${new Date().toISOString().slice(0, 10)}.db`;
+    /* claude.ai saves only listed file types (no .db): the database goes inside a real .zip */
+    const db = core.engine.bytes(), stamp = new Date().toISOString().slice(0, 10), name = `fuelpro-${stamp}.zip`;
+    const bytes = window.FPXLSX && window.FPXLSX.zip ? window.FPXLSX.zip([{ name: `fuelpro-${stamp}.db`, data: db }]) : db;
     const dl = window.claude && window.claude.use ? await window.claude.use('downloads').catch(() => null) : null;
     if (!dl) { notice('التنزيل غير متاح في هذا العرض.'); return; }
-    try { await dl.save({ filename: name, data: new Blob([bytes], { type: 'application/octet-stream' }) }); } catch { /* the viewer declined */ }
+    try { await dl.save({ filename: name, data: new Blob([bytes], { type: 'application/zip' }) }); } catch (e) { if (e && e.code !== 'declined') notice('لم يتم التنزيل (' + (e.code || 'خطأ') + ')'); }
   }
 
   /* ---------- the API bridge ---------- */
