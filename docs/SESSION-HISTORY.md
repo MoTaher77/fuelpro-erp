@@ -68,3 +68,6 @@ Profiled all 33 report routes on the station snapshot in the page engine. Fixes:
 
 ## 2026-11-23 — 0.14.0 palettes + responsive
 `public/app.css` (end block): data-palette royal/emerald/bordeaux/onyx with light+dark tokens; breakpoints >=1600, 901-1180, 601-900, <=600, <=380, landscape phones, hover:none. `app.js`: P.palette (default royal), swatch picker with live preview in Preferences (reverts if closed unsaved). Fixed «null» under customers/suppliers (ageingSection may return null). Screenshots 390/820/1280/1920 in four palettes: no horizontal overflow, no page errors. Tests 73. sw v31.
+
+## 2026-11-23 — 0.15.0 WhatsApp
+`public/books-ui.js`: waNumber (local → international by station currency), waDialog (wa.me link as a real <a target=_blank>, copy, Web Share), statement message builder; customer/supplier statements get a WhatsApp button (cfg.whatsapp). `public/more-ui.js`: payment reminder per customer on #col. Browser-checked on demo data (number 9677…, message text, no page errors). Tests 73. sw v32.

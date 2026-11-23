@@ -91,6 +91,13 @@
   };
 
   /* ================================ COLLECTIONS FOLLOW-UP (متابعة التحصيل) ================================ */
+  /* a polite payment reminder for one customer (sent from the collections screen through WhatsApp) */
+  const waReminder = (c) => {
+    const b = S.brand || {}, cur = F.curWord ? F.curWord() : (S.st ? S.st.currency : '');
+    return [`${T('waHello')} ${c.name}`, '', `${T('waRemindBody')}`, `*${T('balance')}: ${nf(c.balance)} ${cur}*`,
+      c.last_credit ? `${T('lastPay')}: ${String(c.last_credit).slice(0, 10).split('-').reverse().join('/')}${c.last_credit_amount ? ' — ' + nf(c.last_credit_amount) : ''}` : null,
+      '', T('waThanks'), `*${b.name || (S.st && S.st.name) || ''}*`, b.phones ? '☎ ' + b.phones : null].filter(x => x !== null).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  };
   F.VIEWS.col = async (main) => {
     const dd = h('input', { type: 'number', min: 0, max: 3650, class: 'yr', value: S.colDays ?? 0 }), q = h('input', { type: 'search', placeholder: T('searchParty'), value: S.colQ || '' });
     const ov = h('input', { type: 'checkbox', checked: !!S.colOver }); const out = h('div', { class: 'stack' }); let r = null;
@@ -103,7 +110,8 @@
       return grid(cols.filter(Boolean),
         list.map((c, i) => pick([String(i + 1), h('span', { class: 'ltr-num' }, c.ref || ''), h('b', null, c.name), h('span', { class: 'ltr-num' }, c.phone || ''), h('b', null, nf(c.balance)), c.credit_limit ? nf(c.credit_limit) : '—',
           c.last_debit ? slash(c.last_debit) : '', c.last_credit ? slash(c.last_credit) : h('span', { class: 'bad' }, T('neverPaid')), c.last_credit_amount ? nf(c.last_credit_amount) : '',
-          h('span', { class: 'nb ' + c.band }, c.days_since_payment ?? '—'), h('button', { class: 'btn ghost sm nowrap', onclick: () => goCust(c.id) }, T('stmtShort'))])),
+          h('span', { class: 'nb ' + c.band }, c.days_since_payment ?? '—'), h('div', { class: 'nowrap' }, h('button', { class: 'btn ghost sm nowrap', onclick: () => goCust(c.id) }, T('stmtShort')),
+            c.balance > 0 && F.waDialog ? h('button', { class: 'btn ghost sm wa-mini', title: T('waRemind'), 'aria-label': T('waRemind'), onclick: () => F.waDialog(c.phone, waReminder(c)) }, F.waIcon()) : null)])),
         [span(3 + (ph ? 1 : 0), T('total') + ' (' + list.length + ')'), nf(list.reduce((s, c) => s + c.balance, 0)), ...Array(4 + (lim ? 1 : 0) + (forPrint ? 0 : 1)).fill('')], forPrint, (i) => list[i].over_limit ? 'over' : '');
     };
     const draw = () => { S.colQ = q.value; S.colOver = ov.checked; out.replaceChildren(
