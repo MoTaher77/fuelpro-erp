@@ -9,7 +9,7 @@ In real use at **محطة التميز** with one year of data imported from the
 
 ## 2. Where the code lives (read first)
 - **Canonical code: GitHub `MoTaher77/fuelpro-erp` (private), branch `main`.** The owner develops from his phone via claude.ai/code: work on a branch, run `npm test`, open a PR; CI (`.github/workflows/test.yml`) must be green before merge.
-- **Cloud sessions have no real data.** Use `scripts/seed-demo.js` into a temp DB for manual checks; never ask for, upload or commit `data/`.
+- **Cloud sessions work on a snapshot of the real data** (owner's request, ADR-18): `dev-data/fuelpro-snapshot.db`, made on the laptop by `node scripts/dev-snapshot.js` with every password hash, session, reset token, recovery code and 2FA secret removed. To try the app: `node scripts/dev-admin.js` (copies it to a temp file and prints a throwaway admin), then `DB_PATH=<that file> npm start`. Never write to the snapshot itself, never commit `data/`. The snapshot is a copy, not the live data: changes made in the cloud never reach the station.
 - The laptop copy `C:\Users\Moham\FuelPro` holds the real data (`data\`, never in Git); after a merge it updates with `git pull`.
 - Real data: `data\fuelpro.db` (+ `-wal`, `-shm`). Demo data: `data\demo.db`. Backups: `data\fuelpro-backup-*.db`, `data\backups\`.
 - Local Git repo (branch `main`, no remote). `.gitignore` keeps `data/` and secrets out — never force-add them.

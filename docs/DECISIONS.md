@@ -53,3 +53,6 @@ A stored alert can disagree with the books; computing from the live data keeps o
 
 ### ADR-17 Go online in two phases: laptop + Cloudflare Tunnel now, PostgreSQL later (0.11.0, 2026-11-23)
 Owner chose the laptop + tunnel (free, data stays local) and a two-phase database move. Phase 2 replaces the synchronous node:sqlite layer with PostgreSQL behind the same tests, then the data is moved after reconciliation.
+
+### ADR-18 A sign-in-free snapshot of the real data lives in the private repository (2026-11-23)
+The owner develops from the cloud and asked for his real data there. `scripts/dev-snapshot.js` makes `dev-data/fuelpro-snapshot.db` (VACUUM INTO) and removes every password hash, session, reset token, recovery code and two-factor secret; business data (customers, suppliers, journals) stays. The repository is private (`MoTaher77/fuelpro-erp`). Refreshing it is a manual step on the laptop (`node scripts/dev-snapshot.js`, then commit). Git keeps old snapshots in history: if a snapshot must ever disappear, the repository history has to be rewritten.

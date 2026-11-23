@@ -1,6 +1,7 @@
 # Real and demo data, backups — never in Git
 data/
 *.db
+!dev-data/fuelpro-snapshot.db
 *.db-wal
 *.db-shm
 
