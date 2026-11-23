@@ -22,6 +22,7 @@ Start with [`../CLAUDE.md`](../CLAUDE.md). Read **only** what the task needs.
 | [SECURITY.md](SECURITY.md) | touch roles, auth, scoping, secrets |
 | [TESTING.md](TESTING.md) | run/add tests |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | ship to the laptop or the cloud, backups |
+| [PHASE2-POSTGRES.md](PHASE2-POSTGRES.md) | measured scope and recommendation for the PostgreSQL move |
 | [ARTIFACT-EDITION.md](ARTIFACT-EDITION.md) | the claude.ai Artifact edition: how it runs, what it stores, rebuild and republish |
 | [DECISIONS.md](DECISIONS.md) | wonder "why is it like this?" / make a decision |
 

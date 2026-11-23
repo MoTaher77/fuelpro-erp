@@ -92,3 +92,5 @@ Owner wanted the PDF, not text. New `public/stmt-pdf.js`: canvas-drawn A4 pages 
 
 ## 2026-11-23 — 0.21.0 second backup copy
 `src/backup.js` syncMirror (BACKUP_COPY_DIR or data/backup-copy-dir.txt; temp file + rename; 30+30 retention; catch-up each hourly check; failure only reported), `GET /api/backups` returns `mirror`, status line on the backups screen. `test/backup-mirror.test.js` (3). KI-10 mitigated; owner must create the folder file. Tests 76.
+## 2026-11-23 — Phase 2 assessment (docs only)
+Owner said start Phase 2. Measured instead of rewriting: see docs/PHASE2-POSTGRES.md and ADR-21 (recommendation: postpone; needs an approved always-on host, a driver decision and several sessions). No code changed. Resume: owner decides.
