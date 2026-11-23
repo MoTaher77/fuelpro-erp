@@ -80,29 +80,53 @@
     const db = await Promise.race([window.claude.use('db').catch(() => null), new Promise(r => setTimeout(() => r(null), 10000))]);
     return db || null;
   }
+  /* ---------- this device's copy (IndexedDB): opening again on the same device needs one small read, not the whole file ---------- */
+  const CACHE_DB = 'fuelpro-page', CACHE_KEY = 'db';
+  const idb = () => new Promise((ok, no) => { try { const q = indexedDB.open(CACHE_DB, 1); q.onupgradeneeded = () => q.result.createObjectStore('kv'); q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); } catch (e) { no(e); } });
+  async function cacheGet() { try { const d = await idb(); return await new Promise((ok) => { const r = d.transaction('kv').objectStore('kv').get(CACHE_KEY); r.onsuccess = () => ok(r.result || null); r.onerror = () => ok(null); }); } catch { return null; } }
+  async function cachePut(v) { try { const d = await idb(); await new Promise((ok) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, CACHE_KEY); t.oncomplete = ok; t.onerror = ok; t.onabort = ok; }); } catch { /* the cache is only a speed-up */ } }
+  const sameList = (a, b) => a && b && a.length === b.length && a.every((x, i) => x === b[i]);
+
   async function loadSaved() {
     const st = await store.doc('fpstate/main').get(); if (!st.exists) return null;
-    const s = st.data(); const parts = [];
-    for (const h of s.blocks) { const d = await store.doc('fpblk/' + h).get(); if (!d.exists) throw new Error('missing block ' + h); parts.push(await gunzip(b64ToBytes(d.data().d))); }
+    const s = st.data();
+    const c = await cacheGet();
+    if (c && c.gen === s.gen && c.size === s.size && sameList(c.blocks, s.blocks) && c.bytes && c.bytes.byteLength === s.size) {
+      gen = s.gen; blocksNow = s.blocks.slice(); known = new Set(s.blocks); return new Uint8Array(c.bytes);
+    }
+    /* download the blocks in parallel (about 12 at a time), reusing any block this device already holds */
+    const have = new Map(); if (c && c.bytes && c.blocks) { let o = 0; const B = new Uint8Array(c.bytes); for (const h of c.blocks) { have.set(h, B.subarray(o, Math.min(o + BLOCK, B.length))); o += BLOCK; } }
+    const parts = new Array(s.blocks.length); let next = 0, done = 0;
+    const worker = async () => { while (next < s.blocks.length) { const i = next++, h = s.blocks[i];
+      if (have.has(h)) parts[i] = have.get(h);
+      else { const d = await store.doc('fpblk/' + h).get(); if (!d.exists) throw new Error('missing block ' + h); parts[i] = await gunzip(b64ToBytes(d.data().d)); }
+      done++; if (done % 8 === 0 || done === s.blocks.length) say(`تحميل البيانات… ${Math.round(done * 100 / s.blocks.length)}%`); } };
+    await Promise.all(Array.from({ length: 12 }, worker));
     const out = new Uint8Array(s.size); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
-    gen = s.gen; blocksNow = s.blocks.slice(); known = new Set(s.blocks); return out;
+    gen = s.gen; blocksNow = s.blocks.slice(); known = new Set(s.blocks);
+    cachePut({ gen, size: s.size, blocks: blocksNow, bytes: out.buffer.slice(0) });
+    return out;
   }
   async function save(force) {
     if (!store || conflict) return; if (saving) { again = true; return; }
     if (!dirty && !force) return;
     saving = true; dirty = false; status('saving', 'جارٍ الحفظ…');
     try {
-      const bytes = core.engine.bytes(); const hashes = [];
+      const bytes = core.engine.bytes(); const hashes = [], todo = [];
       for (let o = 0; o < bytes.length; o += BLOCK) {
         const part = bytes.subarray(o, Math.min(o + BLOCK, bytes.length)); const h = await hashHex(part); hashes.push(h);
-        if (!known.has(h)) { await store.doc('fpblk/' + h).set({ d: bytesToB64(await gzip(part)), n: part.length }); known.add(h); }
+        if (!known.has(h) && !todo.some(t => t.h === h)) todo.push({ h, part });
       }
+      /* only the blocks that changed, 8 at a time; the state document switches to them afterwards */
+      let k = 0; const put = async () => { while (k < todo.length) { const t = todo[k++]; await store.doc('fpblk/' + t.h).set({ d: bytesToB64(await gzip(t.part)), n: t.part.length }); known.add(t.h); } };
+      await Promise.all(Array.from({ length: 8 }, put));
       const cur = await store.doc('fpstate/main').get();
       if (cur.exists && cur.data().gen !== gen) { conflict = true; status('bad', 'تعارض: حُفظت بيانات أحدث من جهاز آخر — أعد فتح الصفحة'); return; }
       const next = gen + 1;
       await store.doc('fpstate/main').set({ gen: next, blocks: hashes, size: bytes.length, saved_at: new Date().toISOString(), app: window.__FP_BUILD || '' });
       const orphans = blocksNow.filter(h => !hashes.includes(h)); gen = next; blocksNow = hashes;
       for (const h of orphans) { known.delete(h); await store.doc('fpblk/' + h).delete().catch(() => {}); }
+      cachePut({ gen, size: bytes.length, blocks: hashes, bytes: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.length) });
       if (dirty || again) status('saving', 'تغييرات غير محفوظة…'); else status('ok', 'محفوظ ✓');
     } catch (e) {
       dirty = true; status('bad', 'لم يُحفظ: ' + ((e && (e.message || e.code)) || 'خطأ') + ' — اضغط للمحاولة');
@@ -165,7 +189,7 @@
       store = await openStore();
       let bytes = null;
       if (store) { try { bytes = await loadSaved(); } catch (e) { console.error(e); say('تعذّرت قراءة النسخة المحفوظة؛ ستُفتح البيانات التجريبية'); store = null; } }
-      if (!bytes) bytes = await gunzip(b64ToBytes(window.__FP_SEED_GZ_B64));
+      if (!bytes) { say('تجهيز البيانات الأولية…'); if (!window.__FP_SEED_GZ_B64) await loadScript('seed.js'); bytes = await gunzip(b64ToBytes(window.__FP_SEED_GZ_B64)); window.__FP_SEED_GZ_B64 = null; }
       window.__FP_DB_BYTES = bytes;
       window.FP_SQLITE = window.FP_makeSqlite(SQL);
       core = window.FPCore.start(); window.__FP_CORE = core; window.__FP_DB_BYTES = null;
