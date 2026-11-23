@@ -8,7 +8,9 @@
       only changed blocks are written, then one state document switches to the new version)
    Nothing here imitates an accounting result: every number comes from the SQL in src/. */
 (function () {
-  const SQLJS = 'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-asm-memory-growth.js';
+  const SQLJS_WASM = 'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js';            // fast (WebAssembly)
+  const SQLJS_ASM = 'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-asm-memory-growth.js';  // fallback (plain JavaScript, ~10x slower)
+  let engineName = '';
   const BLOCK = 128 * 1024;
   const $ = (id) => document.getElementById(id);
   const say = (t) => { const e = $('fpBootMsg'); if (e) e.textContent = t; };
@@ -61,7 +63,7 @@
   function menu() {
     const old = $('fpMenu'); if (old) { old.remove(); return; }
     const m = document.createElement('div'); m.id = 'fpMenu'; m.className = 'fp-menu';
-    const info = document.createElement('p'); info.textContent = store ? `نسخة التخزين: ${gen || 'بيانات تجريبية جديدة'} — تُحفظ تلقائياً بعد كل عملية` : 'التخزين غير متاح هنا: التغييرات تبقى حتى إغلاق الصفحة فقط';
+    const info = document.createElement('p'); info.textContent = `المحرك: ${engineName} · ` + (store ? `نسخة التخزين: ${gen || 'بيانات تجريبية جديدة'} — تُحفظ تلقائياً بعد كل عملية` : 'التخزين غير متاح هنا: التغييرات تبقى حتى إغلاق الصفحة فقط');
     m.append(info);
     const btn = (t, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.className = 'btn ' + (cls || 'ghost') + ' sm'; b.onclick = () => { m.remove(); fn(); }; m.append(b); };
     if (store) btn('حفظ الآن', () => save(true));
@@ -143,11 +145,22 @@
     };
   }
 
+  /* WebAssembly SQLite when the page may compile it (binary published beside the page), else the pure-JS build */
+  async function loadEngine() {
+    try {
+      const bin = await fetch('sql-wasm.wasm').then(r => { if (!r.ok) throw new Error('wasm ' + r.status); return r.arrayBuffer(); });
+      await loadScript(SQLJS_WASM);
+      const SQL = await Promise.race([window.initSqlJs({ wasmBinary: bin }), new Promise((_, no) => setTimeout(() => no(new Error('wasm timeout')), 10000))]);
+      new SQL.Database().close(); engineName = 'WebAssembly'; window.__FP_ENGINE = engineName; return SQL;
+    } catch (e) { console.warn('[fuelpro] fast engine unavailable, using the JavaScript engine:', e && e.message); }
+    try { delete window.initSqlJs; } catch { window.initSqlJs = undefined; }
+    await loadScript(SQLJS_ASM); engineName = 'JavaScript'; window.__FP_ENGINE = engineName; return window.initSqlJs();
+  }
+
   async function boot() {
     try {
       say('تحميل محرك قاعدة البيانات…');
-      await loadScript(SQLJS);
-      const SQL = await window.initSqlJs();
+      const SQL = await loadEngine();
       say('فتح البيانات المحفوظة…');
       store = await openStore();
       let bytes = null;

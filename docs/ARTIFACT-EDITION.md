@@ -11,7 +11,7 @@ Live pages (both private to the owner):
 | Layer | Laptop / server | Artifact page |
 |---|---|---|
 | Business rules, SQL, permissions, validation, journals, audit | `src/*.js` | **the same `src/*.js`, unchanged**, bundled by `web/bundle.js` |
-| SQLite engine | `node:sqlite` | sql.js 1.10.3 (pure-JS build from cdn.jsdelivr.net), adapter `web/shims/sqlite-sqljs.js` |
+| SQLite engine | `node:sqlite` | sql.js 1.10.3: WebAssembly build (`sql-wasm.js` from cdn.jsdelivr.net + `sql-wasm.wasm` published beside the page, ~10x faster), falling back to the pure-JS build if the page may not compile WebAssembly; the status-chip menu names the engine. Adapter `web/shims/sqlite-sqljs.js` |
 | Node built-ins | Node | `web/shims/node-shims.js`: Buffer subset, SHA-1/256, HMAC, scrypt (byte-identical to Node, checked), path, no-file fs, http handler capture |
 | HTTP | `node:http` server | the app's `fetch('/api/...')` is answered in the page by the same request handler (`web/runtime.js`) |
 | Front end | `public/*` | `public/*` copied as is; only the service-worker line is removed and the one `confirm()` in `bank-ui.js` becomes an in-page dialog |

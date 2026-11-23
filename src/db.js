@@ -385,6 +385,11 @@ CREATE UNIQUE INDEX bank_recs_one_draft ON bank_recs(station_id, account_id) WHE
 CREATE INDEX bank_recs_acct ON bank_recs(station_id, account_id, statement_date);
 CREATE TABLE bank_cleared(line_id INTEGER PRIMARY KEY REFERENCES journal_lines(id), rec_id INTEGER NOT NULL REFERENCES bank_recs(id));
 CREATE INDEX bank_cleared_rec ON bank_cleared(rec_id);
+`,
+/* v15 (0.13.0): speed. The latest M7 result per account and date is read by one index probe instead of a scan,
+   and the planner gets table statistics (without them it walked every journal of a station to total one account). */
+`CREATE INDEX m7_results_latest ON m7_results(station_id, acno, as_of, kind, made_at, id);
+ANALYZE;
 `
 ];
 
@@ -403,6 +408,8 @@ function openDb(path) {
     } catch (e) { db.exec('ROLLBACK'); throw e; }
     finally { if (m.fkOff) db.exec('PRAGMA foreign_keys=ON'); }
   }
+  /* keep the planner's statistics fresh as the books grow (cheap: re-analyses only tables that changed a lot) */
+  try { db.exec('PRAGMA optimize=0x10002'); } catch { /* statistics are an optimisation only */ }
   return db;
 }
 

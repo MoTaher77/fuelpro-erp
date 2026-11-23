@@ -242,7 +242,7 @@ test('upgrade from a v2 database keeps users, assigns stations and opens the boo
       VALUES(1,'old-1',1,1,1,'2026-01-01',100000,12000000,10000000,120000,0,120000,0,1,'credit',1,0,100000,2);`);
   raw.close();
   const d = openDb(file);
-  assert.equal(d.prepare('PRAGMA user_version').get().user_version, 14);
+  assert.equal(d.prepare('PRAGMA user_version').get().user_version, MIGRATIONS.length);
   assert.equal(d.prepare('SELECT role FROM users WHERE id=2').get().role, 'cashier');
   assert.deepEqual(d.prepare('SELECT station_id FROM user_stations WHERE user_id=2').all().map(r => r.station_id), [1]);
   assert.equal(d.prepare('SELECT value FROM tanks WHERE id=1').get().value, 2_000_000);

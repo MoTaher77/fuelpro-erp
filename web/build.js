@@ -34,6 +34,7 @@ const dbPath = path.join(tmp, 'demo.db'), clean = path.join(tmp, 'seed.db');
 if (SEED_DB) fs.copyFileSync(path.resolve(SEED_DB), dbPath);
 else execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', path.join(ROOT, 'scripts', 'seed-demo.js'), '--days', days],
   { env: { ...process.env, DB_PATH: dbPath, BACKUP_AUTO: '0' }, stdio: ['ignore', 'ignore', 'inherit'] });
+require('../src/db').openDb(dbPath).close();   // bring the seed to the current schema (and its statistics) before shipping
 { const d = new DatabaseSync(dbPath); d.exec('DELETE FROM sessions'); d.exec(`VACUUM INTO '${clean.replace(/'/g, "''")}'`); d.close(); }
 { const d = new DatabaseSync(clean); d.exec('PRAGMA journal_mode=DELETE'); d.close(); }
 const raw = fs.readFileSync(clean), gz = zlib.gzipSync(raw, { level: 9 });
@@ -49,6 +50,10 @@ for (const f of appFiles) {
   fs.writeFileSync(path.join(OUT, f), t);
 }
 fs.copyFileSync(path.join(__dirname, 'runtime.js'), path.join(OUT, 'runtime.js'));
+/* the WebAssembly engine's binary must match the sql.js version runtime.js loads (1.10.3); without it the page uses the JS build */
+{ let wasm = null; try { const pj = require.resolve('sql.js/package.json'); if (require(pj).version === '1.10.3') wasm = path.join(path.dirname(pj), 'dist', 'sql-wasm.wasm'); } catch { /* not installed */ }
+  if (wasm && fs.existsSync(wasm)) fs.copyFileSync(wasm, path.join(OUT, 'sql-wasm.wasm'));
+  else console.warn('sql.js@1.10.3 not installed: the page will use the slower JavaScript engine (npm i --no-save --no-package-lock sql.js@1.10.3)'); }
 fs.writeFileSync(path.join(OUT, 'index.html'), fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8').replace('__APP_FILES__', JSON.stringify(appFiles.filter(f => f.endsWith('.js')))).replace('__BUILD__', JSON.stringify(require('../package.json').version))
   .replace('window.__FP_BUILD = ', SEED_DB ? 'window.__FP_NO_REGISTER = true; window.__FP_BUILD = ' : 'window.__FP_BUILD = ')
   .replace('<title>FuelPro تجريبي</title>', SEED_DB ? '<title>FuelPro المحطة</title>' : '<title>FuelPro تجريبي</title>')

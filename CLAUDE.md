@@ -19,7 +19,7 @@ In real use at **محطة التميز** with one year of data imported from the
 ## 3. Stack (verified)
 Node.js ≥ 22.5, **zero npm dependencies**, built-in `node:sqlite` (WAL). Plain HTTP server `src/server.js`
 (133 routes). Front end: vanilla JS SPA in `public/` (no framework, no build step), PWA service worker.
-Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 14).
+Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 15; `openDb` also runs `PRAGMA optimize`).
 
 ## 4. Non-negotiable invariants
 1. Money = integers in minor units (`stations.cur_dec`; YER uses 3 stored / `disp_dec` 2 shown). Quantities in ml, prices `*_e4`, rates `*_e6`. Never floats — use `src/money.js`.
@@ -41,7 +41,7 @@ Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 14).
 
 ## 6. Commands (verified 2026-11-23)
 ```
-npm test                 # node:test, 72 tests (2 skip without sql.js), ~9 s, in-memory DBs — must stay green
+npm test                 # node:test, 73 tests (2 skip without sql.js), ~9 s, in-memory DBs — must stay green
 npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default
 DB_PATH=/tmp/demo.db DEMO_PASSWORD=... node scripts/seed-demo.js --days 365   # throwaway demo DB
 npm run backup           # consistent copy into data/backups/ (server also makes 1 auto copy/day, keeps 30)
