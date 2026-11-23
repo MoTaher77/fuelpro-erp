@@ -80,3 +80,6 @@ Owner wanted the PDF, not text. New `public/stmt-pdf.js`: canvas-drawn A4 pages 
 
 ## 2026-11-23 — 0.17.0 station page refresh from a laptop backup
 `web/runtime.js` importDb (station builds only, `window.__FP_STATION`): file picker → checks → confirm → save(true, bytes) → reload. Chromium e2e with the demo DB as the 'backup': confirm text correct, reload, sign-in with the file's account, integrity ok, old page admin gone. Tests 73.
+
+## 2026-11-23 — 0.18.0 daily summary on WhatsApp
+`public/more-ui.js` waDay on #day (uses F.waDialog with rememberKey `fp.waOwner`). Checked on a station-data copy for 2026-11-12 (message text, number remembered). sw v35. PR #5 merged earlier (0.16-0.17.2).

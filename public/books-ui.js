@@ -218,11 +218,12 @@
     if (cc && d.length <= 9) return cc + d;
     return d;
   }
-  function waDialog(phone, text, hint) {
+  function waDialog(phone, text, hint, rememberKey) {
+    if (!phone && rememberKey) { try { phone = localStorage.getItem(rememberKey) || ''; } catch { phone = ''; } }
     const num = h('input', { id: 'waNum', type: 'tel', dir: 'ltr', inputmode: 'tel', value: waNumber(phone), placeholder: '9677XXXXXXXX' });
     const msg = h('textarea', { id: 'waMsg', rows: 12, dir: 'auto', style: 'min-height:220px;line-height:1.7' }); msg.value = text;
     const link = h('a', { class: 'btn wa-go', target: '_blank', rel: 'noopener' }, waIcon(), ' ', T('waOpen'));
-    const sync = () => { const n = num.value.replace(/\D/g, ''); link.href = 'https://wa.me/' + n + '?text=' + encodeURIComponent(msg.value); };
+    const sync = () => { const n = waNumber(num.value).replace(/\D/g, ''); link.href = 'https://wa.me/' + n + '?text=' + encodeURIComponent(msg.value); };
     num.addEventListener('input', sync); msg.addEventListener('input', sync); sync();
     const copy = h('button', { class: 'btn ghost', type: 'button', onclick: () => {
       const done = () => toast(T('waCopied'));
@@ -231,7 +232,7 @@
     const share = navigator.share ? h('button', { class: 'btn ghost', type: 'button', onclick: () => navigator.share({ text: msg.value }).catch(() => {}) }, T('waShare')) : null;
     const m = modal(T('waTitle'), h('div', { class: 'stack', style: 'gap:12px' }, field(T('waPhone'), num), field(T('waMsg'), msg),
       h('div', { class: 'row', style: 'margin-top:0' }, link, copy, share), h('p', { class: 'hint', style: 'margin:0' }, hint || T('waHint'))));
-    link.addEventListener('click', () => setTimeout(() => m.remove(), 300));
+    link.addEventListener('click', () => { if (rememberKey) { try { localStorage.setItem(rememberKey, waNumber(num.value).replace(/\D/g, '')); } catch { /* optional */ } } setTimeout(() => m.remove(), 300); });
     return m;
   }
   function waIcon() {

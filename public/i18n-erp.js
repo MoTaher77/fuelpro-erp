@@ -8,6 +8,7 @@ window.FP_I18N = {
   exp: ['المصروفات', 'Expenses', 'Dépenses'], acct: ['القيود اليومية', 'Journal entries', 'Écritures'], fin: ['القوائم المالية', 'Financial statements', 'États financiers'],
   rep: ['تقارير التشغيل', 'Operating reports', "Rapports d'exploitation"], setup: ['الإعداد', 'Setup', 'Réglages'], users: ['المستخدمون والصلاحيات', 'Users & roles', 'Utilisateurs et rôles'],
   audit: ['سجل التدقيق', 'Audit log', "Journal d'audit"], menu: ['القائمة', 'Menu', 'Menu'], more: ['المزيد', 'More', 'Plus'],
+  waDayHint: ['اكتب رقم واتساب المالك أو المدير مرة واحدة؛ يُحفظ على هذا الجهاز للمرة القادمة.', 'Enter the owner’s WhatsApp number once; it is remembered on this device.', 'Saisissez le numéro WhatsApp une fois ; il est mémorisé sur cet appareil.'],
   waSend: ['واتساب', 'WhatsApp', 'WhatsApp'], waPdf: ['واتساب PDF', 'WhatsApp PDF', 'WhatsApp PDF'], pdfMaking: ['جارٍ تجهيز ملف PDF…', 'Preparing the PDF…', 'Préparation du PDF…'],
   pdfReady: ['ملف PDF جاهز', 'PDF ready', 'PDF prêt'], dlPdf: ['تنزيل PDF', 'Download PDF', 'Télécharger le PDF'], waSharePdf: ['مشاركة إلى واتساب', 'Share to WhatsApp', 'Partager sur WhatsApp'],
   pdfShareHint: ['«مشاركة إلى واتساب» يرسل الملف مباشرة. أو نزّله ثم أرفقه في المحادثة.', 'Share sends the file straight to WhatsApp, or download it and attach it.', 'Partager l’envoie directement, ou téléchargez-le puis joignez-le.'],

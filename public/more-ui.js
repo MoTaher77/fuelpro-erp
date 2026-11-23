@@ -57,10 +57,23 @@
       return parts;
     };
     const run = guard(async () => { S.dyDate = d.value; r = await api('GET', sp('/reports/daily?date=' + d.value)); out.replaceChildren(sec(h('span', null, T('dayReport'), ' — ', fdate(r.date)), ...body(false))); });
+    /* the day's closing figures as a WhatsApp message to the owner (the number is remembered on this device) */
+    const waDay = () => {
+      if (!r) return; const t = r.totals, b = S.brand || {}, cur = F.curWord ? F.curWord() : '', dd = String(r.date).split('-').reverse().join('/');
+      const L = [`*${b.name || (S.st && S.st.name) || 'FuelPro'}*`, `${T('dayReport')} — ${dd}`, '',
+        `${T('volSold')}: ${vol(t.qty_ml, 0)}`, `${T('sales')}: *${nf(t.amount)} ${cur}*`, `${T('cashSales')}: ${nf(t.cash)}`, `${T('creditSales')}: ${nf(t.credit)}`, `${T('grossProfit')}: ${nf(t.gross_profit)}`];
+      if (r.fuels.length > 1) { L.push('', `${T('salesByFuel')}:`); for (const f of r.fuels) L.push(`• ${f.fuel_name}: ${volNum(f.qty_ml, 0)} — ${nf(f.amount)}`); }
+      if (t.expenses) L.push('', `${T('exp')}: ${nf(t.expenses)}`);
+      if (t.receipts || t.payments) L.push(`${T('moneyIn')}: ${nf(t.receipts || 0)} · ${T('moneyOut')}: ${nf(t.payments || 0)}`);
+      if (t.deliveries) L.push(`${T('pur')}: ${nf(t.deliveries)}`);
+      const boxes = r.boxes.filter(x => x.closing); if (boxes.length) { L.push('', `${T('box')} (${T('closingBal')}):`); for (const x of boxes.slice(0, 8)) L.push(`• ${x.name_ar}: ${nf(x.closing)}`); }
+      if (r.tanks.length) { L.push('', `${T('tankLevels')}:`); for (const k of r.tanks) L.push(`• ${k.tank_name}: ${volNum(k.closing_ml, 0)}`); }
+      F.waDialog('', L.join('\n'), T('waDayHint'), 'fp.waOwner');
+    };
     const step = (n) => () => { const v = addDay(d.value || todayIso(), n); if (v > todayIso()) return; d.value = v; run(); };
     const doPrint = async () => { if (!r) return; await brand(); F.printDoc(`${T('dayReport')} ${r.date}`, h('div', { class: 'a4 xdoc' }, F.letterhead(T('dayReport'), slash(r.date)), ...body(true), signs('cashierSig', 'accountantSig', 'managerSig'), foot())); };
     main.append(sec(T('day'), h('div', { class: 'row' }, h('button', { class: 'btn ghost sm', onclick: step(-1) }, '→ ', T('prevDay')), field(T('date'), d), h('button', { class: 'btn ghost sm', onclick: step(1) }, T('nextDay'), ' ←'),
-      h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')))), out);
+      h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')), F.waDialog ? h('button', { class: 'btn wa-btn', onclick: waDay }, F.waIcon(), ' ', T('waSend')) : null)), out);
     await run();
   };
 
