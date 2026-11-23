@@ -33,3 +33,9 @@ Resume: Task A (owner's print photos) and Task B3 (`git init`, needs the owner's
 ## 2026-11-23 — Git repository (VERIFIED)
 With the owner's OK: `git init -b main`, `.gitignore` extended (whole `data/`, `*.db*`, `.env*` except `.env.example`, `بيانات-الدخول.txt`,
 `.claude/settings.local.json`, `*.zip`, `*.log`), `core.autocrlf=false`. Checked with `git check-ignore`: real DB, `.env` and the login file are excluded. KI-01 closed.
+
+## 2026-11-23 — 0.7.0 cash-flow statement (VERIFIED)
+New `cashFlow` in `src/ops.js` + route `GET /api/accounting/cash-flow` + «التدفقات النقدية» tab in `public/erp.js` (i18n in `public/i18n-erp.js`), `sw.js` → v19.
+Direct method, classification in ACCOUNTING-RULES §11 / ADR-13. Test added in `test/reports.test.js`; `npm test` 60/60.
+Checked read-only on the real DB (no writes): reconciled, 56 ms. Browser check on a throwaway demo DB (port 8765; 3099 is reserved by Windows, 3000 is the owner's server).
+Resume: owner reviews the cash-flow tab on real data; Task A print photos; next feature from NEXT-TASK Task C.

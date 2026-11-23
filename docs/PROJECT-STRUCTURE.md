@@ -43,10 +43,10 @@ FuelPro/
 | `i18n-erp.js` | 223 | extra strings (`window.FP_I18N`) |
 | `app.css` | 539 | theme (emerald/gold, light/dark), layout, fit classes, print rules |
 | `qr.js` | 129 | QR code for 2FA setup |
-| `sw.js` | 14 | shell cache `fuelpro-shell-v18` |
+| `sw.js` | 14 | shell cache `fuelpro-shell-v19` |
 | `manifest.webmanifest`, `icon*.png/svg`, `brand/tamayuz-logo.svg` | | PWA + logo |
 
-## test/ (59 tests)
+## test/ (60 tests)
 `api.test.js` 23 · `erp.test.js` 11 · `books.test.js` 10 · `money.test.js` 9 · `auth-units.test.js` 4 · `reports.test.js` 2 → [TESTING](TESTING.md)
 
 ## scripts/

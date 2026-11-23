@@ -17,6 +17,7 @@ Updated 2026-11-23. No percentages: each line is VERIFIED (code + test), REPORTE
 | Sales register, purchase invoices, profit by month, price history, meter sheet | VERIFIED | `books.test.js` |
 | Daily station report, box report, collections, journal book | VERIFIED | `reports.test.js` |
 | Year close / reopen | VERIFIED | `reports.test.js` |
+| Cash-flow statement, direct method (0.7.0): operating / investing / financing, reconciles to the boxes; checked read-only on the real books (reconciled) | VERIFIED | `reports.test.js` "cash-flow statement…" |
 | Backups (auto daily + manual, VACUUM INTO, restore) | VERIFIED | `erp.test.js`, `books.test.js` |
 | Import of the real M7 year for محطة التميز; balances match except 33807/411005 | REPORTED (checked in earlier sessions with `scripts/reconcile-m7.js`) | — |
 | UI: 3 languages, dark mode, PWA, phone layout, emerald/gold identity | REPORTED + browser sweeps | — |
@@ -26,7 +27,7 @@ Updated 2026-11-23. No percentages: each line is VERIFIED (code + test), REPORTE
 ## Open / not built (PLANNED unless noted)
 - Printed output check by the owner (statement, daily report, sales register) — **waiting on the owner**.
 - Cloud deployment (Render/Railway configs ready, never deployed).
-- Cash-flow statement; sale discounts; bank reconciliation; nozzles as separate units inside a pump (verified absent: no matches in `src/`).
+- Sale discounts; bank reconciliation; nozzles as separate units inside a pump (verified absent: no matches in `src/`).
 - Native PDF/Excel export (today: browser print/PDF + CSV).
 - Offline sale entry (UI shell works offline, saving needs the server).
 - PostgreSQL / multi-server; subscriptions/billing; error monitoring.

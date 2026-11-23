@@ -1,5 +1,5 @@
 # NEXT-TASK — where to resume
-Updated 2026-11-23.
+Updated 2026-11-23 (after 0.7.0).
 
 ## Task A (first) — act on the owner's print feedback
 **Objective:** the owner prints a customer statement, the daily report and the sales register and sends photos.
@@ -17,8 +17,8 @@ Fix whatever looks wrong; if he reports nothing, close this item.
 4. ~~Point `README.md` to `docs/`~~ — done 2026-11-23.
 
 ## Task C — next feature (owner to choose)
-Candidates from [PROGRESS](PROGRESS.md) "Open": cash-flow statement, bank reconciliation, sale discounts, native Excel export, cloud deployment.
-Ask the owner which one; for any accounting feature, follow `.claude/skills/fuelpro-accounting/SKILL.md` and add tests first.
+Done 2026-11-23: **cash-flow statement** (0.7.0, ADR-13). Ask the owner to open it on the real data (Financial statements → Cash flow) and say whether the investing/financing split looks right for his accounts.
+Remaining candidates: bank reconciliation, sale discounts, native Excel export, cloud deployment. For any accounting feature follow `.claude/skills/fuelpro-accounting/SKILL.md` and add tests first.
 
 ## Resume checklist
-`CLAUDE.md` → this file → `docs/KNOWN-ISSUES.md` → `npm test` (expect 59 pass) → check whether `Downloads\fuelpro.zip` is newer than the folder files.
+`CLAUDE.md` → this file → `docs/KNOWN-ISSUES.md` → `npm test` (expect 60 pass) → check whether `Downloads\fuelpro.zip` is newer than the folder files.

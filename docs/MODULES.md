@@ -9,7 +9,7 @@ Status: ✅ VERIFIED (code + test) · 🟡 partial · ⛔ not built.
 | Users & permissions | ✅ | `users` → app.js, erp.js | `/api/users`, `/api/auth/*` | users, user_stations, sessions, recovery_codes, reset_tokens | api/erp/auth tests | — |
 | Chart of accounts | ✅ | `acct` → erp.js | `/api/accounts`, `/api/accounts/tree` (ops/books) | accounts | books.test | — |
 | Journal entries & general ledger | ✅ | `acct` (journals), `jbook` → more-ui.js | `…/journals`, `/api/journals/:id/*`, `/api/accounting/ledger` | journals, journal_lines | erp/books tests | — |
-| Financial statements & period lock | ✅ | `fin` → erp.js | `/api/accounting/{trial-balance,income-statement,balance-sheet,lock,integrity,profit-by-month}` | journals | erp/reports tests | ⛔ cash-flow statement |
+| Financial statements & period lock | ✅ | `fin` → erp.js | `/api/accounting/{trial-balance,income-statement,balance-sheet,cash-flow,lock,integrity,profit-by-month}` | journals | erp/reports tests | |
 | Year close | ✅ | `yc` → more-ui.js | `/api/accounting/year-close`, `/year-reopen` (reports.js) | journals (`year_close`) | reports.test | — |
 | Cash & banks (boxes, vouchers) | ✅ | `vch`, `box` → books-ui.js, more-ui.js | `/api/boxes`, `…/vouchers`, `…/reports/boxes` | vouchers, voucher_lines, accounts.box | books/reports tests | ⛔ bank reconciliation |
 | Currencies & FX | ✅ | `cur` → books-ui.js | `/api/currencies*`, `/api/accounting/revaluation` | currencies, exchange_rates | books.test | — |

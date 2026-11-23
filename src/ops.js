@@ -514,6 +514,57 @@ function balanceSheet(db, user, q) {
   return { as_of: asOf, currency: sc.currency, cur_dec: sc.cur_dec, assets: pick('asset'), liabilities: pick('liability'), equity: pick('equity'), current_earnings: earnings,
     total_assets: assets, total_liabilities: liabilities, total_equity: equity, balanced: assets === liabilities + equity };
 }
+/* Cash-flow statement, direct method.
+   Cash = every account marked as a box (cash or bank). For each posted journal that touches a box, each of its
+   non-box lines contributes (credit − debit) to the class of its account; because the journal balances, the
+   contributions add up exactly to the change in the boxes. Box-to-box journals contribute nothing. The cost-of-sales pair
+   inside a sale journal (Dr 5010 / Cr 1200, equal amounts) moves no cash and is left out; `reconciled` proves the result.
+   Class: opening entries and FX revaluation are shown apart; fixed assets (register, accumulated depreciation,
+   imported groups 11 / 214) = investing; equity, inter-branch, imported 216 / 217 / 224 / 227 = financing; else operating. */
+const CF_SYS = { capital: 'financing', drawings: 'financing', retained: 'financing', interbranch: 'financing', accum_dep: 'investing' };
+const CF_GROUPS = { '11': 'investing', '214': 'investing', '216': 'financing', '217': 'financing', '224': 'financing', '227': 'financing' };
+function cashFlow(db, user, q) {
+  need(user, 'report.read'); const sc = scope(db, user, q);
+  const to = V.date(q.to, 'to'), from = V.date(q.from, 'from', { optional: true }) || to.slice(0, 8) + '01';
+  if (from > to) throw bad('VALIDATION', 'from must not be after to');
+  const accts = db.prepare('SELECT id, code, name_ar, name_en, type, sys, box, parent_id, is_group FROM accounts WHERE org_id=?').all(user.org_id);
+  const byId = new Map(accts.map(a => [a.id, a]));
+  const isBox = (a) => !!(a.box || a.sys === 'cash' || a.sys === 'bank');
+  const fixed = new Set(db.prepare('SELECT account_id, accum_account_id FROM fixed_assets WHERE org_id=?').all(user.org_id).flatMap(f => [f.account_id, f.accum_account_id]));
+  const classOf = (a) => {
+    if (a.sys && CF_SYS[a.sys]) return CF_SYS[a.sys];
+    if (a.sys) return 'operating';
+    if (fixed.has(a.id)) return 'investing';
+    for (let p = a, guard = 0; p && guard < 20; p = byId.get(p.parent_id), guard++) if (p.is_group && CF_GROUPS[p.code]) return CF_GROUPS[p.code];
+    return a.type === 'equity' ? 'financing' : 'operating';
+  };
+  const boxIds = accts.filter(isBox).map(a => a.id);
+  const ph = inList(sc.ids);
+  const boxBal = (cond, ...args) => boxIds.length ? db.prepare(`SELECT l.account_id id, COALESCE(SUM(l.debit-l.credit),0) v FROM journal_lines l JOIN journals j ON j.id=l.journal_id
+      WHERE j.org_id=? AND j.status='posted' AND j.station_id IN (${ph}) AND l.account_id IN (${inList(boxIds)}) AND ${cond} GROUP BY l.account_id`).all(user.org_id, ...sc.ids, ...boxIds, ...args) : [];
+  const openMap = new Map(boxBal('j.business_date<?', from).map(r => [r.id, r.v]));
+  const moveMap = new Map(boxBal('j.business_date BETWEEN ? AND ?', from, to).map(r => [r.id, r.v]));
+  const contrib = boxIds.length ? db.prepare(`SELECT l.account_id id, CASE WHEN j.source LIKE '%opening%' OR j.source='migration' THEN 'opening' WHEN j.source='fx_reval' THEN 'fx' ELSE '' END k,
+      SUM(l.credit-l.debit) v FROM journal_lines l JOIN journals j ON j.id=l.journal_id
+      WHERE j.org_id=? AND j.status='posted' AND j.station_id IN (${ph}) AND j.business_date BETWEEN ? AND ? AND l.account_id NOT IN (${inList(boxIds)})
+        AND EXISTS (SELECT 1 FROM journal_lines b WHERE b.journal_id=j.id AND b.account_id IN (${inList(boxIds)}))
+        AND NOT (j.source='sale' AND l.account_id IN (SELECT id FROM accounts WHERE org_id=j.org_id AND sys IN('cogs','inventory')))
+      GROUP BY l.account_id, k HAVING SUM(l.credit-l.debit)<>0`).all(user.org_id, ...sc.ids, from, to, ...boxIds, ...boxIds) : [];
+  const sec = () => ({ rows: [], inflow: 0, outflow: 0, total: 0 });
+  const out = { operating: sec(), investing: sec(), financing: sec(), opening: sec(), fx: sec() };
+  for (const c of contrib) {
+    const a = byId.get(c.id), s = out[c.k || classOf(a)];
+    s.rows.push({ account_id: a.id, code: a.code, name_ar: a.name_ar, name_en: a.name_en, amount: c.v });
+    if (c.v > 0) s.inflow += c.v; else s.outflow += c.v; s.total += c.v;
+  }
+  for (const k in out) out[k].rows.sort((x, y) => Math.abs(y.amount) - Math.abs(x.amount) || x.code.localeCompare(y.code));
+  const opening = [...openMap.values()].reduce((t, v) => t + v, 0), change = [...moveMap.values()].reduce((t, v) => t + v, 0);
+  const flows = out.operating.total + out.investing.total + out.financing.total + out.opening.total + out.fx.total;
+  const boxes = boxIds.filter(id => openMap.get(id) || moveMap.get(id)).map(id => { const a = byId.get(id), o = openMap.get(id) || 0, m = moveMap.get(id) || 0;
+    return { account_id: id, code: a.code, name_ar: a.name_ar, name_en: a.name_en, box: a.box || a.sys, opening: o, change: m, closing: o + m }; }).sort((x, y) => x.code.localeCompare(y.code));
+  return { from, to, currency: sc.currency, cur_dec: sc.cur_dec, stations: sc.stations.map(s => ({ id: s.id, name: s.name })),
+    opening_cash: opening, ...out, net_change: change, closing_cash: opening + change, reconciled: flows === change, boxes };
+}
 function accountLedger(db, user, q) {
   need(user, 'report.read'); const sc = scope(db, user, q);
   const a = db.prepare('SELECT * FROM accounts WHERE id=? AND org_id=?').get(V.int(Number(q.account_id), 'account_id', { min: 1 }), user.org_id); if (!a) throw notFound('Account');
@@ -568,4 +619,4 @@ module.exports = { shiftTotals, openShiftCmd, closeShift, approveShift, unapprov
   listSuppliers, createSupplier, updateSupplier, supplierPayment, voidSupplierPayment, supplierStatement, supplierBalance, ageing,
   updateTank, createTransfer, voidTransfer, listTransfers, stockMoves, stockReconciliation, updateCustomer,
   listAccounts, createAccount, updateAccount, listJournals, getJournal, createJournal, postJournal, deleteDraft, reverseJournal,
-  trialBalance, incomeStatement, balanceSheet, accountLedger, lockPeriod, integrity };
+  trialBalance, incomeStatement, balanceSheet, cashFlow, accountLedger, lockPeriod, integrity };

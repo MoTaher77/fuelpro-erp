@@ -53,3 +53,12 @@ Compares stock value in tanks with account 1200, customer balances with 1100, su
 2010 AP · 2100 output VAT · 3010 capital/opening · 3200 drawings · 3900 retained earnings · 4010 fuel sales · 4900 other income ·
 4950 FX differences · 5010 COGS · 5100 stock shortage · 5200 cash shortage · 6010–6090 expenses (6070 depreciation).
 The real station also has the imported M7 tree (443 accounts) mapped onto these system accounts.
+
+## 11. Cash-flow statement (`cashFlow` in `src/ops.js`, `GET /api/accounting/cash-flow`) — 0.7.0
+- Direct method. Cash = accounts with `box` set (cash/bank) plus system 1010/1020.
+- For each posted journal that touches a box, each non-box line contributes `credit − debit` to its account's class. A balanced journal makes the contributions equal the box change exactly; `reconciled` proves it on every run.
+- Box-to-box journals contribute nothing. Inside `sale` journals the cost pair (5010 / 1200, equal) is left out because it moves no cash.
+- Class: sources `*opening*`/`migration` → «opening balances entered in the period»; `fx_reval` → «effect of exchange rates»;
+  system capital/drawings/retained/interbranch → financing; accum_dep → investing; other system accounts → operating;
+  accounts in the fixed-asset register → investing; under imported groups `11`, `214` → investing, `216`, `217`, `224`, `227` → financing;
+  other equity → financing; everything else → operating. Test: `reports.test.js` "cash-flow statement…".

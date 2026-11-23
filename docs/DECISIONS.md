@@ -36,3 +36,7 @@ Dates are when the decision is first visible in the CHANGELOG or sessions (REPOR
 
 ### ADR-12 Project knowledge lives in the repo (`CLAUDE.md` + `docs/` + `.claude/skills/`) (2026-11-23)
 - **Why:** sessions should resume without re-explaining; cloud containers are temporary. **Consequence:** every task ends by updating PROGRESS/NEXT-TASK/SESSION-HISTORY. **Alternative:** relying on chat history (lost and expensive to re-read).
+
+### ADR-13 Cash-flow statement by the direct method, classified by account (0.7.0, 2026-11-23)
+- **Decision:** derive flows from journals that touch a box, attributing each box movement to the other accounts of its journal; classify by system account, fixed-asset register, imported group code (11/214 investing; 216/217/224/227 financing), then account type. No schema change.
+- **Why:** exact integer reconciliation with the boxes, works for both the FuelPro chart and the imported M7 tree. **Alternative:** indirect method from net profit and balance-sheet changes (needs a reliable current/non-current split the imported tree does not give). **Evidence:** `src/ops.js` `cashFlow`, `test/reports.test.js`; checked read-only on the real books: reconciled, 56 ms for 11 months.

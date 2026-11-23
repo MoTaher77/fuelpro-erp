@@ -76,3 +76,38 @@ test('year-end closing moves income and expenses into retained earnings, keeps t
   assert.equal(ok(await s.c.get(`/api/accounting/year-close?year=${y}`)).stations[0].closed, null);
   await integrity(s.c);
 });
+
+test('cash-flow statement (direct method) splits box movements into operating, investing and financing and reconciles to the boxes', async () => {
+  const s = await org();
+  const cust = ok(await s.c.post(`${s.p}/customers`, { name: 'Credit customer' }), 201).id;
+  ok(await s.c.post(`${s.p}/sales`, { client_id: 'cf1-' + Date.now(), pump_id: s.pump, quantity_ml: 100_000, pay_type: 'cash' }), 201);                       // +50,000 operating
+  ok(await s.c.post(`${s.p}/sales`, { client_id: 'cf2-' + Date.now(), pump_id: s.pump, quantity_ml: 400_000, pay_type: 'credit', customer_id: cust }), 201);  // no cash
+  ok(await s.c.post(`${s.p}/vouchers`, { kind: 'receipt', box_account_id: s.sys('cash'), lines: [{ account_id: s.sys('ar'), party_id: cust, amount: 120_000 }] }), 201);  // +120,000 operating
+  ok(await s.c.post(`${s.p}/vouchers`, { kind: 'payment', box_account_id: s.sys('cash'), lines: [{ account_id: s.sys('exp_rent'), amount: 30_000 }] }), 201);              // −30,000 operating
+  ok(await s.c.post(`${s.p}/vouchers`, { kind: 'receipt', box_account_id: s.sys('bank'), lines: [{ account_id: s.sys('capital'), amount: 500_000 }] }), 201);              // +500,000 financing
+  ok(await s.c.post(`${s.p}/vouchers`, { kind: 'payment', box_account_id: s.sys('cash'), lines: [{ account_id: s.sys('bank'), amount: 40_000 }] }), 201);                 // box to box: not a flow
+  /* fixed asset registered in the fixed-asset register → investing */
+  const equip = ok(await s.c.post('/api/accounts', { code: '1500', type: 'asset', name_ar: 'معدات', name_en: 'Equipment' }), 201).id;
+  ok(await s.c.post(`${s.p}/assets`, { name: 'Generator', account_id: equip, acquired_on: '2026-01-01', cost: 80_000, life_months: 60 }), 201);
+  ok(await s.c.post(`${s.p}/vouchers`, { kind: 'payment', box_account_id: s.sys('bank'), lines: [{ account_id: equip, amount: 80_000 }] }), 201);                        // −80,000 investing
+  /* account under the imported "11 fixed assets" group → investing, even without a register entry */
+  const g = ok(await s.c.post('/api/accounts', { code: '11', type: 'asset', name_ar: 'موجودات ثابتة', name_en: 'Fixed assets', is_group: true }), 201).id;
+  const furn = ok(await s.c.post('/api/accounts', { code: '11501', type: 'asset', name_ar: 'أثاث', name_en: 'Furniture', parent_id: g }), 201).id;
+  ok(await s.c.post(`${s.p}/vouchers`, { kind: 'payment', box_account_id: s.sys('cash'), lines: [{ account_id: furn, amount: 10_000 }] }), 201);                         // −10,000 investing
+
+  const r = ok(await s.c.get(`/api/accounting/cash-flow?from=2000-01-01&to=2099-12-31`));
+  assert.equal(r.opening_cash, 0);
+  assert.equal(r.operating.total, 140_000); assert.equal(r.operating.inflow, 170_000); assert.equal(r.operating.outflow, -30_000);
+  assert.equal(r.investing.total, -90_000);
+  assert.equal(r.financing.total, 500_000);
+  assert.equal(r.net_change, 550_000); assert.equal(r.closing_cash, 550_000); assert.ok(r.reconciled);
+  assert.ok(!r.operating.rows.some(x => x.account_id === s.sys('bank') || x.account_id === s.sys('cash')), 'box-to-box transfers are not flows');
+  assert.equal(r.boxes.reduce((t, b) => t + b.closing, 0), 550_000);
+  /* a later period opens with the earlier closing balance and shows no flows */
+  const later = ok(await s.c.get(`/api/accounting/cash-flow?from=2099-01-01&to=2099-12-31`));
+  assert.equal(later.opening_cash, 550_000); assert.equal(later.net_change, 0); assert.equal(later.closing_cash, 550_000);
+  /* per station gives the same result, a foreign id is refused */
+  assert.equal(ok(await s.c.get(`/api/accounting/cash-flow?station_id=${s.p.split('/').pop()}&from=2000-01-01&to=2099-12-31`)).net_change, 550_000);
+  assert.equal((await s.c.get(`/api/accounting/cash-flow?station_id=999999&from=2000-01-01&to=2099-12-31`)).status, 404);
+  await integrity(s.c);
+});

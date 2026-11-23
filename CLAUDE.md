@@ -16,7 +16,7 @@ In real use at **محطة التميز** with one year of data imported from the
 
 ## 3. Stack (verified)
 Node.js ≥ 22.5, **zero npm dependencies**, built-in `node:sqlite` (WAL). Plain HTTP server `src/server.js`
-(120 routes). Front end: vanilla JS SPA in `public/` (no framework, no build step), PWA service worker.
+(121 routes). Front end: vanilla JS SPA in `public/` (no framework, no build step), PWA service worker.
 Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 12).
 
 ## 4. Non-negotiable invariants
@@ -35,11 +35,11 @@ Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 12).
 - Never print/store passwords. `بيانات-الدخول.txt` and `.env` hold secrets: do not read or copy them.
 - Customer/supplier names and balances are private: never publish, upload, or paste them into docs.
 - Do not deploy to Render/Railway without the owner's explicit request.
-- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v18`) or users keep the old UI.
+- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v19`) or users keep the old UI.
 
 ## 6. Commands (verified 2026-11-23)
 ```
-npm test                 # node:test, 59 tests, ~9 s, in-memory DBs — must stay green
+npm test                 # node:test, 60 tests, ~9 s, in-memory DBs — must stay green
 npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default
 DB_PATH=/tmp/demo.db DEMO_PASSWORD=... node scripts/seed-demo.js --days 365   # throwaway demo DB
 npm run backup           # consistent copy into data/backups/ (server also makes 1 auto copy/day, keeps 30)

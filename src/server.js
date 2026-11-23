@@ -160,6 +160,7 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
   route('GET', '/api/accounting/trial-balance', (c) => ({ body: O.trialBalance(db, c.user, c.q) }));
   route('GET', '/api/accounting/income-statement', (c) => ({ body: O.incomeStatement(db, c.user, c.q) }));
   route('GET', '/api/accounting/balance-sheet', (c) => ({ body: O.balanceSheet(db, c.user, c.q) }));
+  route('GET', '/api/accounting/cash-flow', (c) => ({ body: O.cashFlow(db, c.user, c.q) }));
   route('GET', '/api/accounting/ledger', (c) => ({ body: O.accountLedger(db, c.user, c.q) }));
   route('GET', '/api/accounting/lock', (c) => ({ body: { locked_through: require('./ledger').lockedThrough(db, c.user.org_id) } }));
   route('POST', '/api/accounting/lock', (c) => ({ body: O.lockPeriod(db, c.user, c.body) }));

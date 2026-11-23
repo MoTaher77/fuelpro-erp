@@ -216,7 +216,7 @@
 
   /* ================================ FINANCIAL STATEMENTS ================================ */
   F.VIEWS.fin = async (main) => {
-    main.append(tabs('finTab', [['is', T('incomeStatement')], ['pl', T('plTitle')], ['bs', T('balanceSheet')], ['tb', T('trialBalance')], ['gl', T('ledger')], ['age', T('ageCust')], ['chk', T('integrity')]]));
+    main.append(tabs('finTab', [['is', T('incomeStatement')], ['pl', T('plTitle')], ['bs', T('balanceSheet')], ['cf', T('cashFlow')], ['tb', T('trialBalance')], ['gl', T('ledger')], ['age', T('ageCust')], ['chk', T('integrity')]]));
     if (S.finTab === 'age') { main.append(await ageingSection('customer')); return; }
     if (S.finTab === 'tb' && F.trialView) { await F.trialView(main); return; }
     if (S.finTab === 'pl' && F.plView) { await F.plView(main); return; }
@@ -251,6 +251,28 @@
           h('div', { class: 'grid2' }, sec(T('assets') + ' — ' + fdate(r.as_of), table(['', T('amount')], [...part(T('assets'), r.assets), [h('b', null, T('totalAssets')), h('b', null, m(r.total_assets))]])),
             sec(T('liabilities') + ' / ' + T('equity'), table(['', T('amount')], [...part(T('liabilities'), r.liabilities), ...part(T('equity'), r.equity), [T('currentEarnings'), m(r.current_earnings)], [h('b', null, T('totalLE')), h('b', null, m(r.total_liabilities + r.total_equity))]]))), h('p', { class: 'hint' }, T('stmtNote')));
       }
+      if (S.finTab === 'cf') {
+        const r = await api('GET', '/api/accounting/cash-flow?' + q()); const m = mf(r.currency, r.cur_dec);
+        const nm = (x) => P.lang === 'ar' ? x.name_ar : x.name_en;
+        const part = (key, title, always) => { const s = r[key]; if (!always && !s.rows.length) return [];
+          return [[h('b', null, title), '', ''], ...s.rows.map(x => [x.code, nm(x), m(x.amount)]),
+            ['', T('cfIn') + ' / ' + T('cfOut'), `${m(s.inflow)} / ${m(s.outflow)}`], ['', h('b', null, T('cfNetOf') + ' — ' + title), h('b', null, m(s.total))]]; };
+        const net = F.statN(T('cfNet'), r.net_change, m); net.classList.add(r.net_change >= 0 ? 'good' : 'badv');
+        out.replaceChildren(h('p', { class: r.reconciled ? 'note good' : 'note' }, r.reconciled ? T('cfOk') : T('cfBad')),
+          h('div', { class: 'grid' }, F.statN(T('cfOpenCash'), r.opening_cash, m), F.statN(T('cfOperating'), r.operating.total, m), net, F.statN(T('cfCloseCash'), r.closing_cash, m)),
+          sec(T('cashFlow') + ` — ${fdate(r.from)} → ${fdate(r.to)}`, table([T('code'), T('account'), T('amount')], [
+            ['', h('b', null, T('cfOpenCash')), h('b', null, m(r.opening_cash))],
+            ...part('operating', T('cfOperating'), true), ...part('investing', T('cfInvesting'), true), ...part('financing', T('cfFinancing'), true),
+            ...part('opening', T('cfOpening')), ...part('fx', T('cfFx')),
+            ['', h('b', null, T('cfNet')), h('b', null, m(r.net_change))], ['', h('b', null, T('cfCloseCash')), h('b', null, m(r.closing_cash))]])),
+          sec(T('cfBoxes'), table([T('code'), T('account'), T('openingCol'), T('cfNetOf'), T('closingCol')], [
+            ...r.boxes.map(b => [b.code, nm(b), m(b.opening), m(b.change), m(b.closing)]),
+            ['', h('b', null, T('total')), h('b', null, m(r.opening_cash)), h('b', null, m(r.net_change)), h('b', null, m(r.closing_cash))]])),
+          h('p', { class: 'hint' }, T('cfNote')));
+        const exp = h('button', { class: 'btn ghost sm', onclick: () => csv(`cash-flow-${r.from}_${r.to}.csv`, ['section', 'code', 'account', 'amount'],
+          ['operating', 'investing', 'financing', 'opening', 'fx'].flatMap(k => r[k].rows.map(x => [k, x.code, x.name_en, (x.amount / 10 ** r.cur_dec).toFixed(r.cur_dec)]))) }, 'CSV');
+        out.append(h('div', { class: 'row' }, exp));
+      }
       if (S.finTab === 'tb') {
         const r = await api('GET', '/api/accounting/trial-balance?' + q()); const m = mf(r.currency, r.cur_dec); const z = (v) => v ? m(v) : '';
         out.replaceChildren(h('p', { class: r.balanced ? 'note good' : 'note' }, r.balanced ? T('balancedOk') : T('notBalanced')),
@@ -268,7 +290,7 @@
       }
     });
     main.append(sec(null, h('div', { class: 'row' }, field(T('scope'), scope), S.finTab !== 'bs' ? field(T('from'), from) : null, field(S.finTab === 'bs' ? T('asOf') : T('to'), to), S.finTab === 'gl' ? field(T('account'), ac) : null,
-      h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn ghost sm', onclick: () => printNode(T(({ is: 'incomeStatement', bs: 'balanceSheet', tb: 'trialBalance', gl: 'ledger' })[S.finTab]), out) }, T('print')))), out);
+      h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn ghost sm', onclick: () => printNode(T(({ is: 'incomeStatement', bs: 'balanceSheet', cf: 'cashFlow', tb: 'trialBalance', gl: 'ledger' })[S.finTab]), out) }, T('print')))), out);
     await run();
   };
 
