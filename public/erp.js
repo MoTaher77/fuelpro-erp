@@ -150,7 +150,7 @@
         h('h2', null, T('suppPay')), h('div', { class: 'grid' }, field(T('supp'), s), field(T('amount'), a), field(T('method'), m), field(T('note'), n)), h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('save')))));
     }
     if (g.childElementCount) main.append(g);
-    if (cd('report.read')) main.append(await ageingSection('supplier'));
+    if (cd('report.read')) { const ag = await ageingSection('supplier'); if (ag) main.append(ag); }
   };
   async function ageingSection(type) {
     const r = await api('GET', sp(`/ageing?type=${type}`)); const m = mf(r.currency, r.cur_dec);
@@ -228,7 +228,7 @@
   /* ================================ FINANCIAL STATEMENTS ================================ */
   F.VIEWS.fin = async (main) => {
     main.append(tabs('finTab', [['is', T('incomeStatement')], ['pl', T('plTitle')], ['bs', T('balanceSheet')], ['cf', T('cashFlow')], ['tb', T('trialBalance')], ['gl', T('ledger')], ['age', T('ageCust')], ['chk', T('integrity')]]));
-    if (S.finTab === 'age') { main.append(await ageingSection('customer')); return; }
+    if (S.finTab === 'age') { { const ag = await ageingSection('customer'); if (ag) main.append(ag); } return; }
     if (S.finTab === 'tb' && F.trialView) { await F.trialView(main); return; }
     if (S.finTab === 'pl' && F.plView) { await F.plView(main); return; }
     if (S.finTab === 'chk') {
@@ -334,7 +334,7 @@
 
   /* customers: add ageing below the existing customer screen */
   const custView = F.VIEWS.cust;
-  F.VIEWS.cust = async (main) => { await custView(main); if (!S.stmt && cd('report.read')) main.append(await ageingSection('customer')); };
+  F.VIEWS.cust = async (main) => { await custView(main); if (!S.stmt && cd('report.read')) { const ag = await ageingSection('customer'); if (ag) main.append(ag); } };
 
   F.boot();
 })();

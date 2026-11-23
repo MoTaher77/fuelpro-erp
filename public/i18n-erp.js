@@ -8,6 +8,8 @@ window.FP_I18N = {
   exp: ['المصروفات', 'Expenses', 'Dépenses'], acct: ['القيود اليومية', 'Journal entries', 'Écritures'], fin: ['القوائم المالية', 'Financial statements', 'États financiers'],
   rep: ['تقارير التشغيل', 'Operating reports', "Rapports d'exploitation"], setup: ['الإعداد', 'Setup', 'Réglages'], users: ['المستخدمون والصلاحيات', 'Users & roles', 'Utilisateurs et rôles'],
   audit: ['سجل التدقيق', 'Audit log', "Journal d'audit"], menu: ['القائمة', 'Menu', 'Menu'], more: ['المزيد', 'More', 'Plus'],
+  palette: ['ألوان الواجهة', 'Colours', 'Couleurs'], 'pal.royal': ['ملكي كحلي', 'Royal: navy & gold', 'Royal : marine et or'], 'pal.emerald': ['زمردي وذهبي', 'Emerald & gold', 'Émeraude et or'],
+  'pal.bordeaux': ['عنابي وذهبي', 'Bordeaux & gold', 'Bordeaux et or'], 'pal.onyx': ['أسود وذهبي', 'Onyx & gold', 'Onyx et or'],
   theme: ['المظهر', 'Theme', 'Thème'], thSystem: ['حسب الجهاز', 'System', 'Système'], thLight: ['نهاري', 'Light', 'Clair'], thDark: ['ليلي', 'Dark', 'Sombre'],
   print: ['طباعة', 'Print', 'Imprimer'], receipt: ['فاتورة', 'Receipt', 'Reçu'], receiptNo: ['رقم الفاتورة', 'Receipt no.', 'N° de reçu'], thanks: ['شكراً لزيارتكم', 'Thank you', 'Merci de votre visite'],
   mCash: ['نقداً', 'Cash', 'Espèces'], mBank: ['تحويل بنكي', 'Bank', 'Banque'], mCredit: ['آجل (على المورد)', 'On credit', 'À crédit'], method: ['طريقة الدفع', 'Method', 'Mode'],

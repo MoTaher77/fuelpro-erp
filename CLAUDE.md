@@ -19,7 +19,7 @@ In real use at **محطة التميز** with one year of data imported from the
 ## 3. Stack (verified)
 Node.js ≥ 22.5, **zero npm dependencies**, built-in `node:sqlite` (WAL). Plain HTTP server `src/server.js`
 (133 routes). Front end: vanilla JS SPA in `public/` (no framework, no build step), PWA service worker.
-Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 14).
+Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 15; `openDb` also runs `PRAGMA optimize`).
 
 ## 4. Non-negotiable invariants
 1. Money = integers in minor units (`stations.cur_dec`; YER uses 3 stored / `disp_dec` 2 shown). Quantities in ml, prices `*_e4`, rates `*_e6`. Never floats — use `src/money.js`.
@@ -36,12 +36,12 @@ Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 14).
 - Before any risky change: copy the DB with `npm run backup` (VACUUM INTO) — never copy a live WAL file by hand.
 - Never print/store passwords. `بيانات-الدخول.txt` and `.env` hold secrets: do not read or copy them.
 - Customer/supplier names and balances are private: never publish, upload, or paste them into docs.
-- **Cloud hosting is allowed (owner's explicit authorisation, 2026-11-23, ADR-19):** the full app (Node server + SQLite on a persistent disk) may be deployed to Render/Railway via `render.yaml`/`Dockerfile`, with HTTPS, `COOKIE_SECURE=1`, `TRUST_PROXY=1`, a random `APP_SECRET`. Demo and production databases stay on separate disks. **Copying real production data to a host still needs the owner's separate OK each time** (backup first, then `--dry-run`); until then a hosted service holds demo data only. Never commit or print passwords, keys, `APP_SECRET`, SMTP credentials or real customer/financial data; verify a deployment with `node scripts/smoke-online.js <url> <email> <password>`.
+- **Online demo = Claude Artifact only (owner, 2026-11-23, ADR-20):** the Artifact edition (`web/`, `docs/ARTIFACT-EDITION.md`) runs the unchanged `src/` in a claude.ai page on **demo data only**, saved in the Artifact's own storage. Do **not** use Render, Railway, ChatGPT Sites or Codex (owner's instruction; supersedes the Render plan in ADR-19). Real station data is allowed **only** in the owner's separate private page «FuelPro المحطة» (https://claude.ai/artifact/Dbe4L4cWnvRSbeswvYAENF, owner's explicit OK 2026-11-23), built from the password-free snapshot with `web/build.js --seed-db` and a throwaway admin from `scripts/dev-admin.js`; never in the demo page, never shared or made public, never re-seeded over saved data without the owner. It is a copy: it does not sync with the laptop. **Moving real data anywhere off the laptop needs the owner's separate OK each time** (backup first, then `--dry-run`). Never commit or print passwords, keys, `APP_SECRET`, SMTP credentials or real customer/financial data; verify a deployment with `node scripts/smoke-online.js <url> <email> <password>`.
 - Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v27`) or users keep the old UI.
 
 ## 6. Commands (verified 2026-11-23)
 ```
-npm test                 # node:test, 70 tests, ~9 s, in-memory DBs — must stay green
+npm test                 # node:test, 73 tests (2 skip without sql.js), ~9 s, in-memory DBs — must stay green
 npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default
 DB_PATH=/tmp/demo.db DEMO_PASSWORD=... node scripts/seed-demo.js --days 365   # throwaway demo DB
 npm run backup           # consistent copy into data/backups/ (server also makes 1 auto copy/day, keeps 30)
@@ -56,6 +56,9 @@ Windows: `start-fuelpro-online.bat` (project root, online via Cloudflare tunnel)
 - New screen = `F.VIEWS.<key>` + an entry in `NAV` (`public/app.js`) + i18n keys + icon.
 - Tables get auto-fit column classes (`fitTables`); print through `printNode` / `F.printDoc`.
 - Add a test in `test/*.test.js` for every accounting rule you touch; record a CHANGELOG entry.
+
+## 7b. Artifact edition
+Build: `DEMO_PASSWORD=<pw> node web/build.js` → `web/dist/` (git-ignored), then republish `web/dist/index.html` to the live page (`docs/ARTIFACT-EDITION.md`). Page-engine checks need `npm i --no-save --no-package-lock sql.js@1.10.3`: `node --test test/artifact-runtime.test.js` and `node --import ./web/sqljs-hook.mjs --test --test-skip-pattern="[Bb]ackup" test/*.test.js`. `src/` stays engine-neutral: no new Node built-ins without a shim in `web/shims/`.
 
 ## 8. Documentation map → `docs/00-MASTER-INDEX.md`
 Stable: ARCHITECTURE, PROJECT-STRUCTURE, DATABASE-SCHEMA, MODULES, API-REFERENCE, ACCOUNTING-RULES, SECURITY,

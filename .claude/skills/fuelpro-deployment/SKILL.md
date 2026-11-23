@@ -16,5 +16,5 @@ description: Use when shipping a FuelPro update to the owner's Windows laptop, t
 
 ## Never
 - Replace or edit `data\fuelpro.db`, or drop a `data\fuelpro-new.db` (that swaps the real DB).
-- Copy real production data to a cloud host without the owner's OK for that move (cloud deployment itself is authorised, ADR-19); keep demo and production DBs separate.
+- Use Render/Railway/ChatGPT Sites/Codex (owner's instruction; the online demo is the Claude Artifact, ADR-20), or copy real production data anywhere off the laptop without the owner's OK for that move; keep demo and production DBs separate.
 - Print or store secrets (`APP_SECRET`, SMTP passwords, user passwords).

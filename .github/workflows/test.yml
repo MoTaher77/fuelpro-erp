@@ -13,3 +13,26 @@ jobs:
         with:
           node-version: 22
       - run: node --version && npm test
+  artifact:
+    # FuelPro Artifact edition (ADR-20): the same src/ on sql.js, the engine the claude.ai page uses
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: sql.js for the page engine (test-only, not a project dependency)
+        run: npm i --no-save --no-package-lock sql.js@1.10.3
+      - name: Artifact runtime tests (save, reopen, permissions)
+        run: node --disable-warning=ExperimentalWarning --test test/artifact-runtime.test.js
+      - name: Whole suite on sql.js, file backups excluded (the page has no file system)
+        run: node --disable-warning=ExperimentalWarning --import ./web/sqljs-hook.mjs --test --test-skip-pattern="[Bb]ackup" test/*.test.js
+      - name: Build the Artifact bundle
+        run: |
+          DEMO_PASSWORD="ci-$(node -e "console.log(require('crypto').randomBytes(12).toString('hex'))")" node --disable-warning=ExperimentalWarning web/build.js --days 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fuelpro-artifact-dist
+          path: web/dist/
+          retention-days: 14

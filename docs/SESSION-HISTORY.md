@@ -57,3 +57,14 @@ Follow-up: re-rendered on a throwaway copy of the real-data snapshot (dev-admin.
 
 ## 2026-11-23 — 0.11.2 cloud hosting authorised
 Owner authorised cloud deployment (ADR-19). CLAUDE.md + fuelpro-deployment skill relaxed; `.dockerignore`; `scripts/smoke-online.js` (local demo run: all checks pass incl. post/list/void expense). NOT deployed: the agent has no Render/Railway account access; owner steps are in docs/DEPLOYMENT.md. Resume: after the PR merges, owner connects the Blueprint; then run the smoke test on the URL.
+
+## 2026-11-23 — 0.12.0 Claude Artifact edition (ADR-20)
+New `web/` (bundle of unchanged src + shims + sql.js engine + runtime with save/load to Artifact db). Published private page https://claude.ai/artifact/CgLf1pmqcani77JBGVL56N (demo data). Tests: npm test 72 (70 pass + 2 skip without sql.js); on sql.js 70/70 non-backup pass incl. 2 new artifact tests; Chromium e2e on the built page with a storage stand-in: sign-in, expense, save (41 blocks), reload, data + session back, integrity OK, no page errors. NOT verified: the live page's real claude storage (needs the owner to open it and do one operation). Resume: owner opens the page; then read `fpstate` with ArtifactData to confirm the save.
+Follow-up: owner approved real data → private page «FuelPro المحطة» https://claude.ai/artifact/Dbe4L4cWnvRSbeswvYAENF from the snapshot + throwaway admin. Chromium e2e on that build: boot 0.8 s, first save 134 blocks, second save 16 blocks, reload keeps data, integrity OK. Fixed: «محفوظ ✓» showed while a second save was pending (e2e caught it).
+Follow-up 2: station page sign-in confusion: the page's "create account" form had made an empty org 2 (no operations), so the owner saw no data. Blocked registration on the station page, renamed the admin to admin@fuelpro.local with an easy password, cleared fpstate/main, republished (v2). Local e2e on that build: sign-in, save, reload OK.
+
+## 2026-11-23 — 0.13.0 speed
+Profiled all 33 report routes on the station snapshot in the page engine. Fixes: migration v15 (m7_results_latest index + ANALYZE), PRAGMA optimize on open, page uses sql.js WebAssembly (JS fallback). Station data, WASM: analytics 0.34 s (was 3.3-3.9 s), alerts 0.16 s (2.7 s), statements ~0.06 s (0.65 s), every screen 0.17-0.54 s in Chromium. Tests 73. Resume: owner checks the chip menu shows «WebAssembly» on his devices.
+
+## 2026-11-23 — 0.14.0 palettes + responsive
+`public/app.css` (end block): data-palette royal/emerald/bordeaux/onyx with light+dark tokens; breakpoints >=1600, 901-1180, 601-900, <=600, <=380, landscape phones, hover:none. `app.js`: P.palette (default royal), swatch picker with live preview in Preferences (reverts if closed unsaved). Fixed «null» under customers/suppliers (ageingSection may return null). Screenshots 390/820/1280/1920 in four palettes: no horizontal overflow, no page errors. Tests 73. sw v31.

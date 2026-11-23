@@ -27,7 +27,10 @@ Env vars: see `.env.example` — `PORT`, `HOST`, `DB_PATH`, `APP_URL`, `APP_SECR
 ## Rollback
 Migrations only add. To roll back code: reinstall the previous zip **together with** a DB backup taken before the upgrade (an old version may not understand a newer schema). Take a backup before every update.
 
-## Cloud (authorised 2026-11-23, ADR-19)
+## Claude Artifact edition (ADR-20, current online demo)
+See `docs/ARTIFACT-EDITION.md`. Render/Railway are not used (owner's instruction, 2026-11-23); the notes below are kept for reference only.
+
+## Cloud (ADR-19, superseded by ADR-20)
 Steps for the owner (needs his Render account; the agent cannot reach it): 1) render.com → New → Blueprint → connect `MoTaher77/fuelpro-erp`, branch `main`, file `render.yaml`; 2) in `fuelpro-demo` set `APP_URL` to its https address; 3) open the service Shell and run `DB_PATH=/app/data/demo.db node scripts/seed-demo.js --days 365` (prints a random password once); 4) verify: `node scripts/smoke-online.js https://<service>.onrender.com demo@fuelpro.demo <password> --write`. `fuelpro-production` stays empty until the owner approves moving real data. Render gives HTTPS automatically.
 
 ## Cloud (reference)
