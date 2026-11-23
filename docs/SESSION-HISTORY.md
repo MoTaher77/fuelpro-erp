@@ -49,3 +49,7 @@ Finding: M7 has no detailed movements before 2026, so prior-year journals are im
 ## 2026-11-23 — 0.9.0 analytics, Excel, discounts, bank reconciliation (tests VERIFIED; browser checked for analytics + Excel only)
 New: src/analytics.js + public/analytics-ui.js (#ana), public/xlsx.js (topbar Excel, opened in real Excel), sale discount (4050 sales_disc, perm sale.discount), src/bankrec.js + public/bank-ui.js (#bank, perm bank.reconcile), migration v14, sw v23. Tests 68/68.
 NOT done: browser check of the discount field and bank screen; docs (MODULES/API/ACCOUNTING-RULES/ADR) not yet updated for 0.9.0; live DB still without M7 history (NEXT-TASK Task 0).
+
+## 2026-11-23 — 0.11.1 print fix for the classic statement (tests VERIFIED 70; Playwright PDF on a demo DB)
+Cloud env saved (Default: setup script + DB_PATH/BACKUP_AUTO). Rendered day report, sales register and customer statement to PDF from a throwaway demo DB. Statement: type column and long descriptions wrapped (14 rows/page); CSS-only fix in `public/app.css` (`.cl-tbl td.c/.k` nowrap, `td.d` bidi plaintext, header cells wrap) -> 22 rows/page, 3 pages instead of 4. sw v28.
+Not done: sales register still has a wide centred Pumps column and tight Fuel/Date columns; Dubai font + real Chrome preview need the owner's printout (KI-07). Resume: NEXT-TASK Task A.
