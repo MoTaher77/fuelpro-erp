@@ -98,3 +98,6 @@ Owner said start Phase 2. Measured instead of rewriting: see docs/PHASE2-POSTGRE
 
 ## 2026-11-23 — libraries and tools installed (ADR-22)
 Owner asked to install external libraries and dev tools instead of hand-writing them. Removed the half-written src/pg client. `npm i`: pg 8 (dependency), eslint 10 + @eslint/js + globals, sql.js 1.10.3 (exact), playwright (dev). `eslint.config.js` (0 errors, 28 warnings; real finds: duplicate i18n keys KI-12). CI: npm ci + lint + test; artifact job uses npm run test:artifact/build:artifact. Dockerfile runs npm ci --omit=dev. A local PostgreSQL 16 server is runnable in the sandbox (initdb + pg_ctl as user postgres, port 5433) for the next stage.
+
+## 2026-11-23 — 0.23.0 Phase 2 stage A (PostgreSQL bridge)
+src/pg/{worker,sync,dialect}.js + test/pg-sync.test.js (live tests need FUELPRO_TEST_PG; CI has a postgres:16 service). Local test server: initdb + pg_ctl as user postgres on port 5433, databases fp (SQL_ASCII, bridge tests) and fp8 (UTF8, schema probe). Schema probe: 127/129 statements port; v3 table rebuild + 9 triggers by hand. SQLite stays the default; nothing changes for the laptop. Resume: stage B in docs/PHASE2-POSTGRES.md.

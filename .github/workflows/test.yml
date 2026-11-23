@@ -7,6 +7,15 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:   # a real PostgreSQL for the Phase 2 bridge tests (UTF-8, like production)
+        image: postgres:16
+        env: { POSTGRES_USER: fuelpro, POSTGRES_PASSWORD: fuelpro-test, POSTGRES_DB: fp }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U fuelpro" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      FUELPRO_TEST_PG: postgres://fuelpro:fuelpro-test@127.0.0.1:5432/fp
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
