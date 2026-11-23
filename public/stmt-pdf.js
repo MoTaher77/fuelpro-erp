@@ -45,7 +45,8 @@
     ctx.textAlign = 'center'; ctx.fillStyle = C.white; ctx.fillText(d.title, W / 2, y + 30);
     ctx.fillStyle = C.muted; ctx.font = f(21, 600); ctx.fillText(d.periodText, W / 2, y + 88);
     y += 120;
-    /* party box */
+    /* party box (statements only; a report has none) */
+    if (d.party) {
     rrect(ctx, M, y, W - 2 * M, 104, 14); ctx.fillStyle = '#f6fbf8'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = C.green; ctx.stroke();
     ctx.textAlign = 'right'; ctx.fillStyle = C.green; ctx.font = f(19, 700); ctx.fillText(d.labels.party, R - 24, y + 28);
     ctx.fillStyle = C.ink; ctx.font = f(31, 800); ctx.fillText(fit(ctx, d.party.name, 640), R - 24, y + 70);
@@ -53,7 +54,9 @@
     ctx.fillStyle = C.ink; ctx.font = f(25, 700); ctx.direction = 'ltr'; ctx.fillText(`${d.party.ref || ''}`, M + 24, y + 70); ctx.direction = 'rtl';
     ctx.textAlign = 'left'; ctx.fillText(d.party.currency || '', M + 24 + 150, y + 70);
     y += 128;
+    }
     /* summary tiles */
+    if (!d.summary || !d.summary.length) return y + 4;
     const n = d.summary.length, gap = 16, tile = (W - 2 * M - gap * (n - 1)) / n;
     d.summary.forEach((s, i) => {
       const x = W - M - (i + 1) * tile - i * gap;
@@ -67,7 +70,7 @@
   /* the slim head of the following pages */
   function runHead(ctx, d, page) {
     ctx.textAlign = 'right'; ctx.fillStyle = C.green; ctx.font = f(22, 800); ctx.fillText(fit(ctx, `${d.brand.name || ''} · ${d.title}`, 760), W - M, M + 14);
-    ctx.textAlign = 'left'; ctx.fillStyle = C.muted; ctx.font = f(20, 600); ctx.fillText(fit(ctx, d.party.name, 360), M, M + 14);
+    ctx.textAlign = 'left'; ctx.fillStyle = C.muted; ctx.font = f(20, 600); ctx.fillText(fit(ctx, d.party ? d.party.name : (d.periodText || ''), 360), M, M + 14);
     ctx.fillStyle = C.gold; ctx.fillRect(M, M + 36, W - 2 * M, 3);
     return M + 60;
   }
@@ -117,9 +120,14 @@
   async function statement(d) {
     const logo = await loadImg(d.brand && d.brand.logo);
     const pages = []; let pg = newPage(); pages.push(pg);
-    const xs = colX(d);
-    let y = head(pg.ctx, d, logo); y = tableHead(pg.ctx, d, xs, y);
     const bottom = H - M - 40;
+    /* a report can carry extra tables after the main one: d.sections = [{ title, cols, rows, total }] */
+    const extra = (d.sections || []).filter(s => s.rows && s.rows.length);
+    const xs = colX(d);
+    let y = head(pg.ctx, d, logo);
+    const secTitle = (ctx, t, yy) => { ctx.fillStyle = C.gold; ctx.fillRect(W - M - 6, yy + 6, 6, 26); ctx.textAlign = 'right'; ctx.fillStyle = C.green; ctx.font = f(23, 800); ctx.fillText(t, W - M - 16, yy + 19); return yy + 40; };
+    if (d.tableTitle) y = secTitle(pg.ctx, d.tableTitle, y);
+    y = tableHead(pg.ctx, d, xs, y);
     const endH0 = 50 + (d.words ? 76 : 0) + (d.note ? 60 : 0) + 20;
     d.rows.forEach((cells, i) => {
       const left = d.rows.length - i;   // keep at least 3 rows with the totals rather than a lonely totals page
@@ -129,13 +137,24 @@
     /* totals, amount in words and the objection note stay together */
     const endH = 50 + (d.words ? 76 : 0) + (d.note ? 60 : 0) + 20;
     if (y + endH > bottom) { pg = newPage(); pages.push(pg); y = runHead(pg.ctx, d, pages.length); y = tableHead(pg.ctx, d, xs, y); }
-    pg.ctx.fillStyle = C.green; pg.ctx.fillRect(M, y, W - 2 * M, 3); y += 3;
-    y = row(pg.ctx, d, xs, y, d.total, { h: 50, fill: C.soft, bold: true });
+    if (d.total) { pg.ctx.fillStyle = C.green; pg.ctx.fillRect(M, y, W - 2 * M, 3); y += 3;
+      y = row(pg.ctx, d, xs, y, d.total, { h: 50, fill: C.soft, bold: true }); }
     if (d.words) {
       y += 20; rrect(pg.ctx, M, y, W - 2 * M, 60, 12); pg.ctx.fillStyle = '#fdf8ea'; pg.ctx.fill(); pg.ctx.lineWidth = 2; pg.ctx.strokeStyle = C.gold; pg.ctx.stroke();
       pg.ctx.textAlign = 'right'; pg.ctx.fillStyle = '#8a611a'; pg.ctx.font = f(19, 700); const lab = d.labels.words + ': '; pg.ctx.fillText(lab, W - M - 20, y + 30);
       const lw = pg.ctx.measureText(lab).width; pg.ctx.fillStyle = C.ink; pg.ctx.font = f(21, 800); pg.ctx.fillText(fit(pg.ctx, d.words, W - 2 * M - 60 - lw), W - M - 20 - lw, y + 30);
       y += 60;
+    }
+    for (const s of extra) {
+      const ds = Object.assign({}, d, { cols: s.cols }), sx = colX(ds);
+      if (y + 40 + 48 + 42 * Math.min(3, s.rows.length) + 20 > bottom) { pg = newPage(); pages.push(pg); y = runHead(pg.ctx, d, pages.length); } else y += 22;
+      y = secTitle(pg.ctx, s.title, y); y = tableHead(pg.ctx, ds, sx, y);
+      s.rows.forEach((cells, i) => {
+        if (y + 42 > bottom) { pg = newPage(); pages.push(pg); y = runHead(pg.ctx, d, pages.length); y = tableHead(pg.ctx, ds, sx, y); }
+        y = row(pg.ctx, ds, sx, y, cells.cells || cells, { fill: cells.fill || (i % 2 ? C.zebra : null), color: cells.color, bold: cells.bold });
+      });
+      if (s.total) { if (y + 53 > bottom) { pg = newPage(); pages.push(pg); y = runHead(pg.ctx, d, pages.length); y = tableHead(pg.ctx, ds, sx, y); }
+        pg.ctx.fillStyle = C.green; pg.ctx.fillRect(M, y, W - 2 * M, 3); y += 3; y = row(pg.ctx, ds, sx, y, s.total, { h: 50, fill: C.soft, bold: true }); }
     }
     if (d.note) { pg.ctx.textAlign = 'center'; pg.ctx.fillStyle = C.ink; pg.ctx.font = f(20, 800); pg.ctx.fillText(fit(pg.ctx, d.note, W - 2 * M), W / 2, y + 40); }
     pages.forEach((p, i) => foot(p.ctx, d, i + 1, pages.length));
