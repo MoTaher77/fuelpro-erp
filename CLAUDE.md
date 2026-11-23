@@ -17,7 +17,7 @@ In real use at **محطة التميز** with one year of data imported from the
   **on every start**. If you edit files in place, rebuild or remove that zip, or your edits are reverted (KI-02).
 
 ## 3. Stack (verified)
-Node.js ≥ 22.5, **zero npm dependencies**, built-in `node:sqlite` (WAL). Plain HTTP server `src/server.js`
+Node.js ≥ 22.5, built-in `node:sqlite` (WAL). **Libraries are allowed (owner, 2026-11-23, ADR-22)** but the SQLite mode must keep running with nothing installed: the runtime dependency `pg` (PostgreSQL, Phase 2) is `require`d lazily, only when a PostgreSQL URL is configured. Dev tools (`npm ci`): `eslint`, `sql.js` (pinned 1.10.3 = the page engine), `playwright`. Plain HTTP server `src/server.js`
 (133 routes). Front end: vanilla JS SPA in `public/` (no framework, no build step), PWA service worker.
 Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 15; `openDb` also runs `PRAGMA optimize`).
 
@@ -41,6 +41,8 @@ Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 15; `openDb` 
 
 ## 6. Commands (verified 2026-11-23)
 ```
+npm ci                   # installs pg + dev tools (lock file committed); not needed just to run the SQLite app
+npm run lint             # eslint (errors fail CI)
 npm test                 # node:test, 73 tests (2 skip without sql.js), ~9 s, in-memory DBs — must stay green
 npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default
 DB_PATH=/tmp/demo.db DEMO_PASSWORD=... node scripts/seed-demo.js --days 365   # throwaway demo DB
@@ -58,7 +60,7 @@ Windows: `start-fuelpro-online.bat` (project root, online via Cloudflare tunnel)
 - Add a test in `test/*.test.js` for every accounting rule you touch; record a CHANGELOG entry.
 
 ## 7b. Artifact edition
-Build: `DEMO_PASSWORD=<pw> node web/build.js` → `web/dist/` (git-ignored), then republish `web/dist/index.html` to the live page (`docs/ARTIFACT-EDITION.md`). Page-engine checks need `npm i --no-save --no-package-lock sql.js@1.10.3`: `node --test test/artifact-runtime.test.js` and `node --import ./web/sqljs-hook.mjs --test --test-skip-pattern="[Bb]ackup" test/*.test.js`. `src/` stays engine-neutral: no new Node built-ins without a shim in `web/shims/`.
+Build: `DEMO_PASSWORD=<pw> node web/build.js` → `web/dist/` (git-ignored), then republish `web/dist/index.html` to the live page (`docs/ARTIFACT-EDITION.md`). Page-engine checks need `npm ci` (sql.js 1.10.3 is a pinned devDependency): `npm run test:artifact`; build with `npm run build:artifact`. `src/` stays engine-neutral: no new Node built-ins without a shim in `web/shims/`.
 
 ## 8. Documentation map → `docs/00-MASTER-INDEX.md`
 Stable: ARCHITECTURE, PROJECT-STRUCTURE, DATABASE-SCHEMA, MODULES, API-REFERENCE, ACCOUNTING-RULES, SECURITY,
