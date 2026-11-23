@@ -3,7 +3,7 @@
 ## Commands (VERIFIED 2026-11-23)
 | Command | What | Result |
 |---|---|---|
-| `npm test` | `node --test test/*.test.js` — real HTTP server on a random port, in-memory SQLite per test | **63 pass / 0 fail, ~9 s** (2026-11-23) |
+| `npm test` | `node --test test/*.test.js` — real HTTP server on a random port, in-memory SQLite per test | **68 pass / 0 fail, ~9 s** (2026-11-23) |
 | `node --test test/reports.test.js` | one file | |
 | `DB_PATH=/tmp/demo.db DEMO_PASSWORD=ci-only-password-123 node scripts/seed-demo.js --days 60` | demo smoke test: generates 60 days through real logic; books must balance | used in CI |
 | CI | `.github/workflows/ci.yml`: npm test + demo seed + docker build | never run on GitHub (no repo) |

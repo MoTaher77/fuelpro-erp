@@ -66,3 +66,8 @@ FuelPro/
 ## Laptop-only files (outside the project)
 `C:\Users\Moham\Downloads\`: `fuelpro.zip` (current build), `start-fuelpro.ps1/.bat`, `start-fuelpro-demo.bat`,
 `build-fuelpro.ps1/.bat`, `0-fill-year.bat`, `fuelpro-mobile.zip`, `fuelpro-build*` (UNKNOWN purpose — older build attempts).
+
+## Added in 0.9.0
+- src/analytics.js (dashboard), src/bankrec.js (bank reconciliation).
+- public/analytics-ui.js (`ana`), public/bank-ui.js (`bank`), public/xlsx.js (dependency-free .xlsx writer, UMD).
+- test/discount-bankrec.test.js, test/xlsx.test.js. Migration v14: sales.discount, bank_recs, bank_cleared.

@@ -5,7 +5,7 @@ Updated 2026-11-23 (after 0.8.0).
 0.8.0 adds the code; the live `data\fuelpro.db` does not have it yet. With the owner's OK: stop FuelPro, `npm run backup`,
 `node scripts/import-m7-history.js --dmp <M7-SAT.DMP> --db data/fuelpro.db --dry-run`, then without `--dry-run`, start FuelPro.
 Tried on a VACUUM copy 2026-11-23: users 6 · edit copies 2,078 (2,057 linked) · approvals 1,263 (990 linked) · runs 54 · log 2,312 · results 8,847 · stock months 27 · rates 19; second run adds 0; books unchanged.
-Then: dashboard (analytics), real .xlsx export, bank reconciliation + sale discounts — the owner chose all three (2026-11-23).
+Done in 0.9.0: analytics dashboard, real .xlsx export, bank reconciliation, sale discounts. The owner must restart FuelPro (after `npm run backup`) to get migrations v13/v14 and the new screens.
 
 ## Task A — act on the owner's print feedback
 **Objective:** the owner prints a customer statement, the daily report and the sales register and sends photos.
@@ -27,4 +27,4 @@ Done 2026-11-23: **cash-flow statement** (0.7.0, ADR-13). Ask the owner to open 
 Remaining candidates: bank reconciliation, sale discounts, native Excel export, cloud deployment. For any accounting feature follow `.claude/skills/fuelpro-accounting/SKILL.md` and add tests first.
 
 ## Resume checklist
-`CLAUDE.md` → this file → `docs/KNOWN-ISSUES.md` → `npm test` (expect 63 pass) → check whether `Downloads\fuelpro.zip` is newer than the folder files.
+`CLAUDE.md` → this file → `docs/KNOWN-ISSUES.md` → `npm test` (expect 68 pass) → check whether `Downloads\fuelpro.zip` is newer than the folder files.

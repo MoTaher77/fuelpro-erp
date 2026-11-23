@@ -49,3 +49,6 @@ vouchers, multi-currency boxes, fixed assets, sales register, purchases, price h
 - The M7 export the owner uploaded is `M7-SAT.DMP` (single schema, 2026 movements to 2026-11-12 = already in FuelPro; history before 2026 only as month-end balances). Old-system passwords are never needed or stored.
 - Waiting on the owner: photos of the **printed** customer statement, daily report and sales register (print preview is not verifiable from the cloud).
 - Next task → [NEXT-TASK](NEXT-TASK.md). History → [SESSION-HISTORY](SESSION-HISTORY.md).
+
+## 0.9.0 (2026-11-23)
+Schema v14, service worker cache v24, 68 tests, 132 routes. New: analytics (`ana`), Excel export, sale discounts (4050, `sale.discount`), bank reconciliation (`bank`, `bank.reconcile`). See ADR-15.

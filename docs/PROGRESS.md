@@ -35,3 +35,5 @@ Updated 2026-11-23. No percentages: each line is VERIFIED (code + test), REPORTE
 - Employees/payroll module: UNKNOWN whether wanted; no code exists.
 - Notifications module: only low-stock alerts in the UI (REPORTED); no messaging.
 - Remote Git hosting (local repo exists since 2026-11-23, no remote) and tagged releases.
+
+- 0.9.0 VERIFIED (68 tests, browser-checked on a copy): analytics dashboard, Excel export, sale discounts, bank reconciliation. Browser check found and fixed a display-scale bug in bank-ui (amounts shown ×10 on a 3-decimal station); sw cache v24.

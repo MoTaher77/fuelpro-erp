@@ -11,7 +11,7 @@ Status: ✅ VERIFIED (code + test) · 🟡 partial · ⛔ not built.
 | Journal entries & general ledger | ✅ | `acct` (journals), `jbook` → more-ui.js | `…/journals`, `/api/journals/:id/*`, `/api/accounting/ledger` | journals, journal_lines | erp/books tests | — |
 | Financial statements & period lock | ✅ | `fin` → erp.js | `/api/accounting/{trial-balance,income-statement,balance-sheet,cash-flow,lock,integrity,profit-by-month}` | journals | erp/reports tests | |
 | Year close | ✅ | `yc` → more-ui.js | `/api/accounting/year-close`, `/year-reopen` (reports.js) | journals (`year_close`) | reports.test | — |
-| Cash & banks (boxes, vouchers) | ✅ | `vch`, `box` → books-ui.js, more-ui.js | `/api/boxes`, `…/vouchers`, `…/reports/boxes` | vouchers, voucher_lines, accounts.box | books/reports tests | ⛔ bank reconciliation |
+| Cash & banks (boxes, vouchers) | ✅ | `vch`, `box` → books-ui.js, more-ui.js | `/api/boxes`, `…/vouchers`, `…/reports/boxes` | vouchers, voucher_lines, accounts.box | books/reports tests | ✅ bank reconciliation (0.9.0, `bank` → bank-ui.js, `src/bankrec.js`, tables bank_recs/bank_cleared, test discount-bankrec) |
 | Currencies & FX | ✅ | `cur` → books-ui.js | `/api/currencies*`, `/api/accounting/revaluation` | currencies, exchange_rates | books.test | — |
 | Sales / POS by meter | ✅ | `sales` → app.js; `sreg` sales register, `day` daily report | `…/sales*`, `…/sales-register*`, `…/reports/daily` | sales, pumps, price_history | api/books/reports tests | ⛔ discounts; ⛔ offline save |
 | Pumps & meters | ✅ | `mtr` → books-ui.js; setup | `…/pumps`, `…/pumps/:pid/meter`, `…/reports/meters` | pumps, shift_meters | api/books tests | ⛔ nozzles as separate units (pump = one hose) |
@@ -32,3 +32,12 @@ Status: ✅ VERIFIED (code + test) · 🟡 partial · ⛔ not built.
 | Employees / payroll | ⛔ | — | — | — | — | only an expense category «الرواتب» (6010) |
 | Notifications | ⛔/🟡 | low-stock warnings in the UI (REPORTED) | — | tanks.min_ml | — | no SMS/e-mail alerts |
 | Companies & branches consolidation | 🟡 | station selector; inter-branch account 1190 | — | — | erp.test (transfers) | consolidated reports only for same-currency stations |
+
+
+## Added in 0.9.0
+| Module | Status | Screen → file | Server | Tables | Tests |
+|---|---|---|---|---|---|
+| Analytics dashboard | ✅ | `ana` → analytics-ui.js | `GET /api/stations/:sid/analytics` (src/analytics.js) | derived only | reports.test |
+| Excel export | ✅ | topbar «⇩ Excel» (`exportScreen` in app.js, public/xlsx.js) | none (client side, one sheet per table) | — | xlsx.test |
+| Sale discounts | ✅ | sales form «الخصم» (amount or %) | `createSale` accepts `discount`/`discount_bp`; permission `sale.discount` | sales.discount (v14), account 4050 | discount-bankrec.test |
+| Bank reconciliation | ✅ | `bank` → bank-ui.js | 7 routes `/api/stations/:sid/bank-recs` (src/bankrec.js); permission `bank.reconcile` | bank_recs, bank_cleared (v14) | discount-bankrec.test |

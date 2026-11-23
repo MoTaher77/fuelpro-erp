@@ -62,3 +62,14 @@ The real station also has the imported M7 tree (443 accounts) mapped onto these 
   system capital/drawings/retained/interbranch → financing; accum_dep → investing; other system accounts → operating;
   accounts in the fixed-asset register → investing; under imported groups `11`, `214` → investing, `216`, `217`, `224`, `227` → financing;
   other equity → financing; everything else → operating. Test: `reports.test.js` "cash-flow statement…".
+
+## 12. Sale discounts (0.9.0)
+- Journal of a discounted sale: Dr cash/receivable (what the customer pays) · Cr sales (list price net of VAT) · Dr `sales_disc` 4050 «خصومات المبيعات» (net list − net paid) · Cr output VAT (VAT on the amount paid). Revenue = sales − discounts.
+- Void reverses the whole journal, discount included. Discount larger than the sale → `DISCOUNT_TOO_LARGE`. Only roles with `sale.discount` (manager, supervisor, owner/admin).
+- `ensureChart` picks another code if 4050 is already used by imported accounts.
+
+## 13. Bank reconciliation (0.9.0)
+- A reconciliation = one bank/cash account of one station + statement date + statement closing balance. Cleared marks live in `bank_cleared(line_id, rec_id)`; journals are never touched.
+- Finalise only when statement balance = Σ every cleared line (earlier final reconciliations + this one) → else `REC_NOT_BALANCED`. Lines already cleared in another reconciliation are not offered again (`LINE_ALREADY_CLEARED`).
+- One open draft per account; only the latest reconciliation can be reopened (`NOT_LATEST`); final ones cannot be deleted.
+- Foreign-currency accounts reconcile in their own currency using `fc_amount`. Bank charges/interest are recorded with a normal voucher, then ticked.

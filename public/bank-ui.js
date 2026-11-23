@@ -6,9 +6,9 @@
   const { h, T, P, S, api, sp, guard, toast, field, sec, modal, render, cd, dec, parseDec, fdate, todayIso, printNode } = F;
   const tile = (k, v, cls) => h('div', { class: 'xtile ' + (cls || '') }, h('span', null, k), h('b', null, v));
   const nm = (a) => (P.lang === 'ar' ? a.name_ar : a.name_en) || a.name_ar;
-  const fmt = (v, d) => new Intl.NumberFormat('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }).format((v || 0) / 10 ** d);
+  const fmt = (v, d, shown) => { const dd = shown ?? d; return new Intl.NumberFormat('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format((v || 0) / 10 ** d); };   // d = stored scale, shown = digits displayed
   const decOf = (acct) => acct.currency ? (acct.decimals ?? 2) : dec();
-  const money = (v, acct) => fmt(v, acct.currency ? (acct.decimals ?? 2) : Math.min(dec(), S.st.disp_dec ?? dec())) + (acct.currency ? ' ' + acct.currency : '');
+  const money = (v, acct) => acct.currency ? fmt(v, acct.decimals ?? 2) + ' ' + acct.currency : fmt(v, dec(), Math.min(dec(), S.st.disp_dec ?? dec()));
 
   F.VIEWS.bank = async (main) => {
     if (S.bankRec) { await recView(main, S.bankRec); return; }
@@ -41,7 +41,7 @@
     const pending = new Map();                                   // line id -> wanted cleared state, sent with «حفظ»
     const q = h('input', { type: 'search', placeholder: T('search') });
     const out = h('div', { class: 'stack' }), sumBox = h('div');
-    const ac = r.account, d = decOf(ac);
+    const ac = r.account, d = decOf(ac), sd = ac.currency ? d : Math.min(d, S.st.disp_dec ?? d);
     const summary = () => { const s = r.summary;
       sumBox.replaceChildren(h('div', { class: 'xtiles' }, tile(T('bookBalance'), money(s.book_balance, ac)), tile(T('outDeposits'), money(s.outstanding_deposits, ac)), tile(T('outPayments'), money(s.outstanding_payments, ac)),
         tile(T('clearedBal'), money(s.cleared_balance, ac)), tile(T('statementBal'), money(s.statement_balance, ac), 'gold'), tile(T('difference'), money(s.difference, ac), s.balanced ? '' : 'red')),
@@ -51,7 +51,7 @@
       const rows = r.lines.filter(l => !t || (l.memo || '').includes(t) || String(l.ref || '').includes(t) || fmt(Math.abs(l.amount), d).includes(t));
       out.replaceChildren(F.table(['', T('date'), T('docNo'), T('source'), T('memo'), T('deposit'), T('withdrawal')], rows.map(l => {
         const cb = h('input', { type: 'checkbox', checked: isOn(l), disabled: !can, 'aria-label': T('cleared'), onchange: (e) => { if (e.target.checked === l.cleared) pending.delete(l.id); else pending.set(l.id, e.target.checked); local(); } });
-        return [cb, fdate(l.date), l.ref || '#' + l.journal_id, l.doc_type || T('src.' + l.source), (l.memo || '').slice(0, 70), l.amount > 0 ? fmt(l.amount, d) : '', l.amount < 0 ? fmt(-l.amount, d) : '']; }))); };
+        return [cb, fdate(l.date), l.ref || '#' + l.journal_id, l.doc_type || T('src.' + l.source), (l.memo || '').slice(0, 70), l.amount > 0 ? fmt(l.amount, d, sd) : '', l.amount < 0 ? fmt(-l.amount, d, sd) : '']; }))); };
     /* recompute the summary locally while ticking, so the difference moves as you go */
     const local = () => { const s = { ...r.summary }; let now = 0, dep = 0, pay = 0;
       for (const l of r.lines) { if (isOn(l)) now += l.amount; else if (l.amount > 0) dep += l.amount; else pay += l.amount; }
