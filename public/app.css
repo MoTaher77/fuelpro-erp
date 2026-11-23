@@ -399,6 +399,9 @@ table.tb td.desc{min-width:240px}
   #print .wide-doc table.stmt{font-size:9.5pt;table-layout:auto}
   #print .wide-doc table.stmt td,#print .wide-doc table.stmt th{padding:3px 4px}
   #print table.stmt tr.grp-row td{background:#eef5f1!important;font-weight:900}
+  #print .wide-doc table.stmt td.pumps{text-align:start}
+  #print .wide-doc table.stmt td.nowrap,#print .wide-doc table.stmt td.fuel{padding-inline:8px}
+  #print .wide-doc table.stmt td.fuel{white-space:nowrap}
 }
 /* ---------- vouchers / entries / P&L ---------- */
 .vhead{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px}

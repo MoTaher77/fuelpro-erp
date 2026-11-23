@@ -8,7 +8,7 @@ Tried on a VACUUM copy 2026-11-23: users 6 · edit copies 2,078 (2,057 linked) �
 Done in 0.9.0: analytics dashboard, real .xlsx export, bank reconciliation, sale discounts. The owner must restart FuelPro (after `npm run backup`) to get migrations v13/v14 and the new screens.
 
 ## Task A — act on the owner's print feedback
-**Progress 2026-11-23 (0.11.1):** customer statement print tightened in the cloud (rows no longer wrap). Still open: sales register column widths (Pumps too wide, Fuel/Date tight); owner's real printout on Windows.
+**Progress 2026-11-23 (0.11.1):** customer statement print tightened in the cloud (rows no longer wrap). Sales register alignment fixed too (checked on the real-data snapshot copy). Still open: daily report tank table splits after one row across pages; owner's real printout on Windows (Dubai font).
 **Objective:** the owner prints a customer statement, the daily report and the sales register and sends photos.
 Fix whatever looks wrong; if he reports nothing, close this item.
 - Files: `public/app.js` (`printNode`, `fitTable`), `public/books-ui.js` (`F.printDoc`, statements, sales register), `public/more-ui.js` (`VIEWS.day`), `public/app.css` (print block at the end, `@page land`).
