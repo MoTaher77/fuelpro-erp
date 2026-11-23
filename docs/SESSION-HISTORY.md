@@ -65,3 +65,6 @@ Follow-up 2: station page sign-in confusion: the page's "create account" form ha
 
 ## 2026-11-23 — 0.13.0 speed
 Profiled all 33 report routes on the station snapshot in the page engine. Fixes: migration v15 (m7_results_latest index + ANALYZE), PRAGMA optimize on open, page uses sql.js WebAssembly (JS fallback). Station data, WASM: analytics 0.34 s (was 3.3-3.9 s), alerts 0.16 s (2.7 s), statements ~0.06 s (0.65 s), every screen 0.17-0.54 s in Chromium. Tests 73. Resume: owner checks the chip menu shows «WebAssembly» on his devices.
+
+## 2026-11-23 — 0.14.0 palettes + responsive
+`public/app.css` (end block): data-palette royal/emerald/bordeaux/onyx with light+dark tokens; breakpoints >=1600, 901-1180, 601-900, <=600, <=380, landscape phones, hover:none. `app.js`: P.palette (default royal), swatch picker with live preview in Preferences (reverts if closed unsaved). Fixed «null» under customers/suppliers (ageingSection may return null). Screenshots 390/820/1280/1920 in four palettes: no horizontal overflow, no page errors. Tests 73. sw v31.
