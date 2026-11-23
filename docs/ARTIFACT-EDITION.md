@@ -3,7 +3,9 @@
 A second way to run FuelPro: a private claude.ai Artifact that opens on phone and laptop. It is **separate from the
 laptop system**. It runs on demo data only, never on the station's data.
 
-Live page: https://claude.ai/artifact/CgLf1pmqcani77JBGVL56N (private to the owner until he shares it).
+Live pages (both private to the owner):
+- Demo: https://claude.ai/artifact/CgLf1pmqcani77JBGVL56N (`web/dist`, demo seed).
+- Station copy «FuelPro المحطة»: https://claude.ai/artifact/Dbe4L4cWnvRSbeswvYAENF — the owner's OK (2026-11-23) to load the real-data snapshot. Built with `node scripts/dev-admin.js --db <tmp>` (throwaway admin; real users' passwords stay disabled) then `node web/build.js --seed-db <tmp> --out web/dist-station`. It is a copy of `dev-data/fuelpro-snapshot.db`: no sync with the laptop in either direction. Never share it; republishing keeps saved data (the seed is used only while storage is empty).
 
 ## How it works (no imitation)
 | Layer | Laptop / server | Artifact page |
@@ -34,7 +36,8 @@ whole database file.
 - **2FA secret encryption with `APP_SECRET`**: not set in the page (2FA itself works, secrets are stored unencrypted, as on a server without `APP_SECRET`).
 - **Several people at the same time on one copy**: one writer at a time; a second device gets "reload" instead of a merge.
 - **Size**: built for demo size (about 5 MB, 40 blocks). The station's full data with M7 history would be slow to save; that is the laptop/server's job.
-- **Real station data**: not allowed here (CLAUDE.md §5). The seed is made by `scripts/seed-demo.js`, which refuses non-demo databases.
+- **Real station data**: only in the private station page above (owner's OK). The demo page's seed is made by `scripts/seed-demo.js`, which refuses non-demo databases.
+- **Size**: the station copy is 16.6 MB (134 blocks, 3.5 MB gzip); the first save writes all blocks (~30 s), later saves only changed blocks.
 
 ## Rebuild and republish after changing the project
 1. `npm test` green, and the page engine checks:

@@ -18,5 +18,5 @@ node_modules/
 *.log
 
 # Artifact edition build output and the test-only sql.js link
-web/dist/
+web/dist*/
 node_modules

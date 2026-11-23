@@ -66,7 +66,7 @@
     const btn = (t, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.className = 'btn ' + (cls || 'ghost') + ' sm'; b.onclick = () => { m.remove(); fn(); }; m.append(b); };
     if (store) btn('حفظ الآن', () => save(true));
     btn('تنزيل نسخة من قاعدة البيانات', downloadDb);
-    if (store) btn('إعادة البيانات التجريبية من البداية', resetDemo, 'danger');
+    if (store) btn('إعادة البيانات إلى نقطة البداية', resetDemo, 'danger');
     btn('إغلاق', () => {});
     document.body.append(m);
   }
@@ -101,14 +101,14 @@
       await store.doc('fpstate/main').set({ gen: next, blocks: hashes, size: bytes.length, saved_at: new Date().toISOString(), app: window.__FP_BUILD || '' });
       const orphans = blocksNow.filter(h => !hashes.includes(h)); gen = next; blocksNow = hashes;
       for (const h of orphans) { known.delete(h); await store.doc('fpblk/' + h).delete().catch(() => {}); }
-      status('ok', 'محفوظ ✓');
+      if (dirty || again) status('saving', 'تغييرات غير محفوظة…'); else status('ok', 'محفوظ ✓');
     } catch (e) {
       dirty = true; status('bad', 'لم يُحفظ: ' + ((e && (e.message || e.code)) || 'خطأ') + ' — اضغط للمحاولة');
-    } finally { saving = false; if (again) { again = false; setTimeout(() => save(), 50); } }
+    } finally { saving = false; if (again || (dirty && !conflict)) { again = false; clearTimeout(timer); timer = setTimeout(() => save(), 50); } }
   }
   const markDirty = () => { dirty = true; if (store && !conflict) { status('saving', 'تغييرات غير محفوظة…'); clearTimeout(timer); timer = setTimeout(() => save(), 1200); } };
   async function resetDemo() {
-    if (!(await ask('ستُحذف كل العمليات المحفوظة في هذه النسخة التجريبية وتعود البيانات كما بدأت. متابعة؟', 'إعادة الضبط', true))) return;
+    if (!(await ask('ستُحذف كل العمليات المحفوظة في هذه الصفحة وتعود البيانات كما كانت عند النشر. متابعة؟', 'إعادة الضبط', true))) return;
     status('saving', 'جارٍ إعادة الضبط…');
     const old = blocksNow.slice(); await store.doc('fpstate/main').delete();
     for (const h of old) await store.doc('fpblk/' + h).delete().catch(() => {});
