@@ -89,3 +89,9 @@ Owner wanted the PDF, not text. New `public/stmt-pdf.js`: canvas-drawn A4 pages 
 
 ## 2026-11-23 — 0.20.0 station setup wizard
 `public/wizard-ui.js` (banner on #dash/#setup while the station has no fuels/tanks/pumps; modal steps VAT → fuels → tanks → pumps → next jobs). Chromium e2e on a fresh org: 5% tax, 2 fuels with price/cost, 2 tanks (25k/10k L), 2 pumps with meter readings, refused a level above capacity before creating anything, banner gone afterwards, no page errors. Bugs found and fixed during the test: parseDec returns scaled integers (VAT), a duplicate tank after a failed retry (now validate-all-then-create), stray 'null' on the last step. sw v37.
+
+## 2026-11-23 — 0.21.0 second backup copy
+`src/backup.js` syncMirror (BACKUP_COPY_DIR or data/backup-copy-dir.txt; temp file + rename; 30+30 retention; catch-up each hourly check; failure only reported), `GET /api/backups` returns `mirror`, status line on the backups screen. `test/backup-mirror.test.js` (3). KI-10 mitigated; owner must create the folder file. Tests 76.
+
+## 2026-11-23 — Phase 2 assessment (docs only)
+Owner said start Phase 2. Measured instead of rewriting: see docs/PHASE2-POSTGRES.md and ADR-21 (recommendation: postpone; needs an approved always-on host, a driver decision and several sessions). No code changed. Resume: owner decides.

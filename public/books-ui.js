@@ -890,7 +890,10 @@
   async function backupCard() {
     const box = h('div');
     const load = guard(async () => { const r = await api('GET', '/api/backups');
-      box.replaceChildren(h('p', { class: 'hint' }, T('backupHelp'), ' ', h('span', { class: 'ltr-num small' }, r.dir)),
+      const mi = r.mirror || {};   // the second copy: green when working, red with the reason, or a how-to when no folder is set
+      const mirrorBox = mi.dir ? h('p', { class: mi.ok ? 'ok' : 'bad', style: 'margin:8px 0;font-weight:700' }, mi.ok ? '✓ ' + T('bkMirrorOk') + ' ' : '⚠ ' + T('bkMirrorBad') + ': ' + (mi.error || '') + ' ', h('span', { class: 'ltr-num small muted' }, mi.dir))
+        : h('p', { class: 'hint', style: 'margin:8px 0;border:1px dashed var(--gold);padding:8px 12px;border-radius:10px' }, '⚠ ', T('bkMirrorHow'));
+      box.replaceChildren(h('p', { class: 'hint' }, T('backupHelp'), ' ', h('span', { class: 'ltr-num small' }, r.dir)), mirrorBox,
         r.rows.length ? table([T('date'), T('kind'), T('size'), ''], r.rows.map(b => [b.name.slice(8, 25).replace(/-(\d{2})(\d{2})(\d{2})$/, ' $1:$2:$3'), T('bk.' + b.kind), (b.bytes / 1048576).toFixed(1) + ' MB',
           h('a', { class: 'btn ghost sm', href: '/api/backups/' + encodeURIComponent(b.name), download: b.name }, '⬇ ', T('download'))])) : h('p', { class: 'muted' }, T('noBackups'))); });
     const card = sec(T('backups'), h('div', { class: 'row' }, h('button', { class: 'btn', onclick: guard(async () => { const r = await api('POST', '/api/backups'); toast(T('saved') + ' · ' + r.name); load(); }) }, T('backupNow'))), box);

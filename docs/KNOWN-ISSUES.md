@@ -12,5 +12,5 @@ Updated 2026-11-23. Severity: High (money/data risk) · Medium · Low.
 | KI-07 | Print preview and the Dubai font were not verified from the cloud | Medium | printing | Playwright has no Dubai font, can't see the Chrome print dialog | owner printouts | open — NEXT-TASK A |
 | KI-08 | Legacy root docs (`ARCHITECTURE.md`, `DATABASE_SCHEMA.md`, `PROJECT_PROGRESS.md`, `RESUME.md`, `QA_REPORT.md`) and `README.md` describe v0.1–0.4 | Low | docs | not updated | use `docs/` | open |
 | KI-09 | Server listens on `0.0.0.0` by default → reachable from the LAN | Medium | security | default `HOST` | set `HOST=127.0.0.1` if LAN access isn't wanted | open — owner decision |
-| KI-10 | Backups are on the same disk as the DB | Medium | backup | single laptop | copy `data\backups\` elsewhere | open |
+| KI-10 | Backups are on the same disk as the DB | Medium | backup | single laptop | second copy (0.21): `data\backup-copy-dir.txt` or `BACKUP_COPY_DIR` → a Drive/OneDrive/USB folder | mitigated 2026-11-23 — owner must set the folder (screen shows the status) |
 | KI-11 | Artifact edition: printing, file backups, SMTP not available in a claude.ai page; one writer at a time | Low | artifact | claude.ai page sandbox (VERIFIED by contract) | print/backup on the laptop; chip menu downloads the DB | accepted (ADR-20) |
