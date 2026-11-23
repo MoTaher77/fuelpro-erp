@@ -8,7 +8,7 @@ customers/suppliers, double-entry accounting, reports, printing). Intended to be
 In real use at **محطة التميز** with one year of data imported from the old Oracle "M7" system.
 
 ## 2. Where the code lives (read first)
-- **Canonical code: GitHub `MoTaher77/fuelpro` (private), branch `main`.** The owner develops from his phone via claude.ai/code: work on a branch, run `npm test`, open a PR; CI (`.github/workflows/test.yml`) must be green before merge.
+- **Canonical code: GitHub `MoTaher77/fuelpro-erp` (private), branch `main`.** The owner develops from his phone via claude.ai/code: work on a branch, run `npm test`, open a PR; CI (`.github/workflows/test.yml`) must be green before merge.
 - **Cloud sessions have no real data.** Use `scripts/seed-demo.js` into a temp DB for manual checks; never ask for, upload or commit `data/`.
 - The laptop copy `C:\Users\Moham\FuelPro` holds the real data (`data\`, never in Git); after a merge it updates with `git pull`.
 - Real data: `data\fuelpro.db` (+ `-wal`, `-shm`). Demo data: `data\demo.db`. Backups: `data\fuelpro-backup-*.db`, `data\backups\`.
