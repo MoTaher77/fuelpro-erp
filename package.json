@@ -1,0 +1,18 @@
+{
+  "name": "fuelpro",
+  "version": "0.6.1",
+  "description": "Multi-tenant fuel station management server (zero dependencies, Node 22+)",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js",
+    "seed:demo": "node --disable-warning=ExperimentalWarning scripts/seed-demo.js",
+    "reset-2fa": "node --disable-warning=ExperimentalWarning scripts/reset-2fa.js"
+  }
+}

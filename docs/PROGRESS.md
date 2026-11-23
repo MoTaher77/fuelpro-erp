@@ -1,0 +1,35 @@
+# PROGRESS — FuelPro
+Updated 2026-11-23. No percentages: each line is VERIFIED (code + test), REPORTED, or PLANNED.
+
+## Done
+| Area | Status | Evidence |
+|---|---|---|
+| Core: orgs, users, stations, fuels, tanks, pumps, meter sales, deliveries, expenses, VAT, void with reason | VERIFIED | `test/api.test.js` |
+| Roles (7) + station isolation + org isolation | VERIFIED | `erp.test.js` "roles and station access…", `api.test.js` |
+| Security: CSRF, login throttle, password reset, TOTP 2FA, sealed secrets | VERIFIED | `api.test.js`, `auth-units.test.js` |
+| Stock ledger, weighted average, counts, transfers, reconciliation, monthly count | VERIFIED | `erp.test.js`, `books.test.js` |
+| Shifts and cash: open/close/approve/unapprove/reopen, variance posting | VERIFIED | `erp.test.js` |
+| Customers & suppliers: credit, limits, statements, ageing, payments | VERIFIED | `erp.test.js`, `api.test.js` |
+| Double entry: auto journals, manual journals, reversal, ledger, trial balance, P&L, balance sheet, period lock, integrity check | VERIFIED | `erp.test.js` |
+| Account tree, boxes, receipt/payment vouchers | VERIFIED | `books.test.js` |
+| Multi-currency boxes, exchange rates, revaluation | VERIFIED | `books.test.js` |
+| Fixed assets, straight-line depreciation | VERIFIED | `books.test.js` |
+| Sales register, purchase invoices, profit by month, price history, meter sheet | VERIFIED | `books.test.js` |
+| Daily station report, box report, collections, journal book | VERIFIED | `reports.test.js` |
+| Year close / reopen | VERIFIED | `reports.test.js` |
+| Backups (auto daily + manual, VACUUM INTO, restore) | VERIFIED | `erp.test.js`, `books.test.js` |
+| Import of the real M7 year for محطة التميز; balances match except 33807/411005 | REPORTED (checked in earlier sessions with `scripts/reconcile-m7.js`) | — |
+| UI: 3 languages, dark mode, PWA, phone layout, emerald/gold identity | REPORTED + browser sweeps | — |
+| Column auto-fit + unified print + Dubai font (0.6.1): 39 screens with no overflow in the owner's Chrome | REPORTED (checked 2026-11-22 in the owner's Chrome) | — |
+| Windows install/run scripts | VERIFIED (scripts exist and are in use) | `Downloads\start-fuelpro.ps1` |
+
+## Open / not built (PLANNED unless noted)
+- Printed output check by the owner (statement, daily report, sales register) — **waiting on the owner**.
+- Cloud deployment (Render/Railway configs ready, never deployed).
+- Cash-flow statement; sale discounts; bank reconciliation; nozzles as separate units inside a pump (verified absent: no matches in `src/`).
+- Native PDF/Excel export (today: browser print/PDF + CSV).
+- Offline sale entry (UI shell works offline, saving needs the server).
+- PostgreSQL / multi-server; subscriptions/billing; error monitoring.
+- Employees/payroll module: UNKNOWN whether wanted; no code exists.
+- Notifications module: only low-stock alerts in the UI (REPORTED); no messaging.
+- Remote Git hosting (local repo exists since 2026-11-23, no remote) and tagged releases.

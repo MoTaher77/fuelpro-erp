@@ -1,0 +1,17 @@
+# Real and demo data, backups — never in Git
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Secrets
+.env
+.env.*
+!.env.example
+بيانات-الدخول.txt
+.claude/settings.local.json
+
+# Build / tooling
+node_modules/
+*.zip
+*.log

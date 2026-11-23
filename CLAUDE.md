@@ -1,0 +1,78 @@
+# CLAUDE.md — FuelPro (entry point for every Claude session)
+
+Reply to the owner (Mohammed, Yemen, UTC+3) in **Arabic**. Keep code identifiers, paths and commands as they are.
+
+## 1. What this is
+FuelPro: a multi-tenant fuel-station ERP (sales by pump meter, tanks and stock, shifts and cash boxes,
+customers/suppliers, double-entry accounting, reports, printing). Intended to be sold commercially.
+In real use at **محطة التميز** with one year of data imported from the old Oracle "M7" system.
+
+## 2. Where the code lives (read first)
+- **Canonical copy: `C:\Users\Moham\FuelPro`** on the owner's laptop (cloud containers are temporary).
+- Real data: `data\fuelpro.db` (+ `-wal`, `-shm`). Demo data: `data\demo.db`. Backups: `data\fuelpro-backup-*.db`, `data\backups\`.
+- Local Git repo (branch `main`, no remote). `.gitignore` keeps `data/` and secrets out — never force-add them.
+- ⚠ `start-fuelpro.ps1` re-installs `src public scripts test` + top-level files from `Downloads\fuelpro.zip`
+  **on every start**. If you edit files in place, rebuild or remove that zip, or your edits are reverted (KI-02).
+
+## 3. Stack (verified)
+Node.js ≥ 22.5, **zero npm dependencies**, built-in `node:sqlite` (WAL). Plain HTTP server `src/server.js`
+(120 routes). Front end: vanilla JS SPA in `public/` (no framework, no build step), PWA service worker.
+Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 12).
+
+## 4. Non-negotiable invariants
+1. Money = integers in minor units (`stations.cur_dec`; YER uses 3 stored / `disp_dec` 2 shown). Quantities in ml, prices `*_e4`, rates `*_e6`. Never floats — use `src/money.js`.
+2. One business operation = one transaction (`tx()` in `src/db.js`, nested = SAVEPOINT): document + stock move + journal + audit together.
+3. Balances are derived: tank = Σ`stock_moves`; account = Σ`journal_lines`. Never edit a balance directly.
+4. No deletes of posted data. Void = written reason + reversing journal + reversing stock move. DB triggers enforce this.
+5. Perpetual stock, weighted-average cost (`L.stockMove` in `src/ledger.js`).
+6. Isolation: every query scoped by org, then by station via `user_stations` (owner/admin = org-wide). Foreign id → 404.
+7. Permissions checked on the server (`need(user, perm)`, table `PERMS` in `src/auth.js`). UI hiding is cosmetic.
+8. Year close = one `source='year_close'` journal per station dated 31 Dec into `3900`; reopen = `reverseSource`.
+
+## 5. Safety rules for any session
+- **Never replace, reset, migrate-by-hand or write to `data\fuelpro.db`.** The owner does real daily work in it. Check the `audit` table before any data operation; deliver **code only**.
+- Before any risky change: copy the DB with `npm run backup` (VACUUM INTO) — never copy a live WAL file by hand.
+- Never print/store passwords. `بيانات-الدخول.txt` and `.env` hold secrets: do not read or copy them.
+- Customer/supplier names and balances are private: never publish, upload, or paste them into docs.
+- Do not deploy to Render/Railway without the owner's explicit request.
+- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v18`) or users keep the old UI.
+
+## 6. Commands (verified 2026-11-23)
+```
+npm test                 # node:test, 59 tests, ~9 s, in-memory DBs — must stay green
+npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default
+DB_PATH=/tmp/demo.db DEMO_PASSWORD=... node scripts/seed-demo.js --days 365   # throwaway demo DB
+npm run backup           # consistent copy into data/backups/ (server also makes 1 auto copy/day, keeps 30)
+node scripts/schema-doc.js > docs/DATABASE-SCHEMA.generated.md   # refresh the table list
+```
+Windows: `start-fuelpro.bat` / `start-fuelpro.ps1` in `Downloads` (real data), `start-fuelpro-demo.bat` (demo).
+
+## 7. Conventions
+- CommonJS, `'use strict'`, small pure helpers; SQL is always parameterised (`db.prepare(...).run(?)`).
+- Errors: `src/errors.js` (`HttpError`); validation: `src/validate.js`.
+- UI strings: dictionary `D` in `public/app.js` + `window.FP_I18N` in `public/i18n-erp.js`; each key = `[ar, en, fr]`.
+- New screen = `F.VIEWS.<key>` + an entry in `NAV` (`public/app.js`) + i18n keys + icon.
+- Tables get auto-fit column classes (`fitTables`); print through `printNode` / `F.printDoc`.
+- Add a test in `test/*.test.js` for every accounting rule you touch; record a CHANGELOG entry.
+
+## 8. Documentation map → `docs/00-MASTER-INDEX.md`
+Stable: ARCHITECTURE, PROJECT-STRUCTURE, DATABASE-SCHEMA, MODULES, API-REFERENCE, ACCOUNTING-RULES, SECURITY,
+TESTING, DEPLOYMENT, DECISIONS. Moving: PROJECT-MEMORY, PROGRESS, NEXT-TASK, KNOWN-ISSUES, SESSION-HISTORY.
+On-demand skills: `.claude/skills/fuelpro-*`.
+Root files `ARCHITECTURE.md DATABASE_SCHEMA.md PROJECT_PROGRESS.md RESUME.md QA_REPORT.md` are **legacy (v0.4.0)**; `docs/` wins.
+
+## 9. Start-of-task workflow (do not skip, do not over-read)
+1. Read this file (auto-loaded), then `docs/PROJECT-MEMORY.md` and `docs/NEXT-TASK.md`.
+2. Open only the docs/skill relevant to the task (index tells you which).
+3. Check reality: file dates/hashes in `src public test`, `npm test`, and whether the Downloads zip is newer than the folder.
+4. Never redo work marked VERIFIED in `docs/PROGRESS.md` unless the code disagrees — then record the discrepancy.
+
+## 10. End-of-task workflow
+1. `npm test` green; note the count.
+2. Update `docs/PROGRESS.md` + `docs/NEXT-TASK.md`; add a decision to `docs/DECISIONS.md` if one was made.
+3. Update the module/architecture doc you changed (paths, not code dumps). Add/close items in `docs/KNOWN-ISSUES.md`.
+4. Append 3–6 lines to `docs/SESSION-HISTORY.md` (date, what changed, tests, where to resume).
+5. Update `CHANGELOG.md` and `package.json` version together.
+
+## 11. Evidence labels used in docs
+VERIFIED (code or executed test) · REPORTED (said in a past session, not re-checked) · PLANNED · UNKNOWN.

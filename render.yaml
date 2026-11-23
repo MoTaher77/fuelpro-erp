@@ -1,0 +1,29 @@
+# Render Blueprint: two fully separate services, each with its own persistent disk and database file.
+# Demo data never touches production. Secrets (APP_SECRET, SMTP_PASS) are set in the Render dashboard, not here.
+services:
+  - type: web
+    name: fuelpro-demo
+    runtime: docker
+    plan: starter            # persistent disks need a paid instance
+    healthCheckPath: /healthz
+    autoDeploy: true         # follows the branch this blueprint is attached to
+    disk: { name: data, mountPath: /app/data, sizeGB: 1 }
+    envVars:
+      - { key: DB_PATH, value: /app/data/demo.db }
+      - { key: APP_URL, sync: false }
+      - { key: APP_SECRET, generateValue: true }
+  - type: web
+    name: fuelpro-production
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    autoDeploy: false        # production deploys are manual
+    disk: { name: data, mountPath: /app/data, sizeGB: 5 }
+    envVars:
+      - { key: DB_PATH, value: /app/data/fuelpro.db }
+      - { key: APP_URL, sync: false }
+      - { key: APP_SECRET, sync: false }
+      - { key: SMTP_HOST, sync: false }
+      - { key: SMTP_USER, sync: false }
+      - { key: SMTP_PASS, sync: false }
+      - { key: MAIL_FROM, sync: false }
