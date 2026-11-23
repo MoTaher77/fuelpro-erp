@@ -83,3 +83,6 @@ Owner wanted the PDF, not text. New `public/stmt-pdf.js`: canvas-drawn A4 pages 
 
 ## 2026-11-23 — 0.18.0 daily summary on WhatsApp
 `public/more-ui.js` waDay on #day (uses F.waDialog with rememberKey `fp.waOwner`). Checked on a station-data copy for 2026-11-12 (message text, number remembered). sw v35. PR #5 merged earlier (0.16-0.17.2).
+
+## 2026-11-23 — 0.19.0 payment reminders queue
+`public/more-ui.js` queue() on #col: list of owing customers, wa.me anchors with waReminder text, sent ticks in localStorage `fp.remind.<date>`, inline phone save via PATCH customers/:cid. Finding: the station snapshot has 0 customers with a phone number. Checked in Chromium on a copy: 105 rows, save number → link 9677…, tick persists after reopen. sw v36.

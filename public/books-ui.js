@@ -242,7 +242,7 @@
     s.append(p); return s;
   }
   const curWord = () => { const c = S.st ? S.st.currency : ''; return P.lang === 'ar' ? ({ YER: 'ريال', SAR: 'ريال سعودي', USD: 'دولار', AED: 'درهم' })[c] || c : c; };
-  F.waDialog = waDialog; F.waIcon = waIcon; F.curWord = curWord;
+  F.waDialog = waDialog; F.waIcon = waIcon; F.curWord = curWord; F.waNumber = waNumber;
 
   /* ================================ STATEMENT SCREEN (any account, customer or supplier) ================================ */
   const addDay = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };

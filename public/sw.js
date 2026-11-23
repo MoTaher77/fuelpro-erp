@@ -1,6 +1,6 @@
 /* FuelPro service worker: caches the app shell only, so the app opens fast on slow networks.
    API calls are never cached: every number on screen comes from the server. */
-const CACHE = 'fuelpro-shell-v35';
+const CACHE = 'fuelpro-shell-v36';
 const SHELL = ['/', '/app.css', '/app.js', '/erp.js', '/books-ui.js', '/stmt-pdf.js', '/more-ui.js', '/analytics-ui.js', '/bank-ui.js', '/alerts-ui.js', '/i18n-erp.js', '/qr.js', '/xlsx.js', '/icon.svg', '/manifest.webmanifest'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

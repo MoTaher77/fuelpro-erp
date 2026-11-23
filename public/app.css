@@ -709,3 +709,10 @@ a.btn.wa-go{justify-content:center}
 button.btn.wa-mini{color:#128c4a;padding:4px 8px;margin-inline-start:4px;vertical-align:middle}
 @media (max-width:600px){a.btn.wa-go{flex:1 1 100%}}
 @media print{.wa-btn,.wa-mini{display:none!important}}
+
+/* reminders queue (0.19) */
+.qlist{display:flex;flex-direction:column;max-height:min(60vh,520px);overflow:auto;border:1px solid var(--line);border-radius:12px}
+.qrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.qrow:last-child{border-bottom:0}.qrow .qi{display:flex;flex-direction:column;min-width:0}.qrow .qi b{overflow-wrap:anywhere}
+.qrow.sent{background:color-mix(in srgb,var(--ok) 8%,transparent)}
+a.btn.wa-go.sm{min-height:36px;padding:4px 12px;font-size:13px;border-radius:10px;flex:none}
