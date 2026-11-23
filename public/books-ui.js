@@ -204,6 +204,45 @@
   }
   F.printDoc = printDoc;
 
+  /* ================================ WHATSAPP (statement summaries and payment reminders) ================================ */
+  /* Opens WhatsApp with a ready message to the customer's number (wa.me works on phones, WhatsApp Web and desktop).
+     Nothing is sent by FuelPro itself: the user checks the text and presses Send in WhatsApp. */
+  const CC = { YER: '967', SAR: '966', AED: '971', OMR: '968', KWD: '965', QAR: '974', BHD: '973', EGP: '20', JOD: '962' };
+  function waNumber(raw) {
+    let d = String(raw || '').replace(/[^\d+]/g, ''); if (!d) return '';
+    const cc = CC[S.st && S.st.currency] || '';
+    if (d.startsWith('+')) return d.slice(1).replace(/\D/g, '');
+    if (d.startsWith('00')) return d.slice(2);
+    if (cc && d.startsWith(cc) && d.length > cc.length + 7) return d;
+    if (cc && d.startsWith('0')) return cc + d.slice(1);
+    if (cc && d.length <= 9) return cc + d;
+    return d;
+  }
+  function waDialog(phone, text) {
+    const num = h('input', { id: 'waNum', type: 'tel', dir: 'ltr', inputmode: 'tel', value: waNumber(phone), placeholder: '9677XXXXXXXX' });
+    const msg = h('textarea', { id: 'waMsg', rows: 12, dir: 'auto', style: 'min-height:220px;line-height:1.7' }); msg.value = text;
+    const link = h('a', { class: 'btn wa-go', target: '_blank', rel: 'noopener' }, waIcon(), ' ', T('waOpen'));
+    const sync = () => { const n = num.value.replace(/\D/g, ''); link.href = 'https://wa.me/' + n + '?text=' + encodeURIComponent(msg.value); };
+    num.addEventListener('input', sync); msg.addEventListener('input', sync); sync();
+    const copy = h('button', { class: 'btn ghost', type: 'button', onclick: () => {
+      const done = () => toast(T('waCopied'));
+      try { navigator.clipboard.writeText(msg.value).then(done, () => { msg.select(); document.execCommand && document.execCommand('copy'); done(); }); } catch { msg.select(); }
+    } }, T('waCopy'));
+    const share = navigator.share ? h('button', { class: 'btn ghost', type: 'button', onclick: () => navigator.share({ text: msg.value }).catch(() => {}) }, T('waShare')) : null;
+    const m = modal(T('waTitle'), h('div', { class: 'stack', style: 'gap:12px' }, field(T('waPhone'), num), field(T('waMsg'), msg),
+      h('div', { class: 'row', style: 'margin-top:0' }, link, copy, share), h('p', { class: 'hint', style: 'margin:0' }, T('waHint'))));
+    link.addEventListener('click', () => setTimeout(() => m.remove(), 300));
+    return m;
+  }
+  function waIcon() {
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('width', '18'); s.setAttribute('height', '18'); s.setAttribute('aria-hidden', 'true');
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('fill', 'currentColor');
+    p.setAttribute('d', 'M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3Z');
+    s.append(p); return s;
+  }
+  const curWord = () => { const c = S.st ? S.st.currency : ''; return P.lang === 'ar' ? ({ YER: 'ريال', SAR: 'ريال سعودي', USD: 'دولار', AED: 'درهم' })[c] || c : c; };
+  F.waDialog = waDialog; F.waIcon = waIcon; F.curWord = curWord;
+
   /* ================================ STATEMENT SCREEN (any account, customer or supplier) ================================ */
   const addDay = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
   const nf = (v) => { const d = dec(), dd = Math.min(d, S.st.disp_dec ?? d); return new Intl.NumberFormat('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(v / 10 ** d); };
@@ -241,6 +280,18 @@
       h('div', null, h('span', null, T('period')), h('b', null, dt(r.from), ' — ', dt(r.to))),
       h('div', null, h('span', null, T('rowsN')), h('b', null, String(shown.length))),
       h('div', { class: 'curnote' }, T('amountsIn'), ' ', S.st ? S.st.currency : ''));
+    /* the WhatsApp text: who, period, totals, the balance in words, the last movements, and how to reach the station */
+    const waStatement = () => {
+      const b = S.brand || {}, d = (x) => String(x || '').slice(0, 10).split('-').reverse().join('/'), cur = curWord();
+      const live = r.rows.filter(e => !e.voided), last = live.slice(-8);
+      const lines = [`*${b.name || (S.st && S.st.name) || 'FuelPro'}*`, `${cfg.title}: *${r.name}*${r.ref ? ' (' + r.ref + ')' : ''}`, `${T('period')}: ${d(r.from)} — ${d(r.to)}`, '',
+        `${T('openingCol')}: ${amt(r.opening)} ${natS(r.opening)}`, `${T('debit')}: ${nf(r.total_debit)}`, `${T('creditCol')}: ${nf(r.total_credit)}`,
+        `*${T('closingBal')}: ${amt(r.balance)} ${cur} ${nature(r.balance)}*`];
+      if (last.length) { lines.push('', `${T('waLast')} (${last.length}${live.length > last.length ? ' / ' + live.length : ''}):`);
+        for (const e of last) lines.push(`• ${d(e.date)} ${String(e.desc || e.kind || '').slice(0, 60)} — ${e.debit ? nf(e.debit) : '(' + nf(e.credit) + ')'}`); }
+      lines.push('', T('stmtObjection')); if (b.phones) lines.push('☎ ' + b.phones);
+      return lines.join('\n');
+    };
     const draw = () => {
       const term = q.value.trim(); shown = term ? r.rows.filter(e => (e.desc + ' ' + (e.ref || '')).includes(term)) : r.rows;
       out.replaceChildren(h('div', { class: 'stmt-screen' }, infoBox(), summary(), tableFor(shown, false), r.truncated ? h('p', { class: 'hint' }, T('stmtTruncated')) : null));
@@ -254,7 +305,7 @@
     main.append(sec(null, h('div', { class: 'row between' }, title, cfg.back ? h('button', { class: 'btn ghost', onclick: cfg.back }, '← ', cfg.backLabel) : null),
       cfg.picker || null,
       h('div', { class: 'row' }, field(T('from'), from), field(T('to'), to), field(T('search'), q), h('button', { class: 'btn', onclick: run }, T('run')),
-        h('button', { class: 'btn gold-btn', onclick: doPrint, title: T('pdfHint') }, '⎙ ', T('printPdf')), exp), h('p', { class: 'hint' }, T('pdfHint'))), out);
+        h('button', { class: 'btn gold-btn', onclick: doPrint, title: T('pdfHint') }, '⎙ ', T('printPdf')), exp, cfg.whatsapp ? h('button', { class: 'btn wa-btn', onclick: () => r && waDialog(r.phone, waStatement()) }, waIcon(), ' ', T('waSend')) : null), h('p', { class: 'hint' }, T('pdfHint'))), out);
     await run();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return true;
@@ -313,12 +364,12 @@
       : e.kind === 'journal' ? T('src.' + e.source) + (e.ref_no ? ' ' + e.ref_no : '') + (e.note ? ' — ' + e.note : '')
       : (cust ? T('payRow') : T('payOut') + ' · ' + T(e.method === 'bank' ? 'mBank' : 'mCash')) + (e.note ? ' — ' + e.note : '');
     return statementScreen(main, {
-      title: T(cust ? 'stmtCust' : 'stmtSupp'), who: T(cust ? 'customer' : 'supplierCol'), debitNormal: cust,
+      title: T(cust ? 'stmtCust' : 'stmtSupp'), who: T(cust ? 'customer' : 'supplierCol'), debitNormal: cust, whatsapp: true,
       back: () => { S[key] = null; render(); }, backLabel: T(cust ? 'cust' : 'supp'),
       sigs: [T('accountantSig'), T('managerSig'), T(cust ? 'customerSig' : 'supplierSig')],
       load: async (from, to) => {
         const r = await api('GET', sp(`/${cust ? 'customers' : 'suppliers'}/${id}/statement?from=${from}&to=${to}`)); const p = r.customer || r.supplier;
-        return { name: p.name, ref: p.ref || '#' + p.id, opening: r.opening, total_debit: r.total_debit, total_credit: r.total_credit, balance: r.balance, from: r.from, to: r.to,
+        return { name: p.name, ref: p.ref || '#' + p.id, phone: p.phone || '', opening: r.opening, total_debit: r.total_debit, total_credit: r.total_credit, balance: r.balance, from: r.from, to: r.to,
           rows: r.entries.map(e => ({ date: e.date, ref: e.ref_no || '', docRef: e.doc_ref || '', kind: e.doc_type || T('mt.' + (e.kind === 'journal' ? e.source : e.kind)), desc: desc(e), debit: e.debit, credit: e.credit, balance: e.balance, voided: e.voided,
             action: e.kind === 'payment' && !e.voided && cd(cust ? 'payment.void' : 'supplier.pay') ? F.voidBtn(() => `/${cust ? 'payments' : 'supplier-payments'}/${e.id}/void`) : null })) };
       }
