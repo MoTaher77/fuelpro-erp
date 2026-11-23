@@ -16,12 +16,37 @@ function list(dbPath) {
   return fs.readdirSync(dir).filter(n => NAME_RE.test(n)).map(n => { const st = fs.statSync(path.join(dir, n)); const m = NAME_RE.exec(n);
     return { name: n, date: m[1], kind: m[3], bytes: st.size, created_at: st.mtime.toISOString() }; }).sort((a, b) => b.name.localeCompare(a.name));
 }
+/* ---- second copy (off the laptop's disk): every backup is also copied to BACKUP_COPY_DIR, or to the folder written in data/backup-copy-dir.txt.
+   Point it at a Google Drive / OneDrive / Dropbox folder or a USB stick and that program carries the copy off the machine.
+   A failure here never stops the real backup; files the second folder is missing are copied on the next check (drive plugged in later). ---- */
+const mirror = { dir: '', ok: null, error: '', at: null, copied: 0 };
+function mirrorDirFor(dbPath) {
+  if (process.env.BACKUP_COPY_DIR) return process.env.BACKUP_COPY_DIR.trim();
+  try { const f = path.join(path.dirname(path.resolve(dbPath)), 'backup-copy-dir.txt'); if (fs.existsSync(f)) return fs.readFileSync(f, 'utf8').split(/\r?\n/)[0].trim().replace(/^"|"$/g, ''); } catch { /* optional */ }
+  return '';
+}
+function syncMirror(dbPath) {
+  const to = mirrorDirFor(dbPath); mirror.dir = to; if (!to) { mirror.ok = null; mirror.error = ''; return mirror; }
+  try {
+    const from = dirFor(dbPath); if (path.resolve(to) === path.resolve(from)) throw new Error('the second folder must differ from the backups folder');
+    fs.mkdirSync(to, { recursive: true });
+    const have = new Set(fs.readdirSync(to).filter(n => NAME_RE.test(n)));
+    let copied = 0;
+    for (const b of list(dbPath)) if (!have.has(b.name)) { const tmp = path.join(to, b.name + '.part'); fs.copyFileSync(path.join(from, b.name), tmp); fs.renameSync(tmp, path.join(to, b.name)); copied++; }
+    /* the same retention as the main folder */
+    const names = fs.readdirSync(to).filter(n => NAME_RE.test(n)).sort().reverse();
+    for (const kind of ['auto', 'other']) names.filter(n => (NAME_RE.exec(n)[3] === 'auto') === (kind === 'auto')).slice(30).forEach(n => { try { fs.unlinkSync(path.join(to, n)); } catch { /* keep going */ } });
+    mirror.ok = true; mirror.error = ''; mirror.at = new Date().toISOString(); mirror.copied = copied;
+  } catch (e) { mirror.ok = false; mirror.error = String(e && e.message || e); console.error('[backup] second copy failed:', mirror.error); }
+  return mirror;
+}
 function make(db, dbPath, kind = 'manual') {
   const dir = dirFor(dbPath); fs.mkdirSync(dir, { recursive: true });
   const name = `fuelpro-${stamp()}-${kind}.db`, dest = path.join(dir, name);
   db.exec(`VACUUM INTO '${dest.replace(/'/g, "''")}'`);
   prune(dbPath);
-  return { name, bytes: fs.statSync(dest).size };
+  syncMirror(dbPath);
+  return { name, bytes: fs.statSync(dest).size, mirror: { ...mirror } };
 }
 /* keep the newest 30 automatic copies and the newest 30 others */
 function prune(dbPath) {
@@ -31,7 +56,7 @@ function prune(dbPath) {
 /** One automatic backup per calendar day; checked at start and every hour. */
 function schedule(db, dbPath) {
   if (!dbPath || dbPath === ':memory:' || process.env.BACKUP_AUTO === '0') return null;
-  const tick = () => { try { const today = stamp().slice(0, 10); if (!list(dbPath).some(b => b.kind === 'auto' && b.date === today)) { const r = make(db, dbPath, 'auto'); console.log('[backup] daily copy written:', r.name); } } catch (e) { console.error('[backup] failed:', e.message); } };
+  const tick = () => { try { syncMirror(dbPath); } catch { /* reported in mirror.error */ } try { const today = stamp().slice(0, 10); if (!list(dbPath).some(b => b.kind === 'auto' && b.date === today)) { const r = make(db, dbPath, 'auto'); console.log('[backup] daily copy written:', r.name); } } catch (e) { console.error('[backup] failed:', e.message); } };
   setTimeout(tick, 5_000).unref();
   const t = setInterval(tick, 3_600_000); t.unref(); return t;
 }
@@ -41,4 +66,4 @@ function file(dbPath, name) {
   const f = path.join(dirFor(dbPath), name); if (!fs.existsSync(f)) throw notFound('Backup');
   return f;
 }
-module.exports = { list, make, prune, schedule, can, file, dirFor };
+module.exports = { list, make, prune, schedule, can, file, dirFor, syncMirror, mirrorDirFor, mirror };
