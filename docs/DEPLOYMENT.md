@@ -29,3 +29,11 @@ Migrations only add. To roll back code: reinstall the previous zip **together wi
 
 ## Cloud (when the owner asks)
 Render: Blueprint from `render.yaml` → set `APP_URL`, `APP_SECRET`, SMTP → demo seed from the demo service shell (`scripts/seed-demo.js` refuses non-DEMO DBs). Persistent disks need a paid plan — check current prices. Health check `/healthz`.
+
+## Online through a Cloudflare Tunnel (0.11.0, owner's choice 2026-11-23)
+- Phase 1 of two (ADR-17): the server stays on the laptop; `start-fuelpro-online.bat` (→ `start-fuelpro-online.ps1`, project root) opens a tunnel with `cloudflared` (installed by winget, `Cloudflare.cloudflared`) and starts the server with `HOST=127.0.0.1 COOKIE_SECURE=1 TRUST_PROXY=1 APP_SECRET=<data\app-secret.txt> APP_URL=<tunnel url>`.
+- Quick tunnel (no account): a new `https://*.trycloudflare.com` address each start; the script prints it and copies it. Cloudflare does not promise uptime for quick tunnels.
+- Fixed address: create a named tunnel on a Cloudflare account with a domain (`cloudflared tunnel login`, `cloudflared tunnel create fuelpro`, `cloudflared tunnel route dns fuelpro fuelpro.<domain>`), then write `fuelpro` to `data\tunnel-name.txt` and `https://fuelpro.<domain>` to `data\tunnel-url.txt`.
+- Only the tunnel and the laptop itself reach the server (LAN devices use the public address). Client IP = `CF-Connecting-IP` (forged X-Forwarded-For cannot bypass the sign-in lockout — test/proxy.test.js).
+- `data\app-secret.txt` encrypts two-factor secrets: back it up with the database; without it encrypted 2FA secrets cannot be read.
+- Phase 2 (PLANNED): PostgreSQL data layer, then a hosted server.

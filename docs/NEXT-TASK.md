@@ -27,4 +27,7 @@ Done 2026-11-23: **cash-flow statement** (0.7.0, ADR-13). Ask the owner to open 
 Remaining candidates: bank reconciliation, sale discounts, native Excel export, cloud deployment. For any accounting feature follow `.claude/skills/fuelpro-accounting/SKILL.md` and add tests first.
 
 ## Resume checklist
-`CLAUDE.md` → this file → `docs/KNOWN-ISSUES.md` → `npm test` (expect 69 pass) → check whether `Downloads\fuelpro.zip` is newer than the folder files.
+`CLAUDE.md` → this file → `docs/KNOWN-ISSUES.md` → `npm test` (expect 70 pass) → check whether `Downloads\fuelpro.zip` is newer than the folder files.
+
+## Phase 2 — PostgreSQL (owner chose two phases, 2026-11-23)
+Introduce a data-access layer that runs the existing SQL on PostgreSQL (async), keep node:sqlite for tests/offline, port migrations, run all tests on both, then copy the live data after a full reconciliation. Optional: a fixed address via a named tunnel (needs a Cloudflare account and a domain).

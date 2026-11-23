@@ -39,13 +39,13 @@ Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 14).
 
 ## 6. Commands (verified 2026-11-23)
 ```
-npm test                 # node:test, 69 tests, ~9 s, in-memory DBs — must stay green
+npm test                 # node:test, 70 tests, ~9 s, in-memory DBs — must stay green
 npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default
 DB_PATH=/tmp/demo.db DEMO_PASSWORD=... node scripts/seed-demo.js --days 365   # throwaway demo DB
 npm run backup           # consistent copy into data/backups/ (server also makes 1 auto copy/day, keeps 30)
 node scripts/schema-doc.js > docs/DATABASE-SCHEMA.generated.md   # refresh the table list
 ```
-Windows: `start-fuelpro.bat` / `start-fuelpro.ps1` in `Downloads` (real data), `start-fuelpro-demo.bat` (demo).
+Windows: `start-fuelpro-online.bat` (project root, online via Cloudflare tunnel), `start-fuelpro.bat` / `start-fuelpro.ps1` in `Downloads` (real data), `start-fuelpro-demo.bat` (demo).
 
 ## 7. Conventions
 - CommonJS, `'use strict'`, small pure helpers; SQL is always parameterised (`db.prepare(...).run(?)`).

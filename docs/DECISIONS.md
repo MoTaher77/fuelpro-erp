@@ -50,3 +50,6 @@ Discounts post to a separate account 4050 so list sales and discounts stay visib
 
 ### ADR-16 Alerts are computed on request, never stored (0.10.0, 2026-11-23)
 A stored alert can disagree with the books; computing from the live data keeps one source of truth. The bell refreshes every 5 minutes and after each screen; the list links to the screen that fixes it.
+
+### ADR-17 Go online in two phases: laptop + Cloudflare Tunnel now, PostgreSQL later (0.11.0, 2026-11-23)
+Owner chose the laptop + tunnel (free, data stays local) and a two-phase database move. Phase 2 replaces the synchronous node:sqlite layer with PostgreSQL behind the same tests, then the data is moved after reconciliation.

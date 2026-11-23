@@ -55,3 +55,6 @@ Schema v14, service worker cache v24, 68 tests, 132 routes. New: analytics (`ana
 
 ## 0.10.0 (2026-11-23)
 Smart alerts (bell, `/alerts`, ADR-16), 69 tests, 133 routes, service-worker cache v27. M7 history is loaded in the live DB (owner OK, 2026-11-23, backup taken first).
+
+## 0.11.0 (2026-11-23)
+Online via `start-fuelpro-online.bat` (Cloudflare tunnel, ADR-17). 70 tests. Secret for 2FA in data\app-secret.txt (never print it).

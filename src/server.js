@@ -229,7 +229,9 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
-    const ip = (trustProxy && req.headers['x-forwarded-for'] ? String(req.headers['x-forwarded-for']).split(',')[0].trim() : req.socket.remoteAddress) || '';
+    /* behind a proxy: Cloudflare's own CF-Connecting-IP (clients cannot forge it), else the last X-Forwarded-For hop the proxy added */
+    const xff = String(req.headers['x-forwarded-for'] || '').split(',').map(x => x.trim()).filter(Boolean);
+    const ip = (trustProxy ? (req.headers['cf-connecting-ip'] || xff[xff.length - 1]) : null) || req.socket.remoteAddress || '';
     try {
       if (!url.pathname.startsWith('/api/') && url.pathname !== '/healthz') {
         if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'Method not allowed');

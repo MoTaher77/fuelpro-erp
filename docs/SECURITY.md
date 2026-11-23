@@ -40,3 +40,6 @@ CSRF: writes must be same-origin and JSON. Static files: path-traversal check. S
 - Running on `http://localhost` on the laptop: fine locally; anyone reaching port 3000 on the LAN could reach the login page (VERIFIED: `server.listen(port, process.env.HOST || '0.0.0.0')`). Prefer `HOST=127.0.0.1` unless LAN access is wanted.
 - No independent penetration test; no error monitoring.
 - Backups live on the same disk as the DB — copy them off the laptop regularly.
+
+## Behind a tunnel (0.11.0)
+HOST=127.0.0.1, Secure cookies, HSTS, TRUST_PROXY with CF-Connecting-IP, APP_SECRET from data\app-secret.txt. Recommend two-factor sign-in for every account before sharing the public address.
