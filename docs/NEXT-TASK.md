@@ -1,5 +1,8 @@
 # NEXT-TASK — where to resume
 
+## Task AF — owner refreshes the station page from his laptop (0.17)
+`npm run backup` on the laptop → station page → chip → «تحديث البيانات من نسخة اللابتوب…». Then decide: keep entering data on the laptop only (recommended; the page is for viewing and WhatsApp), or plan a real two-way sync (needs a server both can reach).
+
 ## Task AE — confirm the Artifact edition on the owner's devices (0.12.0)
 Owner opens https://claude.ai/artifact/CgLf1pmqcani77JBGVL56N on phone and laptop, signs in (demo@fuelpro.demo, password given in chat), posts a sale/expense, reopens. Then a session checks `fpstate/main` with ArtifactData. Rebuild/republish steps: `docs/ARTIFACT-EDITION.md`.
 Updated 2026-11-23 (after 0.8.0).

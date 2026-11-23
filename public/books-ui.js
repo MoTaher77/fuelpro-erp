@@ -218,7 +218,7 @@
     if (cc && d.length <= 9) return cc + d;
     return d;
   }
-  function waDialog(phone, text) {
+  function waDialog(phone, text, hint) {
     const num = h('input', { id: 'waNum', type: 'tel', dir: 'ltr', inputmode: 'tel', value: waNumber(phone), placeholder: '9677XXXXXXXX' });
     const msg = h('textarea', { id: 'waMsg', rows: 12, dir: 'auto', style: 'min-height:220px;line-height:1.7' }); msg.value = text;
     const link = h('a', { class: 'btn wa-go', target: '_blank', rel: 'noopener' }, waIcon(), ' ', T('waOpen'));
@@ -230,7 +230,7 @@
     } }, T('waCopy'));
     const share = navigator.share ? h('button', { class: 'btn ghost', type: 'button', onclick: () => navigator.share({ text: msg.value }).catch(() => {}) }, T('waShare')) : null;
     const m = modal(T('waTitle'), h('div', { class: 'stack', style: 'gap:12px' }, field(T('waPhone'), num), field(T('waMsg'), msg),
-      h('div', { class: 'row', style: 'margin-top:0' }, link, copy, share), h('p', { class: 'hint', style: 'margin:0' }, T('waHint'))));
+      h('div', { class: 'row', style: 'margin-top:0' }, link, copy, share), h('p', { class: 'hint', style: 'margin:0' }, hint || T('waHint'))));
     link.addEventListener('click', () => setTimeout(() => m.remove(), 300));
     return m;
   }
@@ -292,6 +292,51 @@
       lines.push('', T('stmtObjection')); if (b.phones) lines.push('☎ ' + b.phones);
       return lines.join('\n');
     };
+    /* the statement as a PDF file for WhatsApp: share sheet (phone / Windows) straight to WhatsApp,
+       otherwise the file is saved and WhatsApp opens on the customer's chat to attach it */
+    const sendPdf = guard(async () => {
+      if (!r || !window.FPPDF) return;
+      if (!S.brand) await loadBrand();
+      const b = S.brand || {}, cw = curWord(), bal = (v) => v ? `${amt(v)} ${natS(v)}` : '0';
+      /* balance cell for the PDF: the amount, and Dr/Cr as its own badge */
+      const balCell = (v) => v ? { t: amt(v), pill: nature(v), kind: nature(v) === T('natCr') ? 'cr' : 'dr' } : { t: '0' };
+      toast(T('pdfMaking'));
+      const live = shown;
+      const rows = [{ cells: [dmy(r.from), '', T('openingCol'), '', '', balCell(r.opening)], fill: '#fdf8ea', bold: true },
+        ...live.map(e => ({ cells: [dmy(e.date), e.kind || '', e.desc || '', e.debit ? nf(e.debit) : '', e.credit ? nf(e.credit) : '', e.voided ? T('voided') : balCell(e.balance)], color: [null, null, null, null, '#0b5a44', null] }))];
+      const blob = await window.FPPDF.statement({
+        brand: { name: b.name || (S.st && S.st.name) || 'FuelPro', activity: b.activity, phones: b.phones, address: b.address, logo: b.logo },
+        title: cfg.title, periodText: `${T('fromDate')} ${dmy(r.from)}   ${T('toDate')} ${dmy(r.to)}`,
+        party: { name: r.name, ref: r.ref, currency: cw }, labels: { party: cfg.who, acct: T('acctNo'), currency: T('currency'), words: T('amountWords') },
+        summary: [{ k: T('prevBalance'), v: bal(r.opening) }, { k: T('debit'), v: nf(r.total_debit) }, { k: T('creditCol'), v: nf(r.total_credit) }, { k: T('closingBal'), v: bal(r.balance), main: true }],
+        cols: [{ k: T('date'), w: 13.5, center: true, nowrap: true }, { k: T('mvType'), w: 11.5, center: true }, { k: T('desc'), w: 28 }, { k: T('debit'), w: 13.5, num: true }, { k: T('creditCol'), w: 13.5, num: true }, { k: T('balance'), w: 20, num: true, bold: true }],
+        rows, total: [T('total'), '', `${live.length} ${T('rowsN')}`, nf(r.total_debit), nf(r.total_credit), balCell(r.balance)],
+        words: F.tafqeet ? F.tafqeet(Math.abs(r.balance)) : '', note: (S.brand && S.brand.footer) || T('stmtObjection'), stamp: dmy(todayIso()) });
+      const name = `${cfg.title} - ${r.name} - ${r.to}.pdf`.replace(/[\\/:*?"<>|]+/g, '-');
+      const file = new File([blob], name, { type: 'application/pdf' });
+      const text = `${cfg.title}: ${r.name}\n${T('closingBal')}: ${amt(r.balance)} ${cw} ${nature(r.balance)}`;
+      const dlName = `FuelPro-statement-${String(r.ref || '').replace(/[^\w-]+/g, '')}-${r.to}.pdf`;
+      /* every action below runs from its own click, so the browser (or Claude's download prompt) always accepts it */
+      const inClaude = !!(window.claude && window.claude.use);
+      const canShare = !inClaude && navigator.canShare && navigator.canShare({ files: [file] });
+      const save = async () => {
+        if (inClaude) {
+          const dl = await window.claude.use('downloads').catch(() => null);
+          if (!dl) { toast(T('dlUnavailable')); return; }
+          try { await dl.save({ filename: dlName, data: blob }); } catch (e) { if (e && e.code !== 'declined') toast(T('dlFailed') + (e && e.code ? ' (' + e.code + ')' : '')); }
+          return;
+        }
+        const a = h('a', { href: URL.createObjectURL(blob), download: dlName }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000);
+      };
+      const shareBtn = canShare ? h('button', { class: 'btn wa-btn', type: 'button', onclick: () => navigator.share({ files: [file], title: cfg.title, text }).then(() => m.remove(), () => {}) }, waIcon(), ' ', T('waSharePdf')) : null;
+      const saveBtn = h('button', { class: 'btn ' + (canShare ? 'ghost' : 'gold'), type: 'button', onclick: save }, '⬇ ', T('dlPdf'));
+      const chat = h('button', { class: 'btn ghost', type: 'button', onclick: () => { m.remove(); waDialog(r.phone, text + '\n' + T('waAttach'), T('waPdfHint')); } }, waIcon(), ' ', T('waOpen'));
+      const kb = Math.max(1, Math.round(blob.size / 1024));
+      const m = modal(T('pdfReady'), h('div', { class: 'stack', style: 'gap:12px' },
+        h('p', { style: 'margin:0' }, h('b', null, r.name), ' · ', `${live.length} ${T('rowsN')} · ${kb} KB`),
+        h('div', { class: 'row', style: 'margin-top:0' }, shareBtn, saveBtn, chat),
+        h('p', { class: 'hint', style: 'margin:0' }, canShare ? T('pdfShareHint') : T('pdfSaveHint'))));
+    });
     const draw = () => {
       const term = q.value.trim(); shown = term ? r.rows.filter(e => (e.desc + ' ' + (e.ref || '')).includes(term)) : r.rows;
       out.replaceChildren(h('div', { class: 'stmt-screen' }, infoBox(), summary(), tableFor(shown, false), r.truncated ? h('p', { class: 'hint' }, T('stmtTruncated')) : null));
@@ -305,7 +350,7 @@
     main.append(sec(null, h('div', { class: 'row between' }, title, cfg.back ? h('button', { class: 'btn ghost', onclick: cfg.back }, '← ', cfg.backLabel) : null),
       cfg.picker || null,
       h('div', { class: 'row' }, field(T('from'), from), field(T('to'), to), field(T('search'), q), h('button', { class: 'btn', onclick: run }, T('run')),
-        h('button', { class: 'btn gold-btn', onclick: doPrint, title: T('pdfHint') }, '⎙ ', T('printPdf')), exp, cfg.whatsapp ? h('button', { class: 'btn wa-btn', onclick: () => r && waDialog(r.phone, waStatement()) }, waIcon(), ' ', T('waSend')) : null), h('p', { class: 'hint' }, T('pdfHint'))), out);
+        h('button', { class: 'btn gold-btn', onclick: doPrint, title: T('pdfHint') }, '⎙ ', T('printPdf')), exp, cfg.whatsapp ? h('button', { class: 'btn wa-btn', onclick: () => sendPdf() }, waIcon(), ' ', T('waPdf')) : null), h('p', { class: 'hint' }, T('pdfHint'))), out);
     await run();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return true;

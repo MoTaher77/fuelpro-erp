@@ -265,7 +265,8 @@ test('2FA: setup needs password, enable needs a valid code, login then needs a c
   assert.equal((await s0.c.post('/api/auth/2fa/setup', { password: 'wrong password!!' })).status, 403);
   const s = await with2fa();
   assert.equal((await s.c.post('/api/auth/2fa/enable', { code: '000000' })).body.error.code, 'BAD_TOTP');
-  const en = await s.c.post('/api/auth/2fa/enable', { code: codeFor(s.secret) });
+  const enCode = codeFor(s.secret);   // reuse the exact codes below: a fresh codeFor() can fall in the next 30-second step and be valid
+  const en = await s.c.post('/api/auth/2fa/enable', { code: enCode });
   assert.equal(en.status, 200); assert.equal(en.body.recovery_codes.length, 10); assert.match(en.body.recovery_codes[0], /^[A-Z2-7]{5}-[A-Z2-7]{5}$/);
   const me = await s.c.get('/api/me'); assert.equal(me.body.user.totp, true); assert.equal(me.body.user.recovery_left, 10); assert.equal(me.body.user.sid, undefined);
   assert.equal((await s.c.post('/api/auth/2fa/setup', { password: 'correct horse battery' })).body.error.code, 'TOTP_ALREADY_ON');
@@ -273,10 +274,11 @@ test('2FA: setup needs password, enable needs a valid code, login then needs a c
   assert.equal((await client().post('/api/auth/login', creds)).body.error.code, 'TOTP_REQUIRED');
   assert.equal((await client().post('/api/auth/login', { ...creds, code: '123456' })).body.error.code, 'BAD_TOTP');
   // the code used to enable cannot be replayed
-  assert.equal((await client().post('/api/auth/login', { ...creds, code: codeFor(s.secret) })).body.error.code, 'BAD_TOTP');
+  assert.equal((await client().post('/api/auth/login', { ...creds, code: enCode })).body.error.code, 'BAD_TOTP');
   db.prepare('UPDATE users SET totp_last_step=0 WHERE email=?').run(s.email);
-  const c = client(); assert.equal((await c.post('/api/auth/login', { ...creds, code: codeFor(s.secret) })).status, 200);
-  assert.equal((await client().post('/api/auth/login', { ...creds, code: codeFor(s.secret) })).body.error.code, 'BAD_TOTP');   // replay blocked
+  const loginCode = codeFor(s.secret);
+  const c = client(); assert.equal((await c.post('/api/auth/login', { ...creds, code: loginCode })).status, 200);
+  assert.equal((await client().post('/api/auth/login', { ...creds, code: loginCode })).body.error.code, 'BAD_TOTP');   // replay blocked
   // wrong password never reveals the 2FA step
   assert.equal((await client().post('/api/auth/login', { email: s.email, password: 'wrong password!!' })).body.error.code, 'BAD_CREDENTIALS');
   // recovery code works exactly once, lower-case and without dash accepted

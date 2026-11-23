@@ -49,7 +49,7 @@
     (async () => {
       const dl = window.claude && window.claude.use ? await window.claude.use('downloads').catch(() => null) : null;
       if (!dl) { notice('التنزيل غير متاح في هذا العرض.'); return; }
-      try { const blob = await (await fetch(href)).blob(); await dl.save({ filename: name, data: blob }); } catch (e) { if (e && e.code !== 'declined') notice('لم يتم التنزيل.'); }
+      try { const blob = await (await fetch(href)).blob(); await dl.save({ filename: name, data: blob }); } catch (e) { if (e && e.code !== 'declined') notice('لم يتم التنزيل (' + ((e && e.code) || 'خطأ') + ')'); }
     })();
   };
 
@@ -67,7 +67,8 @@
     m.append(info);
     const btn = (t, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.className = 'btn ' + (cls || 'ghost') + ' sm'; b.onclick = () => { m.remove(); fn(); }; m.append(b); };
     if (store) btn('حفظ الآن', () => save(true));
-    btn('تنزيل نسخة من قاعدة البيانات', downloadDb);
+    btn('تنزيل نسخة من قاعدة البيانات (zip)', downloadDb);
+    if (store && window.__FP_STATION) btn('تحديث البيانات من نسخة اللابتوب…', importDb);
     if (store) btn('إعادة البيانات إلى نقطة البداية', resetDemo, 'danger');
     btn('إغلاق', () => {});
     document.body.append(m);
@@ -107,12 +108,12 @@
     cachePut({ gen, size: s.size, blocks: blocksNow, bytes: out.buffer.slice(0) });
     return out;
   }
-  async function save(force) {
-    if (!store || conflict) return; if (saving) { again = true; return; }
+  async function save(force, replaceWith) {
+    if (!store || conflict) return; if (saving) { if (replaceWith) throw new Error('busy'); again = true; return; }
     if (!dirty && !force) return;
     saving = true; dirty = false; status('saving', 'جارٍ الحفظ…');
     try {
-      const bytes = core.engine.bytes(); const hashes = [], todo = [];
+      const bytes = replaceWith || core.engine.bytes(); const hashes = [], todo = [];
       for (let o = 0; o < bytes.length; o += BLOCK) {
         const part = bytes.subarray(o, Math.min(o + BLOCK, bytes.length)); const h = await hashHex(part); hashes.push(h);
         if (!known.has(h) && !todo.some(t => t.h === h)) todo.push({ h, part });
@@ -140,11 +141,54 @@
     for (const h of old) await store.doc('fpblk/' + h).delete().catch(() => {});
     ls.set('fp.sid', null); location.reload();
   }
+  /* the station page refreshed from the laptop: a backup file (npm run backup → data\\backups\\*.db) replaces this page's data.
+     The file is checked first (SQLite, FuelPro tables, integrity, someone can sign in); sessions are dropped; nothing goes back to the laptop. */
+  let SQLref = null;
+  function importDb() {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.db,.sqlite,.zip,application/octet-stream,application/vnd.sqlite3,application/zip';
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      let t = null;
+      try {
+        status('saving', 'فحص الملف…');
+        let raw = new Uint8Array(await f.arrayBuffer());
+        /* a .zip made by «تنزيل نسخة» holds the database stored uncompressed: take the first entry */
+        if (raw[0] === 0x50 && raw[1] === 0x4b && raw[2] === 3 && raw[3] === 4) {
+          const v = new DataView(raw.buffer, raw.byteOffset); if (v.getUint16(8, true) !== 0) throw new Error('ملف zip مضغوط غير مدعوم؛ اختر ملف .db');
+          const size = v.getUint32(18, true), start = 30 + v.getUint16(26, true) + v.getUint16(28, true); raw = raw.subarray(start, start + size);
+        }
+        if (new TextDecoder().decode(raw.subarray(0, 15)) !== 'SQLite format 3') throw new Error('الملف ليس قاعدة بيانات FuelPro');
+        t = new SQLref.Database(raw);
+        const one = (q) => { const r = t.exec(q); return r.length ? r[0].values[0][0] : null; };
+        if (one("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('orgs','users','journals','journal_lines','sales','customers')") !== 6) throw new Error('الملف لا يحتوي جداول FuelPro');
+        if (one('PRAGMA quick_check') !== 'ok') throw new Error('الملف تالف (فشل فحص السلامة)');
+        const users = one("SELECT COUNT(*) FROM users WHERE active=1 AND pw_hash LIKE 'scrypt$%'");
+        if (!users) throw new Error('لا يوجد في الملف مستخدم يستطيع الدخول (كلمات المرور محذوفة منه). استخدم نسخة npm run backup وليس اللقطة.');
+        const sales = one('SELECT COUNT(*) FROM sales'), last = one('SELECT MAX(business_date) FROM sales') || '—', cust = one('SELECT COUNT(*) FROM customers');
+        const tf = one('SELECT COUNT(*) FROM users WHERE active=1 AND totp_enabled=1');
+        t.exec('PRAGMA journal_mode=DELETE'); t.exec('DELETE FROM sessions');
+        const bytes = t.export(); t.close(); t = null;
+        const msg = `سيُستبدل كل ما في هذه الصفحة ببيانات الملف «${f.name}»:\n${sales} فاتورة (آخرها ${last}) · ${cust} عميل · ${users} مستخدم.\nستدخل بعدها بحسابك المعتاد على اللابتوب.` + (tf ? `\nتنبيه: ${tf} حساب عليه التحقق الثنائي، وقد لا يستطيع الدخول هنا إن كان مشفّراً بمفتاح اللابتوب.` : '') + '\nالعمليات المسجّلة في هذه الصفحة فقط ستُفقد.';
+        if (!(await ask(msg, 'تحديث البيانات', true))) { status('ok', 'محفوظ ✓'); return; }
+        await save(true, bytes);
+        if (conflict) return;
+        conflict = true;   // this view still runs the old data: stop saving it, sign out and reopen on the new data
+        ls.set('fp.sid', null); location.reload();
+      } catch (e) {
+        try { if (t) t.close(); } catch { /* already closed */ }
+        status('bad', 'لم يتم التحديث: ' + (e && e.message || e));
+      }
+    };
+    inp.click();
+  }
+
   async function downloadDb() {
-    const bytes = core.engine.bytes(); const name = `fuelpro-artifact-${new Date().toISOString().slice(0, 10)}.db`;
+    /* claude.ai saves only listed file types (no .db): the database goes inside a real .zip */
+    const db = core.engine.bytes(), stamp = new Date().toISOString().slice(0, 10), name = `fuelpro-${stamp}.zip`;
+    const bytes = window.FPXLSX && window.FPXLSX.zip ? window.FPXLSX.zip([{ name: `fuelpro-${stamp}.db`, data: db }]) : db;
     const dl = window.claude && window.claude.use ? await window.claude.use('downloads').catch(() => null) : null;
     if (!dl) { notice('التنزيل غير متاح في هذا العرض.'); return; }
-    try { await dl.save({ filename: name, data: new Blob([bytes], { type: 'application/octet-stream' }) }); } catch { /* the viewer declined */ }
+    try { await dl.save({ filename: name, data: new Blob([bytes], { type: 'application/zip' }) }); } catch (e) { if (e && e.code !== 'declined') notice('لم يتم التنزيل (' + (e.code || 'خطأ') + ')'); }
   }
 
   /* ---------- the API bridge ---------- */
@@ -184,7 +228,7 @@
   async function boot() {
     try {
       say('تحميل محرك قاعدة البيانات…');
-      const SQL = await loadEngine();
+      const SQL = await loadEngine(); SQLref = SQL;
       say('فتح البيانات المحفوظة…');
       store = await openStore();
       let bytes = null;
