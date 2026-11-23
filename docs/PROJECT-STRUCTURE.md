@@ -71,3 +71,5 @@ FuelPro/
 - src/analytics.js (dashboard), src/bankrec.js (bank reconciliation).
 - public/analytics-ui.js (`ana`), public/bank-ui.js (`bank`), public/xlsx.js (dependency-free .xlsx writer, UMD).
 - test/discount-bankrec.test.js, test/xlsx.test.js. Migration v14: sales.discount, bank_recs, bank_cleared.
+
+- 0.10.0: src/alerts.js, public/alerts-ui.js, test/alerts.test.js.

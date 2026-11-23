@@ -73,3 +73,6 @@ The real station also has the imported M7 tree (443 accounts) mapped onto these 
 - Finalise only when statement balance = Σ every cleared line (earlier final reconciliations + this one) → else `REC_NOT_BALANCED`. Lines already cleared in another reconciliation are not offered again (`LINE_ALREADY_CLEARED`).
 - One open draft per account; only the latest reconciliation can be reopened (`NOT_LATEST`); final ones cannot be deleted.
 - Foreign-currency accounts reconcile in their own currency using `fc_amount`. Bank charges/interest are recorded with a normal voucher, then ticked.
+
+## 14. Smart alerts (0.10.0)
+Read-only checks over the live books, no table: stock at/below the tank minimum or ≤ 3 days of sales (critical) and ≤ 7 days (warning); shift open ≥ 16 h (warning) / ≥ 30 h (critical); cash variances in the last 7 days; customers over their credit limit; customer debts > 90 days late; overdue supplier payments; cash/bank accounts in the station currency below zero (critical); no sales yesterday after ≥ 5 selling days in the week before; bank reconciliation draft older than 30 days; failed integrity check (critical). One failing check never hides the others.

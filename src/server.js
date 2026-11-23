@@ -10,6 +10,7 @@ const B = require('./books');
 const R = require('./reports');
 const M7 = require('./m7archive');
 const AN = require('./analytics');
+const AL = require('./alerts');
 const BR = require('./bankrec');
 const auth = require('./auth');
 const { HttpError, unauthorized, notFound } = require('./errors');
@@ -159,6 +160,7 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
   route('POST', '/api/stations/:sid/bank-recs/:id/reopen', (c) => ({ body: BR.reopen(db, c.user, st(c), id(c.p.id)) }));
   route('DELETE', '/api/stations/:sid/bank-recs/:id', (c) => ({ body: BR.remove(db, c.user, st(c), id(c.p.id)) }));
   route('GET', '/api/stations/:sid/analytics', (c) => ({ body: AN.dashboard(db, c.user, st(c), c.q) }));
+  route('GET', '/api/stations/:sid/alerts', (c) => ({ body: AL.alerts(db, c.user, st(c)) }));
   /* history carried over from the old M7 system */
   route('GET', '/api/stations/:sid/reports/old-results', (c) => ({ body: M7.oldResults(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/stock/old-values', (c) => ({ body: M7.oldStockValues(db, c.user, st(c), c.q) }));

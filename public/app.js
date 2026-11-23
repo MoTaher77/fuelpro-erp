@@ -286,7 +286,7 @@
     inv: 'M5 6c0-1.7 3.1-3 7-3s7 1.3 7 3v12c0 1.7-3.1 3-7 3s-7-1.3-7-3zM5 6c0 1.7 3.1 3 7 3s7-1.3 7-3M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3',
     cust: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8', supp: 'M3 21V9l6 4V9l6 4V5h6v16zM7 17h2M13 17h2M17 17h2',
     exp: 'M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4', acct: 'M4 4h11a3 3 0 0 1 3 3v14H7a3 3 0 0 1-3-3zM4 18a3 3 0 0 1 3-3h11M8 8h6',
-    ana: 'M4 20V10M10 20V4M16 20v-7M22 20H2', bank: 'M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18', fin: 'M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0zM8 21h8', rep: 'M3 3v18h18M7 15l4-4 3 3 5-6', vch: 'M4 5h16v14H4zM4 9h16M8 13h4M8 16h6M16 13h1', prc: 'M20 12l-8 8-9-9V3h8zM7.5 7.5h.01', cnt: 'M9 3h6v3H9zM6 5h12v16H6zM9 11l2 2 4-4M9 17h6', cur: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.3 1.8 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6v2M12 16v2', fa: 'M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6', sreg: 'M4 3h16v18l-3-2-2 2-3-2-3 2-2-2-3 2zM8 8h8M8 12h8M8 16h5', pur: 'M3 4h2l2.4 11h11l2-8H6.3M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z', stm: 'M7 3h10l4 4v14H7zM17 3v4h4M10 11h7M10 15h7M3 7v14h4', mtr: 'M12 21a9 9 0 1 1 9-9M12 12l4-4M7 12h1M12 7v1M17 17l3 3',
+    ana: 'M4 20V10M10 20V4M16 20v-7M22 20H2', bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0', bank: 'M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18', fin: 'M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0zM8 21h8', rep: 'M3 3v18h18M7 15l4-4 3 3 5-6', vch: 'M4 5h16v14H4zM4 9h16M8 13h4M8 16h6M16 13h1', prc: 'M20 12l-8 8-9-9V3h8zM7.5 7.5h.01', cnt: 'M9 3h6v3H9zM6 5h12v16H6zM9 11l2 2 4-4M9 17h6', cur: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.3 1.8 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6v2M12 16v2', fa: 'M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6', sreg: 'M4 3h16v18l-3-2-2 2-3-2-3 2-2-2-3 2zM8 8h8M8 12h8M8 16h5', pur: 'M3 4h2l2.4 11h11l2-8H6.3M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z', stm: 'M7 3h10l4 4v14H7zM17 3v4h4M10 11h7M10 15h7M3 7v14h4', mtr: 'M12 21a9 9 0 1 1 9-9M12 12l4-4M7 12h1M12 7v1M17 17l3 3',
     setup: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4',
     users: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM12 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM8 16a4 4 0 0 1 8 0', audit: 'M9 6h12M9 12h12M9 18h12M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2',
     day: 'M4 5h16v15H4zM4 9h16M8 3v4M16 3v4M8 13h3M8 16h6', col: 'M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', box: 'M3 7h18v12H3zM3 11h18M7 15h3M16 4l-4 3-4-3', jbook: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11M9 8h6', yc: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4M12 15v2',
@@ -329,6 +329,7 @@
       h('h1', null, T(S.tab), h('span', { class: 'muted small' }, ' · ', S.st ? S.st.name : '')),
       h('div', { class: 'tools' },
         S.stations.length > 1 && h('select', { id: 'stSel', class: 'compact', 'aria-label': T('station'), onchange: guard(async (e) => { S.sid = +e.target.value; await loadBase(); render(); }) }, S.stations.map(s => h('option', { value: s.id, selected: s.id === S.sid }, s.name))),
+        cd('report.read') ? h('button', { id: 'bell', class: 'iconbtn bell', 'aria-label': T('alerts'), title: T('alerts'), onclick: () => window.FP.showAlerts && window.FP.showAlerts() }, icon('bell'), h('span', { id: 'bellN', class: 'bell-n' })) : null,
         h('button', { class: 'btn ghost sm', title: T('xlsxHelp'), onclick: exportScreen }, '⇩ Excel'),
         h('button', { class: 'iconbtn theme', 'aria-label': T('theme'), title: T('theme'), onclick: toggleTheme }, icon('theme')),
         h('button', { class: 'btn ghost sm wide', onclick: prefsDialog }, T('prefs')),
@@ -343,6 +344,7 @@
     try { await VIEWS[S.tab](main); } catch (e) { toast(e.message); }
     if (!skel.isConnected) return;                        // another navigation replaced this screen meanwhile
     skel.replaceWith(main); animateIn(main);
+    if (window.FP && window.FP.bellRefresh) window.FP.bellRefresh();
   }
   /* entrance: sections rise one after another; liquids and gauges fill once visible */
   function animateIn(el) {

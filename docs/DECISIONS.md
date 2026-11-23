@@ -47,3 +47,6 @@ Dates are when the decision is first visible in the CHANGELOG or sessions (REPOR
 
 ### ADR-15 Sale discount as a contra-revenue line; bank reconciliation as marks beside the books (0.9.0, 2026-11-23)
 Discounts post to a separate account 4050 so list sales and discounts stay visible; VAT follows the amount paid. Bank reconciliation stores only cleared flags (`bank_cleared`), so immutable journals stay untouched and reopening is possible without reversals.
+
+### ADR-16 Alerts are computed on request, never stored (0.10.0, 2026-11-23)
+A stored alert can disagree with the books; computing from the live data keeps one source of truth. The bell refreshes every 5 minutes and after each screen; the list links to the screen that fixes it.

@@ -41,3 +41,8 @@ Status: ✅ VERIFIED (code + test) · 🟡 partial · ⛔ not built.
 | Excel export | ✅ | topbar «⇩ Excel» (`exportScreen` in app.js, public/xlsx.js) | none (client side, one sheet per table) | — | xlsx.test |
 | Sale discounts | ✅ | sales form «الخصم» (amount or %) | `createSale` accepts `discount`/`discount_bp`; permission `sale.discount` | sales.discount (v14), account 4050 | discount-bankrec.test |
 | Bank reconciliation | ✅ | `bank` → bank-ui.js | 7 routes `/api/stations/:sid/bank-recs` (src/bankrec.js); permission `bank.reconcile` | bank_recs, bank_cleared (v14) | discount-bankrec.test |
+
+## Added in 0.10.0
+| Module | Status | Screen → file | Server | Tests |
+|---|---|---|---|---|
+| Smart alerts | ✅ | bell in the top bar → alerts-ui.js (opens the right screen) | `GET /api/stations/:sid/alerts` (src/alerts.js, derived, nothing stored) | alerts.test |

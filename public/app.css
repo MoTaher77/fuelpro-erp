@@ -569,3 +569,10 @@ table.fit.squeeze2 td.f-tight{white-space:normal}table.fit.squeeze2 th{font-size
 .presets{display:flex;flex-wrap:wrap;gap:6px}
 @media print{.an-tip{display:none}.an-card{break-inside:avoid}}
 .cover .cover-days{margin-inline-start:auto;font-size:18px}
+
+/* alerts bell */
+.bell{position:relative}.bell-n{position:absolute;top:-4px;inset-inline-end:-4px;min-width:17px;height:17px;border-radius:9px;padding:0 4px;font-size:11px;line-height:17px;text-align:center;font-weight:700;background:#b0832f;color:#fff;display:none}
+.bell-n.on{display:block}.bell-n.crit{background:#c2412d}
+.al{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:12px;text-decoration:none;color:inherit;background:rgba(127,127,127,.08)}
+.al:hover{background:rgba(127,127,127,.16)}.al-dot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:6px;background:#3b6fb6}
+.al-critical .al-dot{background:#c2412d}.al-warning .al-dot{background:#b0832f}

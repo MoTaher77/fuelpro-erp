@@ -52,3 +52,6 @@ vouchers, multi-currency boxes, fixed assets, sales register, purchases, price h
 
 ## 0.9.0 (2026-11-23)
 Schema v14, service worker cache v24, 68 tests, 132 routes. New: analytics (`ana`), Excel export, sale discounts (4050, `sale.discount`), bank reconciliation (`bank`, `bank.reconcile`). See ADR-15.
+
+## 0.10.0 (2026-11-23)
+Smart alerts (bell, `/alerts`, ADR-16), 69 tests, 133 routes, service-worker cache v27. M7 history is loaded in the live DB (owner OK, 2026-11-23, backup taken first).

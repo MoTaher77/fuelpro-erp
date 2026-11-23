@@ -308,3 +308,8 @@ Generated from `src/server.js` on 2026-11-23 (124 routes). VERIFIED route list; 
 | POST | `/api/stations/:sid/bank-recs/:id/reopen` | bankrec.js reopen | bank.reconcile |
 | DELETE | `/api/stations/:sid/bank-recs/:id` | bankrec.js remove (draft only) | bank.reconcile |
 Sales POST also accepts `discount` (minor units) or `discount_bp`; errors `DISCOUNT_TOO_LARGE`, 403 without `sale.discount`.
+
+### station: alerts (0.10.0)
+| Method | Path | Handler | |
+|---|---|---|---|
+| GET | `/api/stations/:sid/alerts` | alerts.js alerts | report.read |
