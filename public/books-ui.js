@@ -298,17 +298,19 @@
       if (!r || !window.FPPDF) return;
       if (!S.brand) await loadBrand();
       const b = S.brand || {}, cw = curWord(), bal = (v) => v ? `${amt(v)} ${natS(v)}` : '0';
+      /* balance cell for the PDF: the amount, and Dr/Cr as its own badge */
+      const balCell = (v) => v ? { t: amt(v), pill: nature(v), kind: nature(v) === T('natCr') ? 'cr' : 'dr' } : { t: '0' };
       toast(T('pdfMaking'));
       const live = shown;
-      const rows = [{ cells: [dmy(r.from), '', T('openingCol'), '', '', bal(r.opening)], fill: '#fdf8ea', bold: true },
-        ...live.map(e => ({ cells: [dmy(e.date), e.kind || '', e.desc || '', e.debit ? nf(e.debit) : '', e.credit ? nf(e.credit) : '', e.voided ? T('voided') : bal(e.balance)], color: [null, null, null, null, '#0b5a44', null] }))];
+      const rows = [{ cells: [dmy(r.from), '', T('openingCol'), '', '', balCell(r.opening)], fill: '#fdf8ea', bold: true },
+        ...live.map(e => ({ cells: [dmy(e.date), e.kind || '', e.desc || '', e.debit ? nf(e.debit) : '', e.credit ? nf(e.credit) : '', e.voided ? T('voided') : balCell(e.balance)], color: [null, null, null, null, '#0b5a44', null] }))];
       const blob = await window.FPPDF.statement({
         brand: { name: b.name || (S.st && S.st.name) || 'FuelPro', activity: b.activity, phones: b.phones, address: b.address, logo: b.logo },
         title: cfg.title, periodText: `${T('fromDate')} ${dmy(r.from)}   ${T('toDate')} ${dmy(r.to)}`,
         party: { name: r.name, ref: r.ref, currency: cw }, labels: { party: cfg.who, acct: T('acctNo'), currency: T('currency'), words: T('amountWords') },
         summary: [{ k: T('prevBalance'), v: bal(r.opening) }, { k: T('debit'), v: nf(r.total_debit) }, { k: T('creditCol'), v: nf(r.total_credit) }, { k: T('closingBal'), v: bal(r.balance), main: true }],
-        cols: [{ k: T('date'), w: 12, center: true }, { k: T('mvType'), w: 11, center: true }, { k: T('desc'), w: 34 }, { k: T('debit'), w: 13, num: true }, { k: T('creditCol'), w: 13, num: true }, { k: T('balance'), w: 17, num: true, bold: true }],
-        rows, total: [T('total'), '', `${live.length} ${T('rowsN')}`, nf(r.total_debit), nf(r.total_credit), bal(r.balance)],
+        cols: [{ k: T('date'), w: 13.5, center: true, nowrap: true }, { k: T('mvType'), w: 11.5, center: true }, { k: T('desc'), w: 28 }, { k: T('debit'), w: 13.5, num: true }, { k: T('creditCol'), w: 13.5, num: true }, { k: T('balance'), w: 20, num: true, bold: true }],
+        rows, total: [T('total'), '', `${live.length} ${T('rowsN')}`, nf(r.total_debit), nf(r.total_credit), balCell(r.balance)],
         words: F.tafqeet ? F.tafqeet(Math.abs(r.balance)) : '', note: (S.brand && S.brand.footer) || T('stmtObjection'), stamp: dmy(todayIso()) });
       const name = `${cfg.title} - ${r.name} - ${r.to}.pdf`.replace(/[\\/:*?"<>|]+/g, '-');
       const file = new File([blob], name, { type: 'application/pdf' });

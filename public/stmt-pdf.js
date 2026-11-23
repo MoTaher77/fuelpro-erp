@@ -86,12 +86,23 @@
     const h = opt.h || 42;
     if (opt.fill) { ctx.fillStyle = opt.fill; ctx.fillRect(M, y, W - 2 * M, h); }
     ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(M, y + h); ctx.lineTo(W - M, y + h); ctx.stroke();
+    /* light column rules so the eye follows each column */
+    ctx.strokeStyle = '#e3ebe7'; ctx.beginPath(); xs.slice(1).forEach(p => { ctx.moveTo(p.right, y + 6); ctx.lineTo(p.right, y + h - 6); }); ctx.stroke();
     cells.forEach((v, i) => {
       const c = d.cols[i], p = xs[i]; if (v == null || v === '') return;
+      const cell = typeof v === 'object' ? v : { t: v };
       ctx.font = f(c.num ? 20 : 19, opt.bold || c.bold ? 800 : 600); ctx.fillStyle = opt.color && opt.color[i] ? opt.color[i] : C.ink;
-      const txt = fit(ctx, v, p.w - 16);
-      if (c.num) { ctx.direction = 'ltr'; ctx.textAlign = 'center'; ctx.fillText(txt, (p.left + p.right) / 2, y + h / 2); ctx.direction = 'rtl'; }
-      else { ctx.textAlign = c.center ? 'center' : 'right'; ctx.fillText(txt, c.center ? (p.left + p.right) / 2 : p.right - 8, y + h / 2); }
+      if (c.num) {
+        /* amounts: one right edge per column so the digits line up; Dr/Cr as a small badge on the other side */
+        let room = p.w - 24;
+        if (cell.pill) {
+          ctx.font = f(15, 800); const pw = ctx.measureText(cell.pill).width + 16, px = p.left + 8, py = y + h / 2 - 12;
+          rrect(ctx, px, py, pw, 24, 7); ctx.fillStyle = cell.kind === 'cr' ? '#e1efe8' : '#fbecd2'; ctx.fill();
+          ctx.fillStyle = cell.kind === 'cr' ? C.green : '#8a4b00'; ctx.textAlign = 'center'; ctx.fillText(cell.pill, px + pw / 2, y + h / 2 + 1);
+          room -= pw + 8; ctx.font = f(20, opt.bold || c.bold ? 800 : 600); ctx.fillStyle = opt.color && opt.color[i] ? opt.color[i] : C.ink;
+        }
+        ctx.direction = 'ltr'; ctx.textAlign = 'right'; ctx.fillText(fit(ctx, cell.t, room), p.right - 12, y + h / 2); ctx.direction = 'rtl';
+      } else { const txt = fit(ctx, cell.t, p.w - 16); ctx.textAlign = c.center ? 'center' : 'right'; ctx.fillText(txt, c.center ? (p.left + p.right) / 2 : p.right - 10, y + h / 2); }
     });
     return y + h;
   }
