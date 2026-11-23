@@ -39,3 +39,9 @@ New `cashFlow` in `src/ops.js` + route `GET /api/accounting/cash-flow` + «ال�
 Direct method, classification in ACCOUNTING-RULES §11 / ADR-13. Test added in `test/reports.test.js`; `npm test` 60/60.
 Checked read-only on the real DB (no writes): reconciled, 56 ms. Browser check on a throwaway demo DB (port 8765; 3099 is reserved by Windows, 3000 is the owner's server).
 Resume: owner reviews the cash-flow tab on real data; Task A print photos; next feature from NEXT-TASK Task C.
+
+## 2026-11-23 — 0.8.0 old-system history in the normal screens (VERIFIED on a copy)
+Owner uploaded `M7-SAT.DMP`; new `scripts/exp2sqlite.js` reads it (<1 s). All 2026 movements (to 2026-11-12) were already in FuelPro.
+Owner rejected a separate archive screen; history now goes into audit/users/exchange_rates (+ m7_results, m7_stock_month, migration v13) via `scripts/import-m7-history.js`.
+Screens: journal «سجل القيد», audit filters (dates/origin, paging), users «تفعيل», «الأرباح الشهرية» earlier years, «الجرد الشهري» old values. sw v20. Tests 63/63.
+Finding: M7 has no detailed movements before 2026, so prior-year journals are impossible (ADR-14). Live DB NOT changed. Resume: NEXT-TASK Task 0, then dashboard → xlsx → bank rec + discounts.

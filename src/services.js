@@ -155,7 +155,13 @@ function updateUser(db, user, id, b) {
     if (b.station_ids !== undefined || (b.role !== undefined && auth.ORG_WIDE.has(role))) setStations(db, id, stationIds(db, user, b.station_ids, role));
     else if (b.role !== undefined && !auth.ORG_WIDE.has(role) && !db.prepare('SELECT 1 FROM user_stations WHERE user_id=?').get(id)) throw bad('VALIDATION', 'Choose at least one station for this user');
     if (b.role !== undefined || b.station_ids !== undefined) auth.destroyUserSessions(db, id);   // new rights take effect at next sign-in
-    if (b.active !== undefined) { db.prepare('UPDATE users SET active=? WHERE id=?').run(V.bool(b.active) ? 1 : 0, id); if (!V.bool(b.active)) auth.destroyUserSessions(db, id); }
+    if (b.name !== undefined) db.prepare('UPDATE users SET name=? WHERE id=?').run(V.str(b.name, 'name', { min: 1, max: 80 }), id);
+    if (b.email !== undefined) { const em = V.email(b.email, 'email');
+      if (db.prepare('SELECT 1 FROM users WHERE email=? AND id<>?').get(em, id)) throw conflict('EMAIL_TAKEN', 'This e-mail is already used');
+      db.prepare('UPDATE users SET email=? WHERE id=?').run(em, id); }
+    if (b.active !== undefined) {
+      if (V.bool(b.active) && /@old-system.invalid$/i.test(db.prepare('SELECT email FROM users WHERE id=?').get(id).email)) throw bad('EMAIL_REQUIRED', 'Give this user a real e-mail and a password before activating');
+      db.prepare('UPDATE users SET active=? WHERE id=?').run(V.bool(b.active) ? 1 : 0, id); if (!V.bool(b.active)) auth.destroyUserSessions(db, id); }
     if (b.reset_2fa === true) { db.prepare('UPDATE users SET totp_enabled=0, totp_secret=NULL, totp_last_step=0 WHERE id=?').run(id); db.prepare('DELETE FROM recovery_codes WHERE user_id=?').run(id); auth.destroyUserSessions(db, id); }
     if (b.password !== undefined) { auth.checkPasswordPolicy(b.password); db.prepare('UPDATE users SET pw_hash=? WHERE id=?').run(auth.hashPassword(b.password), id); auth.destroyUserSessions(db, id); }
     audit(db, user, null, 'user.update', 'user', id, { fields: Object.keys(b).filter(k => k !== 'password'), role });
@@ -509,10 +515,17 @@ function summary(db, user, sid, q) {
     by_fuel: byFuel, by_pump: byPump, by_day: Object.fromEntries(Object.entries(byDay).sort())
   };
 }
+/* newest first by the time the event happened (old-system events carry their own time); filters: from, to (dates), origin = fp | m7, q = action prefix */
 function auditLog(db, user, sid, q) {
   need(user, 'audit.read'); if (sid) station(db, user, sid); const { limit, before } = pageArgs(q);
+  const where = ['a.org_id=?', '(? IS NULL OR a.station_id=? OR a.station_id IS NULL)', 'a.id<?'], args = [user.org_id, sid || null, sid || null, before];
+  if (q.from) { where.push('a.created_at>=?'); args.push(V.date(q.from, 'from')); }
+  if (q.to) { where.push('a.created_at<?'); args.push(addDays(V.date(q.to, 'to'), 1)); }
+  if (q.origin === 'm7') where.push("a.action LIKE 'm7.%'"); else if (q.origin === 'fp') where.push("a.action NOT LIKE 'm7.%'");
+  if (q.q) { where.push('a.action LIKE ?'); args.push(V.str(q.q, 'q', { max: 40 }).replace(/[%_]/g, '') + '%'); }
+  const offset = Math.max(parseInt(q.offset, 10) || 0, 0);
   return db.prepare(`SELECT a.id,a.station_id,a.action,a.entity,a.entity_id,a.detail,a.created_at,u.name user_name FROM audit a LEFT JOIN users u ON u.id=a.user_id
-    WHERE a.org_id=? AND (? IS NULL OR a.station_id=?) AND a.id<? ORDER BY a.id DESC LIMIT ?`).all(user.org_id, sid || null, sid || null, before, limit);
+    WHERE ${where.join(' AND ')} ORDER BY a.created_at DESC, a.id DESC LIMIT ? OFFSET ?`).all(...args, limit, offset);
 }
 
 function statement(db, user, sid, cid, q) {

@@ -648,10 +648,23 @@
     };
     const bars = () => { const mx = Math.max(1, ...r.months.map(m => Math.abs(m.net_profit)));
       return h('div', { class: 'plbars' }, r.months.map(m => h('div', { class: 'plbar' }, h('div', { class: 'plv' + (m.net_profit < 0 ? ' neg' : ''), 'data-h': String(Math.round(Math.abs(m.net_profit) * 100 / mx)) }), h('small', null, ml(m.month).slice(0, 5)), h('b', null, nf(m.net_profit).replace(/\.\d+$/, ''))))); };
-    const run = guard(async () => { S.plYear = yr.value; r = await api('GET', `/api/accounting/profit-by-month?station_id=${S.sid}&year=${yr.value}`);
-      out.replaceChildren(bars(), tbl(false), h('h3', null, T('byFuel')), fuelTbl(false), h('p', { class: 'hint' }, T('plNote')));
+    let old = null;
+    const oldTbl = (forPrint) => { const cols = [['revenue', T('revenue')], ['cost_of_sales', T('cogsL')], ['gross_profit', T('grossProfit')], ['operating_expenses', T('opex')], ['other_income', T('otherIncome')], ['net_profit', T('netProfit')]];
+      const tot = {}; for (const [k] of cols) tot[k] = old.months.reduce((s, m) => s + m[k], 0);
+      return h('div', { class: forPrint ? 'tw-print' : 'tw' }, h('table', { class: 'stmt' },
+        h('thead', null, h('tr', null, h('th', null, T('month')), h('th', null, T('oldRunDate')), cols.map(([, l]) => h('th', { class: 'num' }, l)), h('th', { class: 'num' }, T('marginPct')))),
+        h('tbody', null, old.months.map(m => h('tr', null, h('td', null, h('b', null, ml(m.month)), m.derived ? h('small', { class: 'muted' }, ' *') : ''), h('td', { class: 'ltr-num' }, m.as_of.slice(5).replace('-', '/')),
+          cols.map(([k]) => h('td', { class: 'num' + (k === 'net_profit' ? ' bal ' + (m[k] < 0 ? 'neg' : 'pos') : '') }, nf(m[k]))), h('td', { class: 'num' }, pct(m.gross_profit, m.revenue))))),
+        h('tfoot', null, h('tr', null, h('td', { colspan: 2 }, T('total')), cols.map(([k]) => h('td', { class: 'num' }, nf(tot[k]))), h('td', { class: 'num' }, pct(tot.gross_profit, tot.revenue))))));
+    };
+    const oldSec = () => old && old.months.length ? sec(T('oldResults') + ' — ' + old.year, h('p', { class: 'hint' }, T('oldResultsHelp')), oldTbl(false),
+      old.months.some(m => m.derived) ? h('p', { class: 'hint' }, '* ', T('oldDerived'), old.year_run ? ' — ' + T('oldYearRun') + ': ' + nf(old.year_run.net_profit) : '') : null) : null;
+    const yearsHint = () => old && old.years.length ? h('p', { class: 'hint' }, T('oldYears'), ': ', old.years.map(y => h('button', { class: 'btn ghost sm', onclick: () => { yr.value = y; run(); } }, String(y)))) : null;
+    const run = guard(async () => { S.plYear = yr.value; [r, old] = await Promise.all([api('GET', `/api/accounting/profit-by-month?station_id=${S.sid}&year=${yr.value}`), api('GET', sp(`/reports/old-results?year=${yr.value}`)).catch(() => null)]);
+      const has = r.months.some(m => m.revenue || m.net_profit || m.operating_expenses);
+      out.replaceChildren(yearsHint() || '', has ? bars() : '', has ? tbl(false) : '', has ? h('h3', null, T('byFuel')) : '', has ? fuelTbl(false) : '', oldSec() || '', h('p', { class: 'hint' }, T('plNote')));
       out.querySelectorAll('.plv').forEach(el => { el.style.height = el.dataset.h + '%'; }); });
-    const doPrint = async () => { if (!r) return; if (!S.brand) await loadBrand(); printDoc(`${T('plTitle')} ${r.year}`, h('div', { class: 'a4 wide-doc' }, letterhead(T('plTitle'), String(r.year)), tbl(true), h('h3', null, T('byFuel')), fuelTbl(true),
+    const doPrint = async () => { if (!r) return; if (!S.brand) await loadBrand(); printDoc(`${T('plTitle')} ${r.year}`, h('div', { class: 'a4 wide-doc' }, letterhead(T('plTitle'), String(r.year)), r.months.length ? tbl(true) : '', r.months.length ? h('h3', null, T('byFuel')) : '', r.months.length ? fuelTbl(true) : '', old && old.months.length ? [h('h3', null, T('oldResults')), oldTbl(true)] : '',
       h('div', { class: 'signs' }, h('div', null, T('accountantSig')), h('div', null, T('auditorSig')), h('div', null, T('managerSig'))), printFooter())); };
     main.append(sec(T('plTitle'), h('div', { class: 'row' }, field(T('year'), yr), h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')))), out);
     await run();
@@ -740,9 +753,15 @@
         h('td', { class: 'num' + (m.over_tolerance ? ' neg' : '') }, m.sold_ml ? pctBp(m.loss_bp) : ''), h('td', { class: 'num' }, m.loss_value ? nf(m.loss_value) : ''), h('td', { class: 'num bal' }, L(m.closing_ml))))),
       h('tfoot', null, h('tr', null, h('td', { colspan: 2 }, T('total')), h('td', { class: 'num' }, L(t.totals.received_ml)), h('td', { class: 'num' }, L(t.totals.sold_ml)), h('td', { class: 'num', colspan: 2 }, L(-t.totals.counted_ml)),
         h('td', { class: 'num' }, pctBp(t.totals.loss_bp)), h('td', { class: 'num' }, nf(t.totals.loss_value)), h('td', { class: 'num' }, L(t.level_ml))))));
-    const run = guard(async () => { S.cntYear = yr.value; r = await api('GET', sp(`/stock/monthly?year=${yr.value}`));
+    const oldTbl = (rows) => rows.length ? h('div', { class: 'tw' }, h('table', { class: 'stmt' },
+      h('thead', null, h('tr', null, [T('month'), T('oldValue'), T('fpValue'), T('diffCol')].map((x, i) => h('th', { class: i ? 'num' : '' }, x)))),
+      h('tbody', null, rows.map(x => h('tr', null, h('td', null, fdate(x.month_end)), h('td', { class: 'num' }, nf(x.value)), h('td', { class: 'num' }, x.fuelpro_value == null ? '—' : nf(x.fuelpro_value)),
+        h('td', { class: 'num' + (x.difference ? ' neg' : '') }, x.difference == null ? '' : nf(x.difference))))))) : null;
+    const run = guard(async () => { S.cntYear = yr.value; const [rr, old] = await Promise.all([api('GET', sp(`/stock/monthly?year=${yr.value}`)), api('GET', sp(`/stock/old-values?year=${yr.value}`)).catch(() => ({ rows: [] }))]); r = rr;
       out.replaceChildren(h('p', { class: 'hint' }, T('cntHelp', { t: pctBp(r.tolerance_bp) })),
-        ...r.tanks.map(t => sec(h('span', null, t.tank_name, ' · ', t.fuel_name, ' — ', T('bookNow'), ': ', h('b', null, vol(t.level_ml, 0))), tankTbl(t, false)))); });
+        ...r.tanks.map(t => { const o = old.rows.filter(x => x.tank_id === t.tank_id);
+          return sec(h('span', null, t.tank_name, ' · ', t.fuel_name, ' — ', T('bookNow'), ': ', h('b', null, vol(t.level_ml, 0))), tankTbl(t, false), o.length ? h('h3', null, T('oldStock')) : '', oldTbl(o) || ''); }),
+        old.rows.length ? h('p', { class: 'hint' }, T('oldStockHelp')) : ''); });
     const doPrint = async () => { if (!r) return; if (!S.brand) await loadBrand(); printDoc(`${T('cnt')} ${r.year}`, h('div', { class: 'a4 wide-doc' }, letterhead(T('cntReport'), String(r.year)),
       ...r.tanks.map(t => h('div', { class: 'stack' }, h('h3', null, t.tank_name, ' · ', t.fuel_name), tankTbl(t, true))), h('div', { class: 'signs' }, h('div', null, T('storekeeperSig')), h('div', null, T('accountantSig')), h('div', null, T('managerSig'))), printFooter())); };
     main.append(sec(T('cnt'), h('div', { class: 'row' }, field(T('year'), yr), h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')))));

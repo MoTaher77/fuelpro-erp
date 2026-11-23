@@ -476,11 +476,25 @@
       if (!canCfg) main.append(sec(null, h('p', { class: 'muted' }, T('noData'))));
     },
     async audit(main) {
-      const a = await api('GET', sp('/audit?limit=100'));
+      const from = h('input', { type: 'date', value: S.auFrom || '', max: todayIso() }), to = h('input', { type: 'date', value: S.auTo || '', max: todayIso() });
+      const origin = sel('auOrigin', [['', T('all')], ['fp', T('auFp')], ['m7', T('auM7')]], S.auOrigin || '');
+      const out = h('div', { class: 'stack' }); let offset = 0, rows = [];
       const describe = (x) => { let d = {}; try { d = JSON.parse(x.detail || '{}'); } catch {} const parts = [];
-        for (const [k, v] of Object.entries(d)) { if (v && typeof v === 'object') { if (Array.isArray(v)) parts.push(`${k}: ${v.join(' → ')}`); else parts.push(`${k}: ${Object.entries(v).map(([a2, b2]) => a2 + '=' + b2).join(', ')}`); } else if (/_ml$/.test(k)) parts.push(`${k.replace('_ml', '')}: ${vol(v, 3)}`); else if (['gross', 'net', 'vat', 'amount'].includes(k)) parts.push(`${T(k === 'amount' ? 'amount' : k)}: ${money(v)}`); else parts.push(`${k}: ${v}`); }
+        if (x.action.startsWith('m7.')) {
+          if (d.book || d.ref) parts.push([d.book, d.ref].filter(Boolean).join(' ')); if (d.doc_date) parts.push(fdate(d.doc_date)); if (d.amount != null) parts.push(money(d.amount));
+          if (d.title) parts.push(d.title); if (d.from || d.to) parts.push((d.from ? fdate(d.from) : '') + ' → ' + (d.to ? fdate(d.to) : '')); if (d.text) parts.push(d.text); if (d.memo) parts.push(d.memo);
+          if (d.lines && d.lines.length) parts.push(d.lines.length + ' ' + T('auLines'));
+          if (parts.length) return parts.join(' · '); delete d.k; }
+        for (const [k, v] of Object.entries(d)) { if (v && typeof v === 'object') { if (Array.isArray(v)) parts.push(`${k}: ${v.join(' → ')}`); else parts.push(`${k}: ${Object.entries(v).map(([a2, b2]) => a2 + '=' + b2).join(', ')}`); } else if (/_ml$/.test(k)) parts.push(`${k.replace('_ml', '')}: ${vol(v)}`); else parts.push(`${k}: ${v}`); }
         return parts.join(' · '); };
-      main.append(sec(T('audit'), table(['#', T('time'), T('name'), '', ''], a.map(x => [x.id, fdt(x.created_at), x.user_name || '', D['au.' + x.action] ? T('au.' + x.action) : x.action, h('span', { class: 'muted small' }, describe(x))]))));
+      const label = (x) => D['au.' + x.action] ? T('au.' + x.action) : x.action;
+      const draw = () => out.replaceChildren(table(['#', T('time'), T('name'), '', ''], rows.map(x => [x.id, fdt(x.created_at), x.user_name || '', x.action.startsWith('m7.') ? h('span', null, h('span', { class: 'chip' }, T('auM7Short')), ' ', label(x)) : label(x), h('span', { class: 'muted small' }, describe(x))])),
+        rows.length && rows.length % 100 === 0 ? h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: more }, T('loadMore'))) : null);
+      const q = () => `/audit?limit=100&offset=${offset}${from.value ? '&from=' + from.value : ''}${to.value ? '&to=' + to.value : ''}${origin.value ? '&origin=' + origin.value : ''}`;
+      const run = guard(async () => { S.auFrom = from.value; S.auTo = to.value; S.auOrigin = origin.value; offset = 0; rows = await api('GET', sp(q())); draw(); });
+      const more = guard(async () => { offset += 100; rows = rows.concat(await api('GET', sp(q()))); draw(); });
+      main.append(sec(T('audit'), h('div', { class: 'row' }, field(T('from'), from), field(T('to'), to), field(T('auOrigin'), origin), h('button', { class: 'btn', onclick: run }, T('run'))), out));
+      await run();
     }
   };
   function csv(name, header, rows) { const esc = (v) => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v); const blob = new Blob(['﻿' + [header, ...rows].map(r => r.map(esc).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' }); const a = h('a', { href: URL.createObjectURL(blob), download: name }); document.body.append(a); a.click(); a.remove(); }

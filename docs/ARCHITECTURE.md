@@ -33,7 +33,7 @@ flowchart LR
 - **Modules:**
   | File | Responsibility |
   |---|---|
-  | `src/db.js` | `openDb`, 12 migrations (`PRAGMA user_version`), `tx()` with SAVEPOINT nesting |
+  | `src/db.js` | `openDb`, 13 migrations (`PRAGMA user_version`), `tx()` with SAVEPOINT nesting |
   | `src/auth.js` | scrypt passwords, hashed sessions, `PERMS`/`ROLES`/`ORG_WIDE`, login throttling |
   | `src/services.js` | orgs/users/stations/fuels/tanks/pumps, sales, deliveries, expenses, payments, adjustments, scoping (`scoped`, `need`), audit, password reset, 2FA |
   | `src/ops.js` | shifts & cash moves, suppliers, transfers, stock moves/reconciliation, journals, trial balance, income statement, balance sheet, ledger, period lock, integrity check |
@@ -50,7 +50,7 @@ flowchart LR
 - `app.js` owns the shell: `h()` DOM helper, dictionary `D` (`[ar,en,fr]`), prefs (language, unit L/gal, Hijri calendar, theme),
   `api()` wrapper, `NAV` (groups gOps/gStock/gParties/gFinance/gAdmin), `render()`, `fitTables` (column auto-fit), `printNode`.
   Other files add screens to the shared `VIEWS` registry (`F.VIEWS.<key>`). Hash routing `#<key>`.
-- PWA: `manifest.webmanifest`, `sw.js` caches the shell only (cache name `fuelpro-shell-v19`); data always from the server.
+- PWA: `manifest.webmanifest`, `sw.js` caches the shell only (cache name `fuelpro-shell-v20`); data always from the server.
 - Print: `printNode` (app.js) and `F.printDoc` (books-ui.js) → unified letterhead from `org_brand`, A4, landscape for wide tables, 80 mm receipt for sale tickets. Font: Dubai → Segoe UI → Tahoma.
 
 ## 4. Data and integrity
@@ -81,6 +81,6 @@ Cloud: `Dockerfile`, `render.yaml` (demo + production services), `/healthz`. →
 
 ## 7. Known architecture limits and ideas (not implemented)
 - One SQLite file means one server process; multi-server needs PostgreSQL (PLANNED, not started).
-- `server.js` holds all 121 routes inline; a per-module route file would make the API easier to read (proposal only — no refactor without the owner's go-ahead).
+- `server.js` holds all 124 routes inline; a per-module route file would make the API easier to read (proposal only — no refactor without the owner's go-ahead).
 - Local Git repo (branch `main`) since 2026-11-23; no remote. Cloud copies are still synced by hand (KI-02).
 - Large UI files (`books-ui.js` 804 lines, `app.js` 600) have very long lines; diff-friendly formatting would help reviews.

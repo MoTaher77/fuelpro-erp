@@ -163,6 +163,17 @@
   }
 
   /* ================================ JOURNAL ENTRIES ================================ */
+  /* everything recorded about one entry: FuelPro's own events and, for carried-over entries, the old system's copies and approvals */
+  const journalHistory = guard(async (j) => {
+    const rows = await api('GET', `/api/journals/${j.id}/history`);
+    const body = rows.length ? rows.map(x => { const d = x.detail || {};
+      const head = h('div', { class: 'row between' }, h('b', null, D['au.' + x.action] ? T('au.' + x.action) : x.action), h('span', { class: 'muted small' }, fdt(x.created_at), x.user_name ? ' · ' + x.user_name : ''));
+      if (x.action !== 'm7.doc_edit') return h('div', { class: 'card' }, head, d.batch ? h('div', { class: 'muted small' }, '#' + d.batch) : null);
+      return h('div', { class: 'card' }, head, h('div', { class: 'muted small' }, T('jOldCopy'), ': ', [d.book, d.ref].filter(Boolean).join(' '), d.doc_date ? ' · ' + fdate(d.doc_date) : '', d.amount != null ? ' · ' + money(d.amount) : '', d.memo ? ' · ' + d.memo : ''),
+        table([T('code'), T('account'), T('debit'), T('creditCol'), T('memo')], (d.lines || []).map(l => [h('span', { class: 'ltr' }, l.acno || ''), l.name || '', l.debit ? money(l.debit) : '', l.credit ? money(l.credit) : '', l.memo || ''])));
+    }) : [h('p', { class: 'muted' }, T('jHistoryNone'))];
+    const m = modal(T('jHistory') + ': ' + (j.ref ? T('docNo') + ' ' + j.ref : '#' + j.id), h('div', { class: 'stack' }, ...body)); m.classList.add('wide');
+  });
   F.VIEWS.acct = async (main) => {
     const opts = [['list', T('journals')]]; if (cd('journal.create')) opts.push(['new', T('newJournal')]); opts.push(['chart', T('chart')]); if (cd('period.lock')) opts.push(['lock', T('lockPeriod')]);
     main.append(tabs('acTab', opts)); const box = h('div', { class: 'stack' }); main.append(box);
@@ -178,7 +189,7 @@
           const d = j.lines.reduce((a, l) => a + l.debit, 0);
           return h('div', { class: 'card' }, h('div', { class: 'row between' }, h('div', null, h('b', null, j.ref ? T('docNo') + ' ' + j.ref : '#' + j.id, ' · ', fdate(j.business_date)), ' ', pill(j.status, T('js.' + j.status)), ' ', h('span', { class: 'chip' }, T('src.' + j.source)), j.reversed_by ? [' ', pill('closed', T('reversed'))] : null, j.reversal_of ? [' ', h('span', { class: 'muted small' }, T('reverse'), ' #', j.reversal_of)] : null,
             h('div', { class: 'muted small' }, j.memo || '', j.user_name ? ' · ' + j.user_name : '')),
-            h('div', { class: 'row' }, h('button', { class: 'btn ghost sm', onclick: () => F.printJournal(j) }, '⎙ ', T('print')), j.status === 'draft' && cd('journal.post') ? h('button', { class: 'btn sm', onclick: guard(async () => { await api('POST', `/api/journals/${j.id}/post`); toast(T('saved')); run(); }) }, T('post')) : null,
+            h('div', { class: 'row' }, h('button', { class: 'btn ghost sm', onclick: () => F.printJournal(j) }, '⎙ ', T('print')), h('button', { class: 'btn ghost sm', onclick: () => journalHistory(j) }, T('jHistory')), j.status === 'draft' && cd('journal.post') ? h('button', { class: 'btn sm', onclick: guard(async () => { await api('POST', `/api/journals/${j.id}/post`); toast(T('saved')); run(); }) }, T('post')) : null,
               j.status === 'draft' && cd('journal.create') ? h('button', { class: 'btn danger sm', onclick: guard(async () => { await api('DELETE', `/api/journals/${j.id}`); run(); }) }, T('delete')) : null,
               j.status === 'posted' && (j.source === 'manual' || j.source === 'import') && !j.reversed_by && !j.reversal_of && cd('journal.reverse') ? h('button', { class: 'btn ghost sm', onclick: () => F.askReason(guard(async (r) => { await api('POST', `/api/journals/${j.id}/reverse`, { reason: r }); run(); })) }, T('reverse')) : null)),
             table([T('code'), T('account'), T('note'), T('debit'), T('creditCol')], [...j.lines.map(l => [l.code, [P.lang === 'ar' ? l.name_ar : l.name_en, l.party_name ? h('div', { class: 'muted small' }, l.party_name) : null], h('span', { class: 'small' }, l.memo || ''), l.debit ? money(l.debit) : '', l.credit ? money(l.credit) : '']), ['', h('b', null, T('total')), '', h('b', null, money(d)), h('b', null, money(d))]]));
@@ -303,10 +314,16 @@
       const m = modal(T('editAccess') + ': ' + u.name, h('form', { onsubmit: guard(async (e) => { e.preventDefault(); const ids = [...m.querySelectorAll('.eus:checked')].map(x => +x.value); await api('PATCH', '/api/users/' + u.id, { role: role.value, station_ids: ids }); m.remove(); toast(T('saved')); render(); }) },
         field(T('role'), role), h('label', null, T('stations')), boxes, h('p', { class: 'hint' }, T('roleHelp')), h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('save')))));
     };
-    main.append(sec(T('users'), table([T('name'), T('email'), T('role'), T('stations'), T('tfa'), ''], users.map(x => [x.name, h('span', { class: 'ltr' }, x.email), T(x.role),
+    const activateOld = (u) => {
+      const em = h('input', { type: 'email', required: true }), pw = h('input', { type: 'password', autocomplete: 'new-password', required: true }), role = sel('auRole', ROLE_LIST.filter(r => r !== 'admin' || S.user.role === 'owner').map(r => [r, T(r)]), 'cashier'), boxes = stationBoxes('aus', [S.sid]);
+      const m = modal(T('activate') + ': ' + u.name, h('form', { onsubmit: guard(async (ev) => { ev.preventDefault(); const ids = [...m.querySelectorAll('.aus:checked')].map(x => +x.value);
+        await api('PATCH', '/api/users/' + u.id, { email: em.value, password: pw.value, role: role.value, station_ids: ids, active: true }); m.remove(); toast(T('saved')); render(); }) },
+        h('p', { class: 'hint' }, T('activateHelp')), field(T('email'), em), field(T('password'), pw), field(T('role'), role), h('label', null, T('stations')), boxes, h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('activate')))));
+    };
+    main.append(sec(T('users'), table([T('name'), T('email'), T('role'), T('stations'), T('tfa'), ''], users.map(x => [x.name, /@old-system\.invalid$/i.test(x.email) ? h('span', { class: 'chip' }, T('oldUser')) : h('span', { class: 'ltr' }, x.email), T(x.role),
       ['owner', 'admin'].includes(x.role) ? h('span', { class: 'muted' }, T('allStations')) : x.station_ids.map(stName).join('، '),
       x.totp_enabled ? h('span', { class: 'pill ok-pill' }, T('tfaOn')) : h('span', { class: 'muted' }, T('tfaOff')),
-      x.role === 'owner' || x.id === S.user.id ? '' : h('div', { class: 'row' }, h('button', { class: 'btn ghost sm', onclick: () => editUser(x) }, T('editAccess')),
+      x.role === 'owner' || x.id === S.user.id ? '' : /@old-system\.invalid$/i.test(x.email) ? h('button', { class: 'btn sm', onclick: () => activateOld(x) }, T('activate')) : h('div', { class: 'row' }, h('button', { class: 'btn ghost sm', onclick: () => editUser(x) }, T('editAccess')),
         h('button', { class: 'btn ghost sm', onclick: guard(async () => { await api('PATCH', '/api/users/' + x.id, { active: !x.active }); render(); }) }, x.active ? T('disable') : T('enable')),
         x.totp_enabled ? h('button', { class: 'btn ghost sm', onclick: guard(async () => { await api('PATCH', '/api/users/' + x.id, { reset_2fa: true }); toast(T('saved')); render(); }) }, T('reset2fa')) : null)])), h('p', { class: 'hint' }, T('roleHelp'))));
     const n = h('input', { id: 'nuName' }), e = h('input', { id: 'nuEmail', type: 'email' }), pw = h('input', { id: 'nuPass', type: 'password', autocomplete: 'new-password' }), role = sel('nuRole', ROLE_LIST.filter(r => r !== 'admin' || S.user.role === 'owner').map(r => [r, T(r)]), 'cashier');

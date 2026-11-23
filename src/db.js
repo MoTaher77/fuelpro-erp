@@ -351,14 +351,26 @@ ALTER TABLE sales ADD COLUMN bill TEXT;
 /* v12: amounts may be kept more precisely than they are shown (the old books kept rials to the thousandth, printed to the fils) */
 `
 ALTER TABLE stations ADD COLUMN disp_dec INTEGER CHECK(disp_dec IS NULL OR disp_dec BETWEEN 0 AND 4);
+`,
+/* v13: history carried over from the old M7 system that has no FuelPro table of its own:
+   the old system's saved period results (trading account / profit & loss, 2020 onwards) and its monthly store values.
+   src_key = the source row, so loading twice never duplicates. Everything else from M7 goes into the normal tables
+   (journals, audit, users, exchange_rates). Nothing here is a posting. */
 `
-
-
-
-
-
-
-
+CREATE TABLE m7_results(
+  id INTEGER PRIMARY KEY, org_id INTEGER NOT NULL REFERENCES orgs(id), station_id INTEGER NOT NULL REFERENCES stations(id),
+  account_id INTEGER REFERENCES accounts(id), acno TEXT NOT NULL, acname TEXT, as_of TEXT, kind INTEGER, status INTEGER,
+  debit INTEGER NOT NULL DEFAULT 0, credit INTEGER NOT NULL DEFAULT 0, made_at TEXT, src_key TEXT NOT NULL, UNIQUE(org_id, src_key)
+);
+CREATE INDEX m7_results_asof ON m7_results(station_id, as_of);
+CREATE TABLE m7_stock_month(
+  id INTEGER PRIMARY KEY, org_id INTEGER NOT NULL REFERENCES orgs(id), station_id INTEGER NOT NULL REFERENCES stations(id),
+  tank_id INTEGER REFERENCES tanks(id), store_no INTEGER, store_name TEXT, month_end TEXT NOT NULL, value INTEGER NOT NULL, entered_at TEXT,
+  src_key TEXT NOT NULL, UNIQUE(org_id, src_key)
+);
+CREATE INDEX audit_entity ON audit(org_id, entity, entity_id);
+CREATE INDEX audit_time ON audit(org_id, created_at);
+`
 ];
 
 function openDb(path) {

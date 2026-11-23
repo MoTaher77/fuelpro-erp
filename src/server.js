@@ -8,6 +8,7 @@ const S = require('./services');
 const O = require('./ops');
 const B = require('./books');
 const R = require('./reports');
+const M7 = require('./m7archive');
 const auth = require('./auth');
 const { HttpError, unauthorized, notFound } = require('./errors');
 
@@ -147,6 +148,10 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
   route('GET', '/api/stations/:sid/reports/boxes', (c) => ({ body: R.boxReport(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/reports/collections', (c) => ({ body: R.collections(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/reports/daily', (c) => ({ body: R.dailyReport(db, c.user, st(c), c.q) }));
+  /* history carried over from the old M7 system */
+  route('GET', '/api/stations/:sid/reports/old-results', (c) => ({ body: M7.oldResults(db, c.user, st(c), c.q) }));
+  route('GET', '/api/stations/:sid/stock/old-values', (c) => ({ body: M7.oldStockValues(db, c.user, st(c), c.q) }));
+  route('GET', '/api/journals/:id/history', (c) => ({ body: M7.journalHistory(db, c.user, id(c.p.id)) }));
   route('GET', '/api/accounting/year-close', (c) => ({ body: R.yearClose(db, c.user, c.q, false) }));
   route('POST', '/api/accounting/year-close', (c) => ({ status: 201, body: R.yearClose(db, c.user, c.body, true) }));
   route('POST', '/api/accounting/year-reopen', (c) => ({ body: R.yearReopen(db, c.user, c.body) }));

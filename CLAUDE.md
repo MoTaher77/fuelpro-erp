@@ -16,8 +16,8 @@ In real use at **محطة التميز** with one year of data imported from the
 
 ## 3. Stack (verified)
 Node.js ≥ 22.5, **zero npm dependencies**, built-in `node:sqlite` (WAL). Plain HTTP server `src/server.js`
-(121 routes). Front end: vanilla JS SPA in `public/` (no framework, no build step), PWA service worker.
-Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 12).
+(124 routes). Front end: vanilla JS SPA in `public/` (no framework, no build step), PWA service worker.
+Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 13).
 
 ## 4. Non-negotiable invariants
 1. Money = integers in minor units (`stations.cur_dec`; YER uses 3 stored / `disp_dec` 2 shown). Quantities in ml, prices `*_e4`, rates `*_e6`. Never floats — use `src/money.js`.
@@ -35,11 +35,11 @@ Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 12).
 - Never print/store passwords. `بيانات-الدخول.txt` and `.env` hold secrets: do not read or copy them.
 - Customer/supplier names and balances are private: never publish, upload, or paste them into docs.
 - Do not deploy to Render/Railway without the owner's explicit request.
-- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v19`) or users keep the old UI.
+- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v20`) or users keep the old UI.
 
 ## 6. Commands (verified 2026-11-23)
 ```
-npm test                 # node:test, 60 tests, ~9 s, in-memory DBs — must stay green
+npm test                 # node:test, 63 tests, ~9 s, in-memory DBs — must stay green
 npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default
 DB_PATH=/tmp/demo.db DEMO_PASSWORD=... node scripts/seed-demo.js --days 365   # throwaway demo DB
 npm run backup           # consistent copy into data/backups/ (server also makes 1 auto copy/day, keeps 30)
@@ -59,6 +59,7 @@ Windows: `start-fuelpro.bat` / `start-fuelpro.ps1` in `Downloads` (real data), `
 Stable: ARCHITECTURE, PROJECT-STRUCTURE, DATABASE-SCHEMA, MODULES, API-REFERENCE, ACCOUNTING-RULES, SECURITY,
 TESTING, DEPLOYMENT, DECISIONS. Moving: PROJECT-MEMORY, PROGRESS, NEXT-TASK, KNOWN-ISSUES, SESSION-HISTORY.
 On-demand skills: `.claude/skills/fuelpro-*`.
+Old-system (M7) history is carried into the normal tables by `scripts/import-m7-history.js` → `src/m7archive.js` (ADR-14). Hash routes are letters only (`#[a-z]+`).
 Root files `ARCHITECTURE.md DATABASE_SCHEMA.md PROJECT_PROGRESS.md RESUME.md QA_REPORT.md` are **legacy (v0.4.0)**; `docs/` wins.
 
 ## 9. Start-of-task workflow (do not skip, do not over-read)

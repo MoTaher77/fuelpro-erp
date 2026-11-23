@@ -17,6 +17,7 @@ Updated 2026-11-23. No percentages: each line is VERIFIED (code + test), REPORTE
 | Sales register, purchase invoices, profit by month, price history, meter sheet | VERIFIED | `books.test.js` |
 | Daily station report, box report, collections, journal book | VERIFIED | `reports.test.js` |
 | Year close / reopen | VERIFIED | `reports.test.js` |
+| Old-system (M7) history 0.8.0: DMP converter; edit copies/approvals/runs/log → audit (journal «سجل القيد», audit filters); users inactive + «تفعيل»; rates → exchange_rates; earlier-year results in «الأرباح الشهرية»; old stock value in «الجرد الشهري». Tried on a copy of the real DB | VERIFIED (code + tests + browser on a copy); **not yet loaded into the live DB** | `m7-history.test.js` |
 | Cash-flow statement, direct method (0.7.0): operating / investing / financing, reconciles to the boxes; checked read-only on the real books (reconciled) | VERIFIED | `reports.test.js` "cash-flow statement…" |
 | Backups (auto daily + manual, VACUUM INTO, restore) | VERIFIED | `erp.test.js`, `books.test.js` |
 | Import of the real M7 year for محطة التميز; balances match except 33807/411005 | REPORTED (checked in earlier sessions with `scripts/reconcile-m7.js`) | — |

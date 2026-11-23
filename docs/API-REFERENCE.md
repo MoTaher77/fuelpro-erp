@@ -1,5 +1,5 @@
 # API-REFERENCE — FuelPro
-Generated from `src/server.js` on 2026-11-23 (121 routes). VERIFIED route list; request/response shapes are summarised, not exhaustive — read the handler for the exact fields.
+Generated from `src/server.js` on 2026-11-23 (124 routes). VERIFIED route list; request/response shapes are summarised, not exhaustive — read the handler for the exact fields.
 
 ## Conventions (VERIFIED in `src/server.js`)
 - JSON only. Writes need `Content-Type: application/json` and a same-origin `Origin` (CSRF). Session cookie `sid` (HttpOnly, SameSite=Strict, 7 days).
@@ -196,6 +196,9 @@ Generated from `src/server.js` on 2026-11-23 (121 routes). VERIFIED route list; 
 | GET | `/api/accounting/trial-balance` | ops.js trialBalance |  |
 | GET | `/api/accounting/income-statement` | ops.js incomeStatement |  |
 | GET | `/api/accounting/balance-sheet` | ops.js balanceSheet |  |
+| GET | `/api/stations/:sid/reports/old-results?year=` | m7archive.js oldResults | old system's saved monthly results (trading + P&L) for one year, `report.read` |
+| GET | `/api/stations/:sid/stock/old-values?year=` | m7archive.js oldStockValues | old monthly store value vs FuelPro value |
+| GET | `/api/journals/:id/history` | m7archive.js journalHistory | audit rows of a journal incl. old edit copies and approvals, `journal.read` |
 | GET | `/api/accounting/cash-flow` | ops.js cashFlow | `from`, `to`, `station_id` or `currency`; returns opening/closing cash, `operating`/`investing`/`financing`/`opening`/`fx` sections (rows, inflow, outflow, total), `boxes`, `reconciled` |
 | GET | `/api/accounting/ledger` | ops.js accountLedger |  |
 | GET | `/api/accounting/lock` | inline |  |
