@@ -57,10 +57,23 @@
       return parts;
     };
     const run = guard(async () => { S.dyDate = d.value; r = await api('GET', sp('/reports/daily?date=' + d.value)); out.replaceChildren(sec(h('span', null, T('dayReport'), ' — ', fdate(r.date)), ...body(false))); });
+    /* the day's closing figures as a WhatsApp message to the owner (the number is remembered on this device) */
+    const waDay = () => {
+      if (!r) return; const t = r.totals, b = S.brand || {}, cur = F.curWord ? F.curWord() : '', dd = String(r.date).split('-').reverse().join('/');
+      const L = [`*${b.name || (S.st && S.st.name) || 'FuelPro'}*`, `${T('dayReport')} — ${dd}`, '',
+        `${T('volSold')}: ${vol(t.qty_ml, 0)}`, `${T('sales')}: *${nf(t.amount)} ${cur}*`, `${T('cashSales')}: ${nf(t.cash)}`, `${T('creditSales')}: ${nf(t.credit)}`, `${T('grossProfit')}: ${nf(t.gross_profit)}`];
+      if (r.fuels.length > 1) { L.push('', `${T('salesByFuel')}:`); for (const f of r.fuels) L.push(`• ${f.fuel_name}: ${volNum(f.qty_ml, 0)} — ${nf(f.amount)}`); }
+      if (t.expenses) L.push('', `${T('exp')}: ${nf(t.expenses)}`);
+      if (t.receipts || t.payments) L.push(`${T('moneyIn')}: ${nf(t.receipts || 0)} · ${T('moneyOut')}: ${nf(t.payments || 0)}`);
+      if (t.deliveries) L.push(`${T('pur')}: ${nf(t.deliveries)}`);
+      const boxes = r.boxes.filter(x => x.closing); if (boxes.length) { L.push('', `${T('box')} (${T('closingBal')}):`); for (const x of boxes.slice(0, 8)) L.push(`• ${x.name_ar}: ${nf(x.closing)}`); }
+      if (r.tanks.length) { L.push('', `${T('tankLevels')}:`); for (const k of r.tanks) L.push(`• ${k.tank_name}: ${volNum(k.closing_ml, 0)}`); }
+      F.waDialog('', L.join('\n'), T('waDayHint'), 'fp.waOwner');
+    };
     const step = (n) => () => { const v = addDay(d.value || todayIso(), n); if (v > todayIso()) return; d.value = v; run(); };
     const doPrint = async () => { if (!r) return; await brand(); F.printDoc(`${T('dayReport')} ${r.date}`, h('div', { class: 'a4 xdoc' }, F.letterhead(T('dayReport'), slash(r.date)), ...body(true), signs('cashierSig', 'accountantSig', 'managerSig'), foot())); };
     main.append(sec(T('day'), h('div', { class: 'row' }, h('button', { class: 'btn ghost sm', onclick: step(-1) }, '→ ', T('prevDay')), field(T('date'), d), h('button', { class: 'btn ghost sm', onclick: step(1) }, T('nextDay'), ' ←'),
-      h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')))), out);
+      h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')), F.waDialog ? h('button', { class: 'btn wa-btn', onclick: waDay }, F.waIcon(), ' ', T('waSend')) : null)), out);
     await run();
   };
 
@@ -118,11 +131,39 @@
       h('div', { class: 'xtiles' }, tile(T('totalOwed'), nf(r.total), 'gold'), tile(T('band1'), nf(r.bands.b1)), tile(T('band2'), nf(r.bands.b2)), tile(T('band3'), nf(r.bands.b3)), tile(T('band4'), nf(r.bands.b4), 'red'), tile(T('overLimit'), String(r.over_limit))), tbl(false)); };
     const run = guard(async () => { S.colDays = +dd.value || 0; r = await api('GET', sp('/reports/collections?days=' + (+dd.value || 0))); draw(); });
     q.addEventListener('input', () => r && draw()); ov.onchange = () => r && draw();
+    /* reminders queue: every customer of the current list who owes money, one tap each, ticked once opened today */
+    const queue = () => {
+      if (!r || !F.waNumber) return;
+      const key = 'fp.remind.' + todayIso(); let done = new Set();
+      try { done = new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch { /* optional */ }
+      const mark = (id, row, btn) => { done.add(id); try { localStorage.setItem(key, JSON.stringify([...done])); } catch { /* optional */ } row.classList.add('sent'); btn.textContent = '✓ ' + T('waSent'); };
+      const list = rows().filter(c => c.balance > 0).sort((a, b) => b.balance - a.balance);
+      const items = list.map(c => {
+        const num = F.waNumber(c.phone), row = h('div', { class: 'qrow' + (done.has(c.id) ? ' sent' : '') });
+        const info = h('div', { class: 'qi' }, h('b', null, c.name), h('span', { class: 'muted small' }, nf(c.balance), c.days_since_payment != null ? ` · ${c.days_since_payment} ${T('daysShort')}` : ''));
+        let btn;
+        if (!num) {
+          /* no number on file: type it here once; it is saved on the customer (needs the customer.edit permission) and the row turns into a WhatsApp button */
+          const inp = h('input', { type: 'tel', dir: 'ltr', inputmode: 'tel', placeholder: '7XXXXXXXX', 'aria-label': T('phone'), style: 'width:9.5em;min-height:36px' });
+          const save = h('button', { class: 'btn ghost sm', type: 'button', onclick: guard(async () => {
+            const v = inp.value.trim(); if (!F.waNumber(v)) return toast(T('noPhone'));
+            await api('PATCH', sp('/customers/' + c.id), { phone: v }); c.phone = v; if (S.customers) { const k = S.customers.find(x => x.id === c.id); if (k) k.phone = v; }
+            toast(T('saved')); queue();
+          }) }, T('save'));
+          btn = h('div', { class: 'row', style: 'margin:0;gap:6px;flex-wrap:nowrap' }, inp, save);
+        } else { btn = h('a', { class: 'btn wa-go sm', target: '_blank', rel: 'noopener', href: 'https://wa.me/' + num + '?text=' + encodeURIComponent(waReminder(c)) }, F.waIcon(), ' ', done.has(c.id) ? '✓ ' + T('waSent') : T('waSend'));
+          btn.addEventListener('click', () => mark(c.id, row, btn)); }
+        row.append(info, btn); return row;
+      });
+      const n = list.filter(c => F.waNumber(c.phone)).length;
+      document.querySelectorAll('.modal').forEach(x => x.remove());
+      modal(T('waQueue'), h('div', { class: 'stack', style: 'gap:10px' }, h('p', { class: 'hint', style: 'margin:0' }, T('waQueueHint', { n, m: list.length })), h('div', { class: 'qlist' }, items.length ? items : h('p', { class: 'muted' }, T('noData')))));
+    };
     const doPrint = async () => { if (!r) return; await brand(); F.printDoc(`${T('colReport')} ${r.as_of}`, h('div', { class: 'a4 wide-doc xdoc' }, F.letterhead(T('colReport'), T('asOf') + ' ' + slash(r.as_of) + (r.days ? ' · ' + T('noPayFor') + ' ' + r.days : '')), tbl(true), signs('accountantSig', 'managerSig'), foot())); };
     const exp = () => r && csv(`collections-${r.as_of}.csv`, ['ref', 'name', 'phone', 'balance', 'credit_limit', 'last_sale', 'last_payment', 'last_payment_amount', 'days_since'],
       rows().map(c => [c.ref || '', c.name, c.phone || '', (c.balance / 10 ** dec()).toFixed(2), (c.credit_limit / 10 ** dec()).toFixed(2), c.last_debit || '', c.last_credit || '', (c.last_credit_amount / 10 ** dec()).toFixed(2), c.days_since_payment ?? '']));
     main.append(sec(T('col'), h('p', { class: 'hint' }, T('colHelp')), h('div', { class: 'row' }, field(T('noPayFor'), dd), h('button', { class: 'btn', onclick: run }, T('run')), field(T('search'), q), h('label', { class: 'chk' }, ov, ' ', T('overLimit')),
-      h('button', { class: 'btn ghost sm', onclick: exp }, 'CSV'), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')))), out);
+      h('button', { class: 'btn ghost sm', onclick: exp }, 'CSV'), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')), F.waDialog ? h('button', { class: 'btn wa-btn', onclick: queue }, F.waIcon(), ' ', T('waQueue')) : null)), out);
     await run();
   };
 

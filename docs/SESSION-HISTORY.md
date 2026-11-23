@@ -80,3 +80,12 @@ Owner wanted the PDF, not text. New `public/stmt-pdf.js`: canvas-drawn A4 pages 
 
 ## 2026-11-23 — 0.17.0 station page refresh from a laptop backup
 `web/runtime.js` importDb (station builds only, `window.__FP_STATION`): file picker → checks → confirm → save(true, bytes) → reload. Chromium e2e with the demo DB as the 'backup': confirm text correct, reload, sign-in with the file's account, integrity ok, old page admin gone. Tests 73.
+
+## 2026-11-23 — 0.18.0 daily summary on WhatsApp
+`public/more-ui.js` waDay on #day (uses F.waDialog with rememberKey `fp.waOwner`). Checked on a station-data copy for 2026-11-12 (message text, number remembered). sw v35. PR #5 merged earlier (0.16-0.17.2).
+
+## 2026-11-23 — 0.19.0 payment reminders queue
+`public/more-ui.js` queue() on #col: list of owing customers, wa.me anchors with waReminder text, sent ticks in localStorage `fp.remind.<date>`, inline phone save via PATCH customers/:cid. Finding: the station snapshot has 0 customers with a phone number. Checked in Chromium on a copy: 105 rows, save number → link 9677…, tick persists after reopen. sw v36.
+
+## 2026-11-23 — 0.20.0 station setup wizard
+`public/wizard-ui.js` (banner on #dash/#setup while the station has no fuels/tanks/pumps; modal steps VAT → fuels → tanks → pumps → next jobs). Chromium e2e on a fresh org: 5% tax, 2 fuels with price/cost, 2 tanks (25k/10k L), 2 pumps with meter readings, refused a level above capacity before creating anything, banner gone afterwards, no page errors. Bugs found and fixed during the test: parseDec returns scaled integers (VAT), a duplicate tank after a failed retry (now validate-all-then-create), stray 'null' on the last step. sw v37.
