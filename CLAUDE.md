@@ -46,7 +46,7 @@ Front end stays vanilla JS, no framework/build (ADR-24); SQLite stays the engine
 ```
 npm ci                   # installs pg + dev tools (lock file committed); not needed just to run the SQLite app
 npm run lint             # eslint (errors fail CI)
-npm test                 # node:test, 80 pass + 1 skipped (PostgreSQL), ~6 s, in-memory DBs — must stay green
+npm test                 # node:test, 81 pass + 1 skipped (PostgreSQL), ~6 s, in-memory DBs — must stay green
 npm run test:e2e         # Playwright on a seeded demo DB, 5 tests, ~25 s
 npm run typecheck        # tsc on files marked // @ts-check
 npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default

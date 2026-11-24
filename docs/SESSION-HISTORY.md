@@ -116,6 +116,6 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 ## 2026-11-24 — 0.26.0 speed and quality (cloud, branch claude/wonderful-pascal-jfuqxu)
 - Measured first (snapshot copy + demo DBs up to 100k journals): no compression/ETag (533 KB per reload), alerts after every screen (165 ms blocking), N+1 in ageing/integrity/party lists, 36k `Intl` constructions and up to 300 forced layouts on long screens.
 - Fixed: compression + ETag, v16 covering indexes, grouped queries, faster balances/ledger/integrity, FPFMT, batched fitTables, long lists in parts, bell throttle; bugs KI-13..16 (boot race, CSP styles, date paging, double submit).
-- Proved: `compare-dump.js` identical answers (snapshot + 100k); stress 20 users PASS; 80 unit + 5 e2e tests; sql.js suite; Artifact bundle builds.
+- Proved: `compare-dump.js` identical answers (snapshot, 100k and 480k journals); stress 20 users PASS (120-day and 20-year demo); 81 unit + 5 e2e tests; sql.js suite; Artifact bundle builds.
 - Added: bench/stress scripts, CI jobs (typecheck, audit, e2e, perf), `fuelpro-performance` skill, review agents, ADR-23..25, docs PERFORMANCE.md + DATABASE.md.
 - Resume: `docs/NEXT-TASK.md` → "Handoff 2026-11-24".

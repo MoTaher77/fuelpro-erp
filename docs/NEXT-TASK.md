@@ -1,10 +1,10 @@
 # NEXT-TASK — where to resume
 
 ## Handoff 2026-11-24 (0.26.0 on branch `claude/wonderful-pascal-jfuqxu`, PR open) — speed and quality
-- State: 80 unit tests + 5 browser tests green, lint 0 errors, typecheck 0 errors, audit 0 vulnerabilities, sql.js suite green. Schema v16, sw `fuelpro-shell-v43`.
+- State: 81 unit tests + 5 browser tests green, lint 0 errors, typecheck 0 errors, audit 0 vulnerabilities, sql.js suite green. Schema v16, sw `fuelpro-shell-v43`.
 - **Owner after merge (laptop):** `git pull` → `npm run backup` → restart FuelPro (migration v16 adds indexes only, a few seconds on the real file; no data change). Then open the journal book, an account statement of the cash box and the analytics screen once on the phone and say if they feel faster.
 - Owner to check by eye (cloud cannot): the long lists now show «عرض المزيد / عرض الكل»; printing the journal book or a statement still prints every row (code path unchanged, `classicStatement` / `tbl(true)`).
-- Next speed steps (measured, `docs/PERFORMANCE.md` §Next): server-side idempotency key for vouchers/payments/expenses (KI-16 rest); versioned app-file URLs to drop the 16 revalidations on reload (phone reload 1.6 s); analytics/alerts at 7+ years (KI-17).
+- Next speed steps (measured, `docs/PERFORMANCE.md` §9): trigger-maintained daily account totals for 7+ years of data (KI-17); heavy reports off the main thread; server-side idempotency key for vouchers/payments/expenses (KI-16 rest); smaller first part of the journal book on phones (2.7 s).
 - Earlier open choices still stand (below): more report PDFs, Phase 2 stage B, customer phones, KI-06.
 
 ## Handoff 2026-11-23 (after 0.24.0, PR #10 merged) — continue on the owner's laptop
