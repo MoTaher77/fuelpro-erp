@@ -1,3 +1,4 @@
+// @ts-check
 'use strict';
 /* Repeatable API speed benchmark (docs/PERFORMANCE.md). Runs the real HTTP server in this process on a COPY of a database,
    signs in, and times every main read screen's request: p50 / p95 / max in ms, plus the response size.
@@ -22,9 +23,9 @@ if (/[\\/]data[\\/]fuelpro\.db$/.test(dbPath)) { console.error('refusing to benc
 const pct = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.ceil(p / 100 * s.length) - 1)]; };
 
 (async () => {
-  const { server, db } = createApp({ dbPath, mailer: { send: async () => {} } });
-  await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const { server, db } = createApp({ dbPath, mailer: { kind: 'none', send: async () => {} } });
+  await new Promise((r) => server.listen(0, '127.0.0.1', () => r(null)));
+  const base = `http://127.0.0.1:${/** @type {import('net').AddressInfo} */ (server.address()).port}`;
   let cookie = '';
   const call = async (method, url, body) => {
     const r = await fetch(base + url, { method, headers: { 'content-type': 'application/json', cookie }, body: body ? JSON.stringify(body) : undefined });
@@ -37,7 +38,7 @@ const pct = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.mi
   const me = (await call('GET', '/api/me')).json;
   const sid = me.stations[0].id;
   const span = db.prepare('SELECT MIN(business_date) a, MAX(business_date) b FROM journals WHERE station_id=?').get(sid);
-  const to = span.b || new Date().toISOString().slice(0, 10);
+  const to = String(span.b || new Date().toISOString().slice(0, 10));
   const yearStart = to.slice(0, 4) + '-01-01';
   const monthStart = to.slice(0, 8) + '01';
   const year = to.slice(0, 4);

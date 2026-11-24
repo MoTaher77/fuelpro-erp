@@ -1,3 +1,4 @@
+// @ts-check
 'use strict';
 /* global document, location  */   // used inside page.evaluate (runs in the browser)
 /* Repeatable page-speed benchmark in a real browser (Playwright + the pre-installed Chromium). docs/PERFORMANCE.md.
@@ -58,9 +59,9 @@ async function runProfile(browser, base, name) {
       for (let i = 0; i < repeat; i++) { await open(k === rest ? 'dash' : rest); runs.push(await open(k)); }
       runs.sort((a, b) => a.ms - b.ms);
       screens.push({ tab: k, ...runs[Math.floor(runs.length / 2)] });   // median of the runs
-    } catch { screens.push({ tab: k, ms: null }); }
+    } catch { screens.push({ tab: k, ms: null, kb: null }); }
   }
-  const heap = await page.evaluate(() => (performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null));
+  const heap = await page.evaluate(() => (/** @type {any} */ (performance).memory ? Math.round(/** @type {any} */ (performance).memory.usedJSHeapSize / 1048576) : null));
   const dom = await page.evaluate(() => document.getElementsByTagName('*').length);
   await ctx.close();
   return { profile: name, cold_ms: cold, cold_kb: +(coldBytes / 1024).toFixed(1), warm_ms: warm, warm_kb: +(warmBytes / 1024).toFixed(1), heap_mb: heap, dom_nodes_last: dom, screens };
@@ -68,9 +69,9 @@ async function runProfile(browser, base, name) {
 
 (async () => {
   const { chromium } = require('playwright');
-  const { server, db } = createApp({ dbPath, mailer: { send: async () => {} } });
-  await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const { server, db } = createApp({ dbPath, mailer: { kind: 'none', send: async () => {} } });
+  await new Promise((r) => server.listen(0, '127.0.0.1', () => r(null)));
+  const base = `http://127.0.0.1:${/** @type {import('net').AddressInfo} */ (server.address()).port}`;
   const exe = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined);
   const browser = await chromium.launch(exe && fs.statSync(exe).isFile() ? { executablePath: exe } : {});
   const out = [];

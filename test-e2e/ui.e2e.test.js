@@ -116,3 +116,16 @@ test('app files arrive compressed and a reload costs 304s, not the whole app aga
   const raw = await fetch(base + '/app.js', { headers: { 'accept-encoding': 'br' } });
   assert.equal(raw.headers.get('content-encoding'), 'br');
 });
+
+test('a double tap on «save» posts the document once', async () => {
+  const { ctx, page, errors } = await signedIn();
+  await openTab(page, 'exp'); await page.waitForSelector('#eAmt');
+  const note = 'e2e-double-' + Date.now();
+  await page.fill('#eAmt', '1234'); await page.fill('#eNote', note);
+  await page.evaluate(() => { const f = document.getElementById('eAmt').closest('form'); f.requestSubmit(); f.requestSubmit(); f.requestSubmit(); });
+  await page.waitForFunction((n) => document.body.textContent.includes(n), note, { timeout: 15000 });
+  const n = db.prepare('SELECT COUNT(*) n FROM expenses WHERE note=?').get(note).n;
+  assert.equal(n, 1, 'three quick submits = one expense');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

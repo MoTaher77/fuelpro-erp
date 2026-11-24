@@ -171,7 +171,17 @@ window.FPFMT = (function () {
     return json;
   }
   const sp = (p) => `/api/stations/${S.sid}${p}`;
-  const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { toast(e.message); if (e.code === 'UNAUTHENTICATED') { S.user = null; authScreen(); } } };
+  /* A second tap on «save» while the first save is still on its way used to post the document twice (vouchers, payments, expenses
+     have no client id like sales do). For submit and click events the same handler now ignores re-entry until the first call ends,
+     and the buttons involved are greyed out meanwhile. Other events (a select's change, typing) are not held back. */
+  const guard = (fn) => { let busy = false; return async (...a) => {
+    const ev = a[0], hold = !!ev && (ev.type === 'submit' || ev.type === 'click');
+    if (hold && busy) { if (ev.preventDefault) ev.preventDefault(); return; }
+    const btns = hold ? (ev.type === 'submit' && ev.target && ev.target.querySelectorAll ? [...ev.target.querySelectorAll('button[type=submit], button:not([type])')] : ev.currentTarget && ev.currentTarget.tagName === 'BUTTON' ? [ev.currentTarget] : []).filter(b => !b.disabled) : [];
+    if (hold) { busy = true; btns.forEach(b => { b.disabled = true; b.setAttribute('aria-busy', 'true'); }); }
+    try { await fn(...a); } catch (e) { toast(e.message); if (e.code === 'UNAUTHENTICATED') { S.user = null; authScreen(); } }
+    finally { if (hold) { busy = false; btns.forEach(b => { b.disabled = false; b.removeAttribute('aria-busy'); }); } }
+  }; };
   const can = (...roles) => S.user && roles.includes(S.user.role);
   const cd = (...ps) => !!S.perms && (S.perms.includes('*') || ps.some(p => S.perms.includes(p)));   // server-provided permissions (the server enforces them again)
   const mgr = () => cd('config.edit');

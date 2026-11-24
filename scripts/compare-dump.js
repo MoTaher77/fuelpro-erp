@@ -1,3 +1,4 @@
+// @ts-check
 'use strict';
 /* Proves an optimisation changed nothing a user can see: compares two --dump files of scripts/bench-api.js
    (before and after) response by response and prints the first difference of each endpoint.
