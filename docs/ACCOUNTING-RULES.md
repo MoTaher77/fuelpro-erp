@@ -76,3 +76,11 @@ The real station also has the imported M7 tree (443 accounts) mapped onto these 
 
 ## 14. Smart alerts (0.10.0)
 Read-only checks over the live books, no table: stock at/below the tank minimum or ≤ 3 days of sales (critical) and ≤ 7 days (warning); shift open ≥ 16 h (warning) / ≥ 30 h (critical); cash variances in the last 7 days; customers over their credit limit; customer debts > 90 days late; overdue supplier payments; cash/bank accounts in the station currency below zero (critical); no sales yesterday after ≥ 5 selling days in the week before; bank reconciliation draft older than 30 days; failed integrity check (critical). One failing check never hides the others.
+
+## 15. Employees & payroll (0.28.0, `src/payroll.js`, test `test/payroll.test.js`)
+- Accounts: `emp_adv` 1160 «سلف الموظفين» (asset), `salaries_payable` 2200 «رواتب مستحقة للموظفين» (liability), expense `exp_salaries` 6010. Every line on 1160/2200 carries `party_type='employee'` + `party_id`; manual journals and vouchers cannot post to them (`USE_PAYROLL_SCREENS`), so per-employee balances always add up to the accounts.
+- Advance: Dr 1160 (employee) / Cr cash or bank. Payroll of a month (one per station and month, `PAYROLL_EXISTS`): Dr 6010 Σ(base + allowances − deductions) / Cr 2200 net per employee / Cr 1160 advance recovered per employee. Recovery ≤ the outstanding advance and ≤ what the employee earned; deductions ≤ base + allowances; net ≥ 0 (DB CHECK).
+- Salary payment: Dr 2200 (employee) / Cr cash or bank; more than owed → `SALARY_OVERPAID`.
+- Cash advances and payments belong to the open shift and reduce its expected cash (`payroll_cash` in `shiftTotals`).
+- Void with a reason = reversing journal. A payroll whose salaries were paid cannot be voided (`PAYROLL_PAID`); an advance already deducted by a payroll cannot be voided (`ADVANCE_RECOVERED`); an employee with a balance cannot be deactivated.
+- Statement: one running balance over both accounts, credit − debit (+ = the station owes the employee, − = the employee owes the station).

@@ -125,3 +125,10 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - App: `REGISTRATION=open|first|closed` (+ /api/health `register`, sign-in page hides «create account»); Caddy strips client `CF-Connecting-IP`; `scripts/check-books.js`.
 - Verified: 83 tests; smoke-online 14/14 with the VPS settings; scripts run in an Ubuntu 24.04 container with stubbed systemd/ufw/caddy. Not verified: real systemd, Let's Encrypt, firewall (KI-19).
 - Resume: `docs/NEXT-TASK.md` → "Handoff 2026-11-24 (0.27.0)".
+- 2026-11-24 later: owner ran the kit on his VPS. App + systemd + ufw OK; Caddy stopped on `/var/log/caddy/fuelpro.log: permission denied` (file created by root during `caddy validate`). 0.27.1: log to journald, fix ownership, verify HTTPS at the end. Owner given a one-line fix for his server.
+- 2026-11-24 later still: Caddy fixed on the server (HTTPS 200); owner asked to put his real data on the VPS (explicit OK): snapshot copy + new owner password generated on the server, `fuelpro-restore --yes` → live, 13,857 journals, books OK. Kit fixes in PR #14: tolerant confirmation, scripts ignore SIGHUP.
+
+## 2026-11-24 — 0.28.0 employees & payroll + screen audit (cloud)
+- Owner: «no mistakes; find the missing screens and build them». Audit of all 30 screens × sub-tabs × ar/en × desktop/phone on the snapshot: no script errors, no failed API calls; 20 untranslated audit actions fixed + test/i18n.test.js.
+- Built the only ⛔ module: employees & payroll (src/payroll.js, public/payroll-ui.js, migration v17, ADR-27, ACCOUNTING-RULES §15). 87 unit + 6 e2e; all snapshot API answers identical except 2 new accounts.
+- Found: the real station keeps 37 employee accounts under 125 (KI-20) → owner decision. Resume: NEXT-TASK.

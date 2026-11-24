@@ -5,7 +5,7 @@ Two environments exist today. **Never mix their databases.**
 |---|---|---|---|
 | **Production (real)** | owner's Windows laptop, `C:\Users\Moham\FuelPro`, http://localhost:3000 | `data\fuelpro.db` (محطة التميز, real data) | in daily use (VERIFIED files present) |
 | Demo (laptop) | same folder, started with `start-fuelpro-demo.bat` | `data\demo.db` | available |
-| **VPS (owner's own server)** | Ubuntu/Debian, `deploy/vps/` → **[VPS.md](VPS.md)** (systemd + Caddy HTTPS) | `/var/lib/fuelpro/fuelpro.db` | kit ready 0.27.0; runs when the owner installs it (ADR-26) |
+| **VPS (owner's own server)** | Ubuntu/Debian, `deploy/vps/` → **[VPS.md](VPS.md)** (systemd + Caddy HTTPS) | `/var/lib/fuelpro/fuelpro.db` | **live since 2026-11-24** on the owner's Contabo VPS, https://212-90-120-15.sslip.io, with محطة التميز's data from the 2026-11-23 snapshot (owner's explicit OK) |
 | Cloud demo / production | Render (`render.yaml`) or Railway (Dockerfile) | separate persistent disks | **not used** (ADR-20) |
 
 ## Runtime requirements

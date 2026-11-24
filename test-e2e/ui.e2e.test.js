@@ -129,3 +129,50 @@ test('a double tap on «save» posts the document once', async () => {
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('staff & payroll screen: add an employee, give an advance, post the month, pay the salary, read the statement', async () => {
+  const { ctx, page, errors } = await signedIn();
+  await openTab(page, 'emp'); await page.waitForSelector('#emName');
+  const name = 'E2E موظف ' + Date.now();
+  await page.fill('#emName', name); await page.fill('#emSalary', '300000');
+  await page.evaluate(() => document.getElementById('emName').closest('form').requestSubmit());
+  await page.waitForFunction((n) => document.body.textContent.includes(n), name, { timeout: 15000 });
+  const emp = db.prepare('SELECT * FROM employees WHERE name=?').get(name); assert.ok(emp, 'saved');
+  /* advance from the bank (no shift needed) */
+  await page.evaluate((id) => { window.FP.S.empTab = 'moves'; window.FP.S.empMoveFor = id; window.FP.render(); }, emp.id);
+  await page.waitForSelector('#mvAmt');
+  await page.fill('#mvAmt', '50000'); await page.selectOption('#mvMethod', 'bank');
+  await page.evaluate(() => document.getElementById('mvAmt').closest('form').requestSubmit());
+  await page.waitForFunction(() => document.querySelectorAll('main table tbody tr').length > 0, null, { timeout: 15000 });
+  /* the month: only the new employee is changed by this test; post the draft as proposed */
+  await page.evaluate(() => { window.FP.S.empTab = 'run'; window.FP.render(); });
+  await page.waitForSelector('main form button[type=submit]', { timeout: 15000 }).catch(() => {});
+  const posted = db.prepare("SELECT 1 FROM payroll_runs WHERE station_id=? AND voided_at IS NULL AND month=?").get(emp.station_id, new Date().toISOString().slice(0, 7));
+  if (!posted) {
+    await page.evaluate(() => document.querySelector('main form').requestSubmit());
+    await page.waitForFunction(() => /\b(payroll|مسير)/i.test(document.body.textContent), null, { timeout: 15000 });
+    await page.waitForTimeout(800);
+  }
+  const dec = db.prepare('SELECT cur_dec FROM stations WHERE id=?').get(emp.station_id).cur_dec, unit = 10 ** dec;
+  const line = db.prepare('SELECT l.* FROM payroll_lines l JOIN payroll_runs r ON r.id=l.run_id WHERE l.employee_id=? AND r.voided_at IS NULL').get(emp.id);
+  assert.ok(line, 'payroll line posted');
+  assert.equal(line.base, 300000 * unit, 'the salary typed on the card');
+  assert.equal(line.recovered, 50000 * unit, 'the advance is deducted');
+  assert.equal(line.net, 250000 * unit);
+  /* pay the salary from the bank: the amount field fills itself with what is owed */
+  await page.evaluate((id) => { window.FP.S.empTab = 'moves'; window.FP.S.empMoveFor = id; window.FP.render(); }, emp.id);
+  await page.waitForSelector('#mvKind');
+  await page.selectOption('#mvKind', 'salary_pay'); await page.selectOption('#mvMethod', 'bank');
+  assert.equal(await page.inputValue('#mvAmt'), '250000', 'prefilled with the salary owed');
+  await page.evaluate(() => document.getElementById('mvAmt').closest('form').requestSubmit());
+  await page.waitForTimeout(800);
+  const paid = db.prepare("SELECT amount FROM employee_moves WHERE employee_id=? AND kind='salary_pay' AND voided_at IS NULL").get(emp.id);
+  assert.equal(paid && paid.amount, 250000 * unit, 'salary paid once, exact amount');
+  /* statement shows the balance the server computes */
+  await page.evaluate((id) => { window.FP.S.empTab = 'stmt'; window.FP.S.empStmtId = id; window.FP.render(); }, emp.id);
+  await page.waitForSelector('main table', { timeout: 15000 });
+  const closing = await page.$$eval('main table tbody tr', (r) => r[r.length - 1].textContent);
+  assert.match(closing, /^\D*0([.,]0+)?\D*$/, 'closing balance 0 after advance, payroll and payment: ' + closing);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

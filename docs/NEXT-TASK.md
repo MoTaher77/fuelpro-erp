@@ -1,5 +1,15 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-24 — 0.28.0 employees & payroll (branch, PR pending)
+- Built and tested (87 unit + 6 e2e). On the server after merge: `sudo fuelpro-update` (migration v17 adds tables only).
+- **Owner decision (KI-20):** the station's 37 employee accounts under 125 (≈ 1,640,627 YER). Options: (a) carry them into the payroll module with one opening journal per employee (125xx → 1160 with the employee; totals unchanged), (b) keep 125 as history and use the module only for new hires/movements.
+- New system accounts 1160/2200 sit at the root of the imported tree; the owner may move them under groups 12/22 from the chart screen.
+
+## State 2026-11-24 — FuelPro LIVE on the owner's VPS
+- https://212-90-120-15.sslip.io (Contabo, Ubuntu; installed by the owner with `deploy/vps/install.sh`; HTTPS 200; schema v16).
+- Data: محطة التميز from `dev-data/fuelpro-snapshot.db` (to 2026-11-23 ~08:00 Yemen time; 13,857 journals, 11,881 sales; books check all OK), loaded with `fuelpro-restore` at the owner's explicit request. The owner account got a new password generated on the server.
+- **Open with the owner:** (1) change the owner password and the root password (both appeared in chat); (2) decide the ONE live system (VPS or laptop) — no sync; (3) if the laptop has entries after 2026-11-23 08:00, send them with `deploy\vps\laptop-send-data.ps1` (replaces the server DB after the books check); (4) a real domain instead of sslip.io (`install.sh --domain`); (5) SSH key login, `PasswordAuthentication no`; (6) daily `laptop-pull-backups.ps1` for an off-server copy; (7) merge PR #14 (0.27.1 kit fixes), then `sudo fuelpro-update` on the server.
+
 ## Handoff 2026-11-24 (0.27.0) — VPS kit ready, waiting for the owner's server
 - Code: `deploy/vps/` + `docs/VPS.md` (Arabic). 83 tests green. Tried in a container with stubs (install, restore, update incl. rollback); not yet on a real server (KI-19).
 - **Owner:** get an Ubuntu 22.04/24.04 or Debian 12 VPS (1–2 GB RAM) and, if possible, a domain (A record → server IP). Then follow `docs/VPS.md` §1. Decide: fresh server (§2أ) or move محطة التميز's data (§2ب: your own step; afterwards enter data on the server only).

@@ -5,6 +5,8 @@
 # 4) restart  5) health check — if the tests or the health check fail, the previous code is put back and restarted.
 # Migrations only add (indexes, columns), so the previous code still opens a database the new code has opened.
 set -euo pipefail
+# keep going if the SSH window is closed meanwhile (a restore stopped half-way left FuelPro stopped on 2026-11-24)
+trap '' HUP
 BRANCH="${1:-main}"; APP=/opt/fuelpro; DATA=/var/lib/fuelpro
 [ "$(id -u)" -eq 0 ] || { echo "run with sudo"; exit 1; }
 cd "$APP"

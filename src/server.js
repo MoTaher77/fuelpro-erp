@@ -12,6 +12,7 @@ const M7 = require('./m7archive');
 const AN = require('./analytics');
 const AL = require('./alerts');
 const BR = require('./bankrec');
+const PR = require('./payroll');
 const auth = require('./auth');
 const { HttpError, unauthorized, notFound } = require('./errors');
 
@@ -165,6 +166,19 @@ function createApp({ registration = String(process.env.REGISTRATION || 'open').t
   route('POST', '/api/stations/:sid/bank-recs/:id/finalize', (c) => ({ body: BR.finalize(db, c.user, st(c), id(c.p.id)) }));
   route('POST', '/api/stations/:sid/bank-recs/:id/reopen', (c) => ({ body: BR.reopen(db, c.user, st(c), id(c.p.id)) }));
   route('DELETE', '/api/stations/:sid/bank-recs/:id', (c) => ({ body: BR.remove(db, c.user, st(c), id(c.p.id)) }));
+  /* employees & payroll (0.28.0) */
+  route('GET', '/api/stations/:sid/employees', (c) => ({ body: PR.listEmployees(db, c.user, st(c), c.q) }));
+  route('POST', '/api/stations/:sid/employees', (c) => ({ status: 201, body: PR.createEmployee(db, c.user, st(c), c.body) }));
+  route('PATCH', '/api/stations/:sid/employees/:id', (c) => ({ body: PR.updateEmployee(db, c.user, st(c), id(c.p.id), c.body) }));
+  route('GET', '/api/stations/:sid/employees/:id/statement', (c) => ({ body: PR.statement(db, c.user, st(c), id(c.p.id), c.q) }));
+  route('GET', '/api/stations/:sid/employee-moves', (c) => ({ body: PR.listMoves(db, c.user, st(c), c.q) }));
+  route('POST', '/api/stations/:sid/employee-moves', (c) => ({ status: 201, body: PR.createMove(db, c.user, st(c), c.body) }));
+  route('POST', '/api/stations/:sid/employee-moves/:id/void', (c) => ({ body: PR.voidMove(db, c.user, st(c), id(c.p.id), c.body && c.body.reason) }));
+  route('GET', '/api/stations/:sid/payroll/draft', (c) => ({ body: PR.payrollDraft(db, c.user, st(c), c.q) }));
+  route('GET', '/api/stations/:sid/payroll', (c) => ({ body: PR.listPayrolls(db, c.user, st(c)) }));
+  route('POST', '/api/stations/:sid/payroll', (c) => ({ status: 201, body: PR.createPayroll(db, c.user, st(c), c.body) }));
+  route('GET', '/api/stations/:sid/payroll/:id', (c) => ({ body: PR.getPayroll(db, c.user, st(c), id(c.p.id)) }));
+  route('POST', '/api/stations/:sid/payroll/:id/void', (c) => ({ body: PR.voidPayroll(db, c.user, st(c), id(c.p.id), c.body && c.body.reason) }));
   route('GET', '/api/stations/:sid/analytics', (c) => ({ body: AN.dashboard(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/alerts', (c) => ({ body: AL.alerts(db, c.user, st(c)) }));
   /* history carried over from the old M7 system */

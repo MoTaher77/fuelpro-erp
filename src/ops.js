@@ -26,8 +26,9 @@ function shiftTotals(db, sh) {
     deposits: one("SELECT COALESCE(SUM(amount),0) v FROM cash_moves WHERE shift_id=? AND kind='deposit' AND voided_at IS NULL")
   };
   Object.assign(t, require('./books').shiftVoucherCash(db, sh.id));
+  t.payroll_cash = require('./payroll').shiftCash(db, sh.id);   // cash advances and salaries paid from the drawer
   // credit sales and bank receipts never enter the drawer
-  t.expected_cash = sh.float_amount + t.cash_sales + t.collections_cash + t.deposits + t.voucher_receipts - t.expenses_cash - t.purchases_cash - t.supplier_payments_cash - t.withdrawals - t.voucher_payments;
+  t.expected_cash = sh.float_amount + t.cash_sales + t.collections_cash + t.deposits + t.voucher_receipts - t.expenses_cash - t.purchases_cash - t.supplier_payments_cash - t.withdrawals - t.voucher_payments - t.payroll_cash;
   return t;
 }
 function getShiftRow(db, sid, id) { const sh = db.prepare('SELECT * FROM shifts WHERE id=? AND station_id=?').get(id, sid); if (!sh) throw notFound('Shift'); return sh; }

@@ -29,7 +29,7 @@ Status: ✅ VERIFIED (code + test) · 🟡 partial · ⛔ not built.
 | Settings / preferences | ✅ | prefs dialog (language, unit, calendar, theme) → app.js | `PATCH /api/stations/:sid` | stations | — | prefs stored in the browser |
 | Old-system history | ✅ | in pl, cnt, acct (history), audit, users | `reports/old-results`, `stock/old-values`, `journals/:id/history` | audit, users, exchange_rates, m7_results, m7_stock_month (v13) | m7-history tests | loaded by `scripts/import-m7-history.js` |
 | Data import | 🟡 | none (CLI) | `scripts/import-m7.js`, `exp2sqlite.js`, `import-m7-history.js`, `reconcile-m7.js` | all | none automated | M7-specific; CSV export only for sales |
-| Employees / payroll | ⛔ | — | — | — | — | only an expense category «الرواتب» (6010) |
+| Employees / payroll | ✅ (0.28.0) | `emp` → public/payroll-ui.js (employees, monthly payroll, advances & salary payments, employee statement) | `src/payroll.js` | employees, employee_moves, payroll_runs, payroll_lines | payroll.test, e2e | the real station's 37 per-employee accounts under 125 are not linked yet (KI-20) |
 | Notifications | ⛔/🟡 | low-stock warnings in the UI (REPORTED) | — | tanks.min_ml | — | no SMS/e-mail alerts |
 | Companies & branches consolidation | 🟡 | station selector; inter-branch account 1190 | — | — | erp.test (transfers) | consolidated reports only for same-currency stations |
 

@@ -6,6 +6,8 @@
 # 3) stops FuelPro, keeps the server's current database as backups/before-restore-<time>.db  4) puts the new file in place
 # 5) optionally sets APP_SECRET to the laptop's value (needed if any user has two-factor sign-in)  6) starts and checks again.
 set -euo pipefail
+# keep going if the SSH window is closed meanwhile (a restore stopped half-way left FuelPro stopped on 2026-11-24)
+trap '' HUP
 SRC="${1:-}"; shift || true
 SECRET_FILE=""; YES=0
 while [ $# -gt 0 ]; do case "$1" in --app-secret-file) SECRET_FILE="$2"; shift 2 ;; --yes) YES=1; shift ;; *) echo "unknown option: $1"; exit 2 ;; esac; done
@@ -24,7 +26,10 @@ rm -rf "$WORK"
 if [ "$YES" != 1 ]; then
   echo; echo "This REPLACES the server's database with $SRC (the current one is kept in $DATA/backups/)."
   echo "After this, enter data on ONE system only (the server), or the laptop and the server will disagree."
-  read -r -p "Type yes to continue: " a; [ "$a" = "yes" ] || { echo "cancelled"; exit 1; }
+  # read from the terminal itself, and ignore a carriage return / spaces / capitals some phone SSH apps send with the answer
+  read -r -p "Type yes to continue: " a < /dev/tty || a=""
+  a=$(printf '%s' "$a" | tr -d '\r' | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+  case "$a" in yes|y|نعم) ;; *) echo "cancelled (answer was: '$a'). To skip this question: add --yes"; exit 1 ;; esac
 fi
 
 say "stop FuelPro"

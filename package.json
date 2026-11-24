@@ -1,6 +1,6 @@
 {
   "name": "fuelpro",
-  "version": "0.27.0",
+  "version": "0.28.0",
   "description": "Multi-tenant fuel station management server (Node 22+; the SQLite mode needs no installed package)",
   "private": true,
   "license": "UNLICENSED",
