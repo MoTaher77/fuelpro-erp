@@ -1,5 +1,10 @@
 # NEXT-TASK — where to resume
 
+## Handoff 2026-11-24 (0.27.0) — VPS kit ready, waiting for the owner's server
+- Code: `deploy/vps/` + `docs/VPS.md` (Arabic). 83 tests green. Tried in a container with stubs (install, restore, update incl. rollback); not yet on a real server (KI-19).
+- **Owner:** get an Ubuntu 22.04/24.04 or Debian 12 VPS (1–2 GB RAM) and, if possible, a domain (A record → server IP). Then follow `docs/VPS.md` §1. Decide: fresh server (§2أ) or move محطة التميز's data (§2ب: your own step; afterwards enter data on the server only).
+- After the first install, tell the next session the address so it can run `scripts/smoke-online.js` against it.
+
 ## Handoff 2026-11-24 (0.26.0 on branch `claude/wonderful-pascal-jfuqxu`, PR open) — speed and quality
 - State: 81 unit tests + 5 browser tests green, lint 0 errors, typecheck 0 errors, audit 0 vulnerabilities, sql.js suite green. Schema v16, sw `fuelpro-shell-v44`.
 - **Owner after merge (laptop):** `git pull` → `npm run backup` → restart FuelPro (migration v16 adds indexes only, a few seconds on the real file; no data change). Then open the journal book, an account statement of the cash box and the analytics screen once on the phone and say if they feel faster.

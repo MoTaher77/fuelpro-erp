@@ -5,11 +5,12 @@ Two environments exist today. **Never mix their databases.**
 |---|---|---|---|
 | **Production (real)** | owner's Windows laptop, `C:\Users\Moham\FuelPro`, http://localhost:3000 | `data\fuelpro.db` (محطة التميز, real data) | in daily use (VERIFIED files present) |
 | Demo (laptop) | same folder, started with `start-fuelpro-demo.bat` | `data\demo.db` | available |
-| Cloud demo / production | Render (`render.yaml`: `fuelpro-demo` auto, `fuelpro-production` manual) or Railway (Dockerfile) | separate persistent disks | **not deployed** |
+| **VPS (owner's own server)** | Ubuntu/Debian, `deploy/vps/` → **[VPS.md](VPS.md)** (systemd + Caddy HTTPS) | `/var/lib/fuelpro/fuelpro.db` | kit ready 0.27.0; runs when the owner installs it (ADR-26) |
+| Cloud demo / production | Render (`render.yaml`) or Railway (Dockerfile) | separate persistent disks | **not used** (ADR-20) |
 
 ## Runtime requirements
 Node.js ≥ 22.5 (22.5–22.12 need `--experimental-sqlite`, handled by `start-fuelpro.ps1`). No npm install. Disk for `data/`.
-Env vars: see `.env.example` — `PORT`, `HOST`, `DB_PATH`, `APP_URL`, `APP_SECRET`, `COOKIE_SECURE`, `TRUST_PROXY`, `SMTP_*`, `MAIL_FROM*`, `BACKUP_DIR`, `BACKUP_AUTO`.
+Env vars: see `.env.example` — `PORT`, `HOST`, `DB_PATH`, `APP_URL`, `APP_SECRET`, `COOKIE_SECURE`, `TRUST_PROXY`, `REGISTRATION` (open|first|closed, 0.27), `SMTP_*`, `MAIL_FROM*`, `BACKUP_DIR`, `BACKUP_COPY_DIR`, `BACKUP_AUTO`.
 
 ## Updating the laptop (current procedure)
 1. Build `fuelpro.zip` containing a top folder `fuelpro/` with `src public scripts test` and top-level files (`package.json`, `CLAUDE.md`, `CHANGELOG.md`, …). **Never include `data/`.**

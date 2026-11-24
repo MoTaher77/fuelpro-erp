@@ -119,3 +119,9 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Proved: `compare-dump.js` identical answers (snapshot, 100k and 480k journals); stress 20 users PASS (120-day and 20-year demo); 81 unit + 5 e2e tests; sql.js suite; Artifact bundle builds.
 - Added: bench/stress scripts, CI jobs (typecheck, audit, e2e, perf), `fuelpro-performance` skill, review agents, ADR-23..25, docs PERFORMANCE.md + DATABASE.md.
 - Resume: `docs/NEXT-TASK.md` → "Handoff 2026-11-24".
+
+## 2026-11-24 — 0.27.0 VPS kit (cloud)
+- Owner asked to run FuelPro on a real VPS. Built `deploy/vps/` (install/update/restore, systemd unit with hardening, Caddy HTTPS, laptop send/pull PowerShell) and `docs/VPS.md`; ADR-26.
+- App: `REGISTRATION=open|first|closed` (+ /api/health `register`, sign-in page hides «create account»); Caddy strips client `CF-Connecting-IP`; `scripts/check-books.js`.
+- Verified: 83 tests; smoke-online 14/14 with the VPS settings; scripts run in an Ubuntu 24.04 container with stubbed systemd/ufw/caddy. Not verified: real systemd, Let's Encrypt, firewall (KI-19).
+- Resume: `docs/NEXT-TASK.md` → "Handoff 2026-11-24 (0.27.0)".

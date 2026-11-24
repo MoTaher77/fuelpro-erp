@@ -26,6 +26,7 @@ Updated 2026-11-24. No percentages: each line is VERIFIED (code + test), REPORTE
 | Speed 0.26.0: compression + ETag, schema v16 covering indexes, N+1 removed (ageing, integrity, party lists, dashboard), faster balances/ledger/integrity, cached formatters, batched table fitting, long lists in parts | VERIFIED (identical answers on the snapshot copy and at 100k journals; numbers in PERFORMANCE.md) | `test/perf.test.js`, `test-e2e/ui.e2e.test.js`, `scripts/compare-dump.js` |
 | Fixes 0.26.0: boot race (KI-13), CSP-blocked styles (KI-14), (date,id) paging (KI-15), double submit (KI-16) | VERIFIED | `test/perf.test.js`, e2e tests (the double-submit test fails without the fix: 3 expenses) |
 | Concurrency: 20 users, reads + writes + sale retries | VERIFIED: 0 5xx, 0 duplicates, retries answered with the first sale, books balanced | `scripts/stress-api.js` |
+| VPS kit 0.27.0 (`deploy/vps/`, docs/VPS.md), `REGISTRATION` setting, `check-books.js` | VERIFIED in a container with stubbed systemd/ufw/caddy + tests; real server pending (KI-19) | `test/vps.test.js`, VPS.md «ما تم التحقق منه» |
 | CI: lint, typecheck, audit, unit + PostgreSQL bridge, e2e, perf report, Artifact | VERIFIED locally; GitHub run pending on the PR | `.github/workflows/test.yml` |
 | Windows install/run scripts | VERIFIED (scripts exist and are in use) | `Downloads\start-fuelpro.ps1` |
 

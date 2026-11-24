@@ -1,6 +1,6 @@
 ---
 name: fuelpro-deployment
-description: Use when shipping a FuelPro update to the owner's Windows laptop, touching backups/restore, environment variables, security settings, or preparing a cloud (Render/Railway) deployment.
+description: Use when shipping a FuelPro update to the owner's Windows laptop or his VPS (deploy/vps, docs/VPS.md), touching backups/restore, environment variables or security settings.
 ---
 # FuelPro deployment, backups and security
 
@@ -13,6 +13,9 @@ description: Use when shipping a FuelPro update to the owner's Windows laptop, t
 3. Deliver to `C:\Users\Moham\Downloads\fuelpro.zip`; verify sha256 on the laptop.
 4. Copy changed `docs/` and `.claude/` files to `C:\Users\Moham\FuelPro` separately (the start script does not copy them).
 5. Owner restarts with `start-fuelpro.bat`. Remember KI-02: the script re-installs the zip on every start.
+
+## VPS (ADR-26)
+`docs/VPS.md`: `deploy/vps/install.sh` once, `sudo fuelpro-update` after each merge (tests + rollback), `sudo fuelpro-restore <file>` to put a laptop backup on the server (owner's own step; books checked first). You have no SSH access: change the scripts, test them with stubs in the container (see VPS.md «ما تم التحقق منه»), never claim they ran on the real server.
 
 ## Never
 - Replace or edit `data\fuelpro.db`, or drop a `data\fuelpro-new.db` (that swaps the real DB).

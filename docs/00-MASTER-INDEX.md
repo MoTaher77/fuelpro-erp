@@ -22,6 +22,7 @@ Start with [`../CLAUDE.md`](../CLAUDE.md). Read **only** what the task needs.
 | [SECURITY.md](SECURITY.md) | touch roles, auth, scoping, secrets |
 | [TESTING.md](TESTING.md) | run/add tests |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | ship to the laptop or the cloud, backups |
+| [VPS.md](VPS.md) | run FuelPro on the owner's own server (install, move the data, update, backups) — Arabic |
 | [PERFORMANCE.md](PERFORMANCE.md) | measured speed before/after, how to measure, what is left |
 | [DATABASE.md](DATABASE.md) | engine choice (SQLite vs PostgreSQL vs D1), v16 indexes, query rules |
 | [PHASE2-POSTGRES.md](PHASE2-POSTGRES.md) | measured scope and recommendation for the PostgreSQL move |
