@@ -31,7 +31,8 @@ function boxReport(db, user, sid, q) {
       COALESCE(SUM(CASE WHEN j.business_date>=? AND l.fc_code=? AND l.debit>0 THEN l.fc_amount END),0) fdr,
       COALESCE(SUM(CASE WHEN j.business_date>=? AND l.fc_code=? AND l.credit>0 THEN l.fc_amount END),0) fcr,
       COUNT(CASE WHEN j.business_date>=? THEN 1 END) n
-    FROM journal_lines l JOIN journals j ON j.id=l.journal_id WHERE l.account_id=? AND j.station_id=? AND j.status='posted' AND j.business_date<=?`);
+    FROM journal_lines l JOIN journals j ON j.id=l.journal_id WHERE l.account_id=? AND +j.station_id=? AND +j.status='posted' AND +j.business_date<=?`);
+  /* `+j.…`: read this box's own lines (account index), not every journal of the station up to `to` (1.4x slower at 20 years) */
   const boxes = list.map(a => {
     const fc = a.currency && a.currency !== st.currency ? a.currency : null;
     const r = agg.get(from, from, from, from, fc, from, fc, from, fc, from, a.id, sid, to);

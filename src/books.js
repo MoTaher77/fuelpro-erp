@@ -272,10 +272,11 @@ function stockMonthly(db, user, sid, q) {
   const out = [];
   for (const t of tanks) {
     const months = [];
+    let open = null;   // stock before the month: the whole history once (January), then rolled forward month by month (same sums, no rescans)
     for (let m = 1; m <= 12; m++) {
       const from = `${year}-${String(m).padStart(2, '0')}-01`, to = new Date(Date.UTC(year, m, 0)).toISOString().slice(0, 10);
       if (from > tzToday(st.timezone)) break;
-      const open = db.prepare('SELECT COALESCE(SUM(qty_ml),0) q, COALESCE(SUM(value),0) v FROM stock_moves WHERE tank_id=? AND business_date<?').get(t.id, from);
+      if (!open) open = db.prepare('SELECT COALESCE(SUM(qty_ml),0) q, COALESCE(SUM(value),0) v FROM stock_moves WHERE tank_id=? AND business_date<?').get(t.id, from);
       const k = Object.fromEntries(db.prepare(`SELECT kind || CASE WHEN kind='count' AND ref_type='revaluation' THEN '_reval' ELSE '' END k, SUM(qty_ml) q, SUM(value) v FROM stock_moves WHERE tank_id=? AND business_date BETWEEN ? AND ? GROUP BY 1`).all(t.id, from, to).map(r => [r.k, r]));
       const g = (x, f = 'q') => (k[x] ? k[x][f] : 0);
       const sold = -g('sale'), received = g('delivery') + g('transfer_in'), out_ = -g('transfer_out'), counted = g('count') + g('opening') + g('void');
@@ -284,6 +285,7 @@ function stockMonthly(db, user, sid, q) {
       const adjs = db.prepare(`SELECT a.business_date, a.before_ml, a.after_ml, a.note FROM adjustments a WHERE a.tank_id=? AND a.business_date BETWEEN ? AND ? ORDER BY a.id`).all(t.id, from, to);
       months.push({ month: from.slice(0, 7), opening_ml: open.q, received_ml: received, sold_ml: sold, transfer_out_ml: out_, counted_ml: g('count'), shortage_ml: shortage, surplus_ml: surplus, closing_ml: closing,
         loss_value: -g('count', 'v'), loss_bp: sold ? Math.round(-g('count') * 10000 / sold) : 0, over_tolerance: sold > 0 && -g('count') * 10000 / sold > st.loss_tolerance_bp, counts: adjs });
+      open = { q: open.q, v: open.v }; for (const x in k) { open.q += k[x].q; open.v += k[x].v; }
     }
     const tot = months.reduce((a, x) => ({ sold_ml: a.sold_ml + x.sold_ml, received_ml: a.received_ml + x.received_ml, counted_ml: a.counted_ml + x.counted_ml, loss_value: a.loss_value + x.loss_value }), { sold_ml: 0, received_ml: 0, counted_ml: 0, loss_value: 0 });
     out.push({ tank_id: t.id, tank_name: t.name, fuel_name: t.fuel_name, level_ml: t.level_ml, capacity_ml: t.capacity_ml, avg_cost_e4: t.avg_cost_e4, months, totals: { ...tot, loss_bp: tot.sold_ml ? Math.round(-tot.counted_ml * 10000 / tot.sold_ml) : 0 } });
