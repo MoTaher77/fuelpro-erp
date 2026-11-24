@@ -6,6 +6,8 @@
 # 3) stops FuelPro, keeps the server's current database as backups/before-restore-<time>.db  4) puts the new file in place
 # 5) optionally sets APP_SECRET to the laptop's value (needed if any user has two-factor sign-in)  6) starts and checks again.
 set -euo pipefail
+# keep going if the SSH window is closed meanwhile (a restore stopped half-way left FuelPro stopped on 2026-11-24)
+trap '' HUP
 SRC="${1:-}"; shift || true
 SECRET_FILE=""; YES=0
 while [ $# -gt 0 ]; do case "$1" in --app-secret-file) SECRET_FILE="$2"; shift 2 ;; --yes) YES=1; shift ;; *) echo "unknown option: $1"; exit 2 ;; esac; done
