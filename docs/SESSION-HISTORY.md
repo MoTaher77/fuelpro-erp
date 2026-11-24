@@ -133,3 +133,6 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Built the only ⛔ module: employees & payroll (src/payroll.js, public/payroll-ui.js, migration v17, ADR-27, ACCOUNTING-RULES §15). 87 unit + 6 e2e; all snapshot API answers identical except 2 new accounts.
 - Found: the real station keeps 37 employee accounts under 125 (KI-20) → owner decision. Resume: NEXT-TASK.
 - Owner chose to carry the 125 accounts over: preview/carry/undo (src/payroll.js carry*, migration v18), rehearsed on the snapshot copy (27 employees, equity/profit unchanged, integrity OK) + browser check; test for undo → re-carry found and fixed a duplicate-employee bug.
+
+## 2026-11-24 — 0.28.1 (cloud)
+- Owner: trial user with no data → `scripts/new-org.js` (empty org + owner, random password printed once). «Failed to fetch» after idle → `api()` retries reads, clear message on saves, boot keeps the session screen; Caddy template h1/h2 only. 7 e2e. Domain: `domain.sh` merged (#16), waiting for the owner's domain.

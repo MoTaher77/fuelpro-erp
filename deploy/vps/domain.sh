@@ -35,7 +35,7 @@ fi
 say "Caddy configuration"
 TMP=$(mktemp)
 sed -e "s|__DOMAIN__|$NEW|g" -e "s|__EMAIL__|${EMAIL}|g" "$APP/deploy/vps/Caddyfile" > "$TMP"
-[ -n "$EMAIL" ] || sed -i '/^{$/,/^}$/d' "$TMP"
+[ -n "$EMAIL" ] || sed -i '/^[[:space:]]*email[[:space:]]*$/d' "$TMP"
 if [ -n "$OLD" ] && [ "$OLD" != "$NEW" ]; then
   printf '\n# the previous address keeps working and sends everyone to the new one\n%s {\n\tredir https://%s{uri} permanent\n}\n' "$OLD" "$NEW" >> "$TMP"
 fi

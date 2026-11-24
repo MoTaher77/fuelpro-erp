@@ -126,7 +126,7 @@ if ! command -v caddy >/dev/null; then
   apt-get update -qq && apt-get install -y -qq caddy >/dev/null
 fi
 sed -e "s|__DOMAIN__|$DOMAIN|g" -e "s|__EMAIL__|${EMAIL:-}|g" "$APP/deploy/vps/Caddyfile" > /etc/caddy/Caddyfile
-[ -n "$EMAIL" ] || sed -i '/^{$/,/^}$/d' /etc/caddy/Caddyfile   # no e-mail: drop the global block
+[ -n "$EMAIL" ] || sed -i '/^[[:space:]]*email[[:space:]]*$/d' /etc/caddy/Caddyfile   # no e-mail: drop that line only
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1 || { caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile; exit 1; }
 # validate runs as root and may create files Caddy (user caddy) must own; 0.27.0 left a root-owned log file that stopped Caddy
 install -d -o caddy -g caddy /var/log/caddy; rm -f /var/log/caddy/fuelpro.log; chown -R caddy:caddy /var/log/caddy /var/lib/caddy 2>/dev/null || true

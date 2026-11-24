@@ -84,7 +84,8 @@ window.FPFMT = (function () {
     'err.BAD_CREDENTIALS': ['البريد أو كلمة المرور غير صحيحة', 'Email or password is incorrect', 'E-mail ou mot de passe incorrect'], 'err.TOO_MANY_ATTEMPTS': ['محاولات كثيرة. حاول لاحقاً.', 'Too many attempts. Try again later.', 'Trop de tentatives. Réessayez plus tard.'],
     'err.BAD_NUMBER': ['رقم غير صالح (تحقق من الخانات العشرية)', 'Invalid number (check the decimals)', 'Nombre invalide (vérifiez les décimales)'], 'err.STOCK_ALREADY_SOLD': ['بيع جزء من هذه الكمية. استخدم الجرد للتصحيح.', 'Part of this delivery was sold. Use a stock count to correct.', 'Une partie a déjà été vendue. Utilisez un inventaire.'],
     'err.WEAK_PASSWORD': ['كلمة المرور ضعيفة (10 أحرف على الأقل)', 'Password too weak (10+ characters)', 'Mot de passe trop faible (10 caractères min.)'], 'err.EMAIL_TAKEN': ['هذا البريد مسجّل مسبقاً', 'This email is already registered', 'Cet e-mail est déjà enregistré'],
-    'err.FUTURE_DATE': ['التاريخ لا يمكن أن يكون في المستقبل', 'The date cannot be in the future', 'La date ne peut pas être dans le futur'], 'err.FORBIDDEN': ['ليست لديك صلاحية لهذا الإجراء', 'You do not have permission', "Vous n'avez pas la permission"], 'err.REGISTRATION_CLOSED': ['إنشاء حساب جديد مغلق على هذا الخادم. اطلب من مالك المنشأة إضافتك مستخدماً.', 'New accounts cannot be created on this server. Ask the owner to add you as a user.', 'La création de compte est fermée sur ce serveur.'],
+    'err.FUTURE_DATE': ['التاريخ لا يمكن أن يكون في المستقبل', 'The date cannot be in the future', 'La date ne peut pas être dans le futur'], 'err.NETWORK': ['تعذّر الاتصال بالخادم. تحقق من الإنترنت ثم أعد المحاولة.', 'Cannot reach the server. Check the connection and try again.', 'Serveur injoignable. Vérifiez la connexion.'], 'err.NETWORK_SAVE': ['انقطع الاتصال أثناء الحفظ. تحقق من القائمة أن العملية لم تُحفظ قبل أن تعيدها.', 'The connection dropped while saving. Check the list that it was not saved before trying again.', 'Connexion perdue pendant l’enregistrement : vérifiez avant de recommencer.'],
+    'err.FORBIDDEN': ['ليست لديك صلاحية لهذا الإجراء', 'You do not have permission', "Vous n'avez pas la permission"], 'err.REGISTRATION_CLOSED': ['إنشاء حساب جديد مغلق على هذا الخادم. اطلب من مالك المنشأة إضافتك مستخدماً.', 'New accounts cannot be created on this server. Ask the owner to add you as a user.', 'La création de compte est fermée sur ce serveur.'],
     'err.UNAUTHENTICATED': ['انتهت الجلسة. سجّل الدخول من جديد.', 'Session expired. Please sign in again.', 'Session expirée. Reconnectez-vous.'],
     'au.sale.create': ['تسجيل بيع', 'Sale recorded', 'Vente enregistrée'], 'au.sales.void': ['إلغاء بيع', 'Sale voided', 'Vente annulée'], 'au.delivery.create': ['توريد', 'Delivery received', 'Livraison reçue'], 'au.deliveries.void': ['إلغاء توريد', 'Delivery voided', 'Livraison annulée'],
     'au.employee.create': ['إضافة موظف', 'Employee added', 'Employé ajouté'], 'au.employee.update': ['تعديل موظف', 'Employee updated', 'Employé modifié'], 'au.employee.advance': ['سلفة موظف', 'Employee advance', 'Avance au salarié'],
@@ -172,8 +173,23 @@ window.FPFMT = (function () {
   const sec = (title, ...c) => h('section', { class: 'card' }, title && h('h2', null, title), ...c);
 
   /* ---------- API ---------- */
+  /* A phone that wakes up, a Wi-Fi switch or a server restart drops the connection for a moment and fetch() fails with
+     "Failed to fetch". Reads are retried quietly (3 times, ~4 s in all); a save is never re-sent by itself (it may have reached
+     the server), the user gets a clear message instead. */
+  const NET_RETRY = [400, 1200, 2500];
+  const netError = (save) => { const err = new Error(T(save ? 'err.NETWORK_SAVE' : 'err.NETWORK')); err.code = 'NETWORK'; return err; };
   async function api(method, path, body) {
-    const res = await fetch(path, { method, headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const read = method === 'GET';
+    let res;
+    for (let i = 0; ; i++) {
+      try { res = await fetch(path, { method, headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) }); }
+      catch { if (read && i < NET_RETRY.length) { await new Promise(r => setTimeout(r, NET_RETRY[i])); continue; } throw netError(!read); }
+      if ([502, 503, 504].includes(res.status)) {   // the proxy answered but FuelPro is restarting (an update)
+        if (read && i < NET_RETRY.length) { await new Promise(r => setTimeout(r, NET_RETRY[i])); continue; }
+        throw netError(!read);
+      }
+      break;
+    }
     const text = await res.text(); let json; try { json = text ? JSON.parse(text) : undefined; } catch { json = undefined; }
     if (!res.ok) { const e = (json && json.error) || { code: 'ERR', message: res.statusText }; const err = new Error(D['err.' + e.code] ? T('err.' + e.code) : e.message); err.code = e.code; err.details = e.details; throw err; }
     return json;
@@ -680,7 +696,8 @@ window.FPFMT = (function () {
     if (resetFromHash()) return;
     const m = /^#([a-z]+)$/.exec(location.hash); if (m) S.tab = m[1];
     const ready = scriptsReady();
-    try { await loadBase(); await ready; S.user && S.sid ? render() : authScreen(); } catch { await ready; authScreen(); }
+    try { await loadBase(); await ready; S.user && S.sid ? render() : authScreen(); }
+    catch (e) { await ready; authScreen('login', e && e.code === 'NETWORK' ? { notice: e.message } : {}); }
   }
   document.addEventListener('pointerdown', (e) => {
     const b = e.target.closest && e.target.closest('button.btn, .iconbtn'); if (!b || calm()) return;
