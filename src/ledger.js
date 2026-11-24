@@ -33,7 +33,9 @@ const CHART = [
   ['exp_other', '6090', 'expense', 'مصروفات أخرى', 'Other expenses'],
   ['exp_dep', '6070', 'expense', 'مصروف الإهلاك', 'Depreciation expense'],
   ['accum_dep', '1290', 'asset', 'مجمع إهلاك الأصول الثابتة', 'Accumulated depreciation'],
-  ['fx', '4950', 'income', 'فروق أسعار الصرف', 'Exchange differences']
+  ['fx', '4950', 'income', 'فروق أسعار الصرف', 'Exchange differences'],
+  ['emp_adv', '1160', 'asset', 'سلف الموظفين', 'Employee advances'],
+  ['salaries_payable', '2200', 'liability', 'رواتب مستحقة للموظفين', 'Salaries payable']
 ];
 const EXPENSE_KEYS = new Set(['salaries', 'power', 'maint', 'transport', 'rent', 'fees', 'other']);
 const expenseKey = (cat) => 'exp_' + (EXPENSE_KEYS.has(cat) ? cat : 'other');

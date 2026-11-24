@@ -108,6 +108,7 @@ function checkLine(db, orgId, sid, accountId, partyType, partyId, label) {
   if (!a || !a.active) throw notFound('Account');
   if (a.is_group) throw bad('GROUP_ACCOUNT', 'Group accounts only add up their children; choose a detail account', { code: a.code });
   if (a.sys === 'inventory') throw bad('USE_STOCK_SCREENS', 'Fuel stock moves only through deliveries, sales, counts and transfers', { code: a.code });
+  if (a.sys === 'emp_adv' || a.sys === 'salaries_payable') throw bad('USE_PAYROLL_SCREENS', 'Employee advances and salaries move only through the employees & payroll screens', { code: a.code });
   const need = a.sys === 'ar' ? 'customer' : a.sys === 'ap' ? 'supplier' : null;
   if (need) {
     if (partyType && partyType !== need) throw bad('PARTY_MISMATCH', `This account needs a ${need}`);

@@ -403,6 +403,38 @@ DROP INDEX jl_party;
 CREATE INDEX journals_post_day ON journals(org_id, station_id, status, business_date, source);
 CREATE INDEX sales_tank_day ON sales(tank_id, business_date);
 ANALYZE;
+`,
+/* v17 (0.28.0): employees, advances and salary payments, monthly payroll (src/payroll.js, ACCOUNTING-RULES §15).
+   Balances are not stored: they come from journal lines with party_type='employee'. Documents are voided, never deleted. */
+`CREATE TABLE employees(
+  id INTEGER PRIMARY KEY, org_id INTEGER NOT NULL REFERENCES orgs(id), station_id INTEGER NOT NULL REFERENCES stations(id),
+  name TEXT NOT NULL, job_title TEXT, phone TEXT, salary INTEGER NOT NULL DEFAULT 0 CHECK(salary>=0), hired_on TEXT,
+  active INTEGER NOT NULL DEFAULT 1, note TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX employees_station ON employees(station_id, active);
+CREATE TABLE employee_moves(
+  id INTEGER PRIMARY KEY, station_id INTEGER NOT NULL REFERENCES stations(id), employee_id INTEGER NOT NULL REFERENCES employees(id),
+  kind TEXT NOT NULL CHECK(kind IN('advance','salary_pay')), business_date TEXT NOT NULL, amount INTEGER NOT NULL CHECK(amount>0),
+  method TEXT NOT NULL DEFAULT 'cash' CHECK(method IN('cash','bank')), shift_id INTEGER REFERENCES shifts(id), note TEXT,
+  user_id INTEGER NOT NULL REFERENCES users(id), created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  voided_at TEXT, void_reason TEXT, void_by INTEGER REFERENCES users(id)
+);
+CREATE INDEX employee_moves_emp ON employee_moves(employee_id, business_date);
+CREATE INDEX employee_moves_shift ON employee_moves(shift_id);
+CREATE TABLE payroll_runs(
+  id INTEGER PRIMARY KEY, org_id INTEGER NOT NULL REFERENCES orgs(id), station_id INTEGER NOT NULL REFERENCES stations(id),
+  month TEXT NOT NULL, business_date TEXT NOT NULL, total_expense INTEGER NOT NULL, total_recovered INTEGER NOT NULL, total_net INTEGER NOT NULL,
+  note TEXT, user_id INTEGER NOT NULL REFERENCES users(id), created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  voided_at TEXT, void_reason TEXT, void_by INTEGER REFERENCES users(id)
+);
+CREATE UNIQUE INDEX payroll_runs_one ON payroll_runs(station_id, month) WHERE voided_at IS NULL;
+CREATE TABLE payroll_lines(
+  id INTEGER PRIMARY KEY, run_id INTEGER NOT NULL REFERENCES payroll_runs(id), employee_id INTEGER NOT NULL REFERENCES employees(id),
+  base INTEGER NOT NULL, allowances INTEGER NOT NULL DEFAULT 0, deductions INTEGER NOT NULL DEFAULT 0, recovered INTEGER NOT NULL DEFAULT 0,
+  net INTEGER NOT NULL, note TEXT, CHECK(net = base + allowances - deductions - recovered AND net >= 0)
+);
+CREATE INDEX payroll_lines_run ON payroll_lines(run_id);
+CREATE INDEX payroll_lines_emp ON payroll_lines(employee_id);
 `
 ];
 

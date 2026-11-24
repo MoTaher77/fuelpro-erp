@@ -1,5 +1,10 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-24 — 0.28.0 employees & payroll (branch, PR pending)
+- Built and tested (87 unit + 6 e2e). On the server after merge: `sudo fuelpro-update` (migration v17 adds tables only).
+- **Owner decision (KI-20):** the station's 37 employee accounts under 125 (≈ 1,640,627 YER). Options: (a) carry them into the payroll module with one opening journal per employee (125xx → 1160 with the employee; totals unchanged), (b) keep 125 as history and use the module only for new hires/movements.
+- New system accounts 1160/2200 sit at the root of the imported tree; the owner may move them under groups 12/22 from the chart screen.
+
 ## State 2026-11-24 — FuelPro LIVE on the owner's VPS
 - https://212-90-120-15.sslip.io (Contabo, Ubuntu; installed by the owner with `deploy/vps/install.sh`; HTTPS 200; schema v16).
 - Data: محطة التميز from `dev-data/fuelpro-snapshot.db` (to 2026-11-23 ~08:00 Yemen time; 13,857 journals, 11,881 sales; books check all OK), loaded with `fuelpro-restore` at the owner's explicit request. The owner account got a new password generated on the server.
