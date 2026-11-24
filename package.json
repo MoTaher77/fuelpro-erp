@@ -16,7 +16,10 @@
     "reset-2fa": "node --disable-warning=ExperimentalWarning scripts/reset-2fa.js",
     "lint": "eslint .",
     "test:artifact": "node --disable-warning=ExperimentalWarning --import ./web/sqljs-hook.mjs --test --test-skip-pattern=\"[Bb]ackup\" test/*.test.js",
-    "build:artifact": "node --disable-warning=ExperimentalWarning web/build.js"
+    "build:artifact": "node --disable-warning=ExperimentalWarning web/build.js",
+    "test:e2e": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test-e2e/*.test.js",
+    "bench": "node --disable-warning=ExperimentalWarning scripts/bench-api.js",
+    "bench:pages": "node --disable-warning=ExperimentalWarning scripts/bench-pages.js"
   },
   "dependencies": {
     "pg": "^8.23.1"

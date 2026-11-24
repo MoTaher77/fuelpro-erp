@@ -2,6 +2,14 @@
 /* FuelPro web client. Plain JS, no build step.
  * Server stores money as integer minor units and volume as integer millilitres.
  * This file only converts for display / input, using exact decimal parsing (no floats for money). */
+/* Number and date formatters are costly to create (tens of microseconds each, more on a phone) and used to be created for
+   every amount on screen: a 12,000-line ledger made 36,000 of them. One formatter per locale + options, created once and reused.
+   Same constructor, same arguments, so the text shown is exactly the same (and a bad locale still throws, for the callers' try/catch). */
+window.FPFMT = (function () {
+  var cache = new Map();
+  function get(C, tag) { return function (locale, opts) { var k = tag + String(locale) + '|' + (opts ? JSON.stringify(opts) : ''); var f = cache.get(k); if (!f) { f = new C(locale, opts); cache.set(k, f); } return f; }; }
+  return { nf: get(Intl.NumberFormat, 'n:'), dt: get(Intl.DateTimeFormat, 'd:') };
+})();
 (function () {
   /* ---------- translations: [ar, en, fr] ---------- */
   const D = {
@@ -115,26 +123,27 @@
   const S = { user: null, stations: [], sid: null, st: null, tab: 'dash', fuels: [], tanks: [], pumps: [], customers: [], salesDate: null, expMonth: null, stmt: null };
   const dec = () => S.st.cur_dec;
   const base = () => P.lang;
-  const nfmt = (max) => new Intl.NumberFormat(base() + '-u-nu-' + P.nums, { maximumFractionDigits: max });
+  const nfmt = (max) => FPFMT.nf(base() + '-u-nu-' + P.nums, { maximumFractionDigits: max });
   const ddec = () => (S.st.disp_dec ?? S.st.cur_dec);   // digits shown (amounts may be stored more precisely)
   /* amounts are shown as plain figures (the currency is in the column head / the station's base currency), like a printed ledger */
-  const money = (v) => { const d = dec(), dd = Math.min(ddec(), d); try { return new Intl.NumberFormat(base() + '-u-nu-' + P.nums, { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(v / Math.pow(10, d)); } catch { return String(v / Math.pow(10, d)); } };
+  const money = (v) => { const d = dec(), dd = Math.min(ddec(), d); try { return FPFMT.nf(base() + '-u-nu-' + P.nums, { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(v / Math.pow(10, d)); } catch { return String(v / Math.pow(10, d)); } };
   const volNum = (ml, max = 2) => nfmt(max).format(ml / U().ml);
   const vol = (ml, max = 2) => volNum(ml, max) + ' ' + uLbl();
   const volMl = (str) => { const n = parseDec(str, 3); return n == null ? null : Math.round(n * U().ml / 1000); };           // thousandths of the display unit -> ml
   const priceE4 = (str) => { const n = parseDec(str, dec() + 4); return n == null ? null : Math.round(n * 1000 / U().ml); };       // per display unit -> per litre
   const priceShow = (e4) => nfmt(Math.min(ddec(), dec()) + 2).format(e4 * (U().ml / 1000) / Math.pow(10, dec() + 4));
   const priceInput = (e4) => (e4 * (U().ml / 1000) / Math.pow(10, dec() + 4)).toFixed(dec() + 2).replace(/0+$/, '').replace(/\.$/, '');
-  const dtf = (o) => { try { return new Intl.DateTimeFormat(base() + '-u-ca-' + P.cal + '-nu-' + P.nums, { timeZone: 'UTC', ...o }); } catch { return new Intl.DateTimeFormat('en', { timeZone: 'UTC', ...o }); } };
+  const dtf = (o) => { try { return FPFMT.dt(base() + '-u-ca-' + P.cal + '-nu-' + P.nums, { timeZone: 'UTC', ...o }); } catch { return FPFMT.dt('en', { timeZone: 'UTC', ...o }); } };
   const fdate = (d) => dtf({ day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(d + 'T12:00:00Z'));
-  const fdt = (utc) => { try { return new Intl.DateTimeFormat(base() + '-u-ca-' + P.cal + '-nu-' + P.nums, { timeZone: S.st.timezone, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(utc.replace(' ', 'T') + 'Z')); } catch { return utc; } };
-  const ftime = (utc) => { try { return new Intl.DateTimeFormat(base() + '-u-nu-' + P.nums, { timeZone: S.st.timezone, hour: '2-digit', minute: '2-digit' }).format(new Date(utc.replace(' ', 'T') + 'Z')); } catch { return utc; } };
-  const todayIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: S.st.timezone }).format(new Date());
+  const fdt = (utc) => { try { return FPFMT.dt(base() + '-u-ca-' + P.cal + '-nu-' + P.nums, { timeZone: S.st.timezone, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(utc.replace(' ', 'T') + 'Z')); } catch { return utc; } };
+  const ftime = (utc) => { try { return FPFMT.dt(base() + '-u-nu-' + P.nums, { timeZone: S.st.timezone, hour: '2-digit', minute: '2-digit' }).format(new Date(utc.replace(' ', 'T') + 'Z')); } catch { return utc; } };
+  const todayIso = () => FPFMT.dt('en-CA', { timeZone: S.st.timezone }).format(new Date());
 
   /* ---------- tiny DOM helpers ---------- */
   function h(tag, attrs, ...kids) {
     const e = document.createElement(tag);
-    for (const k in (attrs || {})) { const v = attrs[k]; if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (v === true) e.setAttribute(k, ''); else if (v !== false && v != null) e.setAttribute(k, v); }
+    /* style through the CSSOM: the page's Content-Security-Policy (style-src 'self') blocks style="" attributes, so those were silently dropped */
+    for (const k in (attrs || {})) { const v = attrs[k]; if (k === 'class') e.className = v; else if (k === 'style') { if (v) e.style.cssText = v; } else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (v === true) e.setAttribute(k, ''); else if (v !== false && v != null) e.setAttribute(k, v); }
     for (const c of kids.flat(Infinity)) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(String(c)));
     return e;
   }
@@ -325,6 +334,7 @@
     const openMenu = () => { side.classList.add('open'); scrim.classList.add('open'); };
     /* every table on the screen -> one .xlsx workbook, one sheet per table, named after its heading */
     const exportScreen = () => {
+      document.querySelectorAll('#main [data-expand]').forEach(b => b.click());   // long lists shown in parts: put every row on screen first
       const X = window.FPXLSX, tables = [...document.querySelectorAll('#main table')].filter(t => t.rows.length > 1 && t.offsetParent !== null);
       if (!X || !tables.length) { toast(T('xlsxNone')); return; }
       const sheets = tables.map((t, i) => { const box = t.closest('.an-card, section, .sec, .card, .modal') || document.getElementById('main');
@@ -382,7 +392,7 @@
   const VIEWS = {
     async dash(main) {
       const [d, recent, cur] = await Promise.all([api('GET', sp('/dashboard')), api('GET', sp(`/sales?date=${todayIso()}&limit=6`)), api('GET', sp('/shifts/current')).catch(() => ({ shift: null }))]);
-      const hr = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: S.st.timezone }).format(new Date());
+      const hr = +FPFMT.dt('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: S.st.timezone }).format(new Date());
       const go = (k) => () => { location.hash = '#' + k; };
       const big = countUp(h('div', { class: 'big' }), d.sales.gross, money);
       main.append(h('section', { class: 'hero' },
@@ -563,12 +573,26 @@
       if (kind[i] === 'num' && c.tagName === 'TH') c.classList.add('num');
     }
     t.dataset.fitRows = String(rows.length);
-    /* still wider than its box on screen: tighten, then let text columns give up their minimum width */
-    const w = t.parentElement; t.classList.remove('squeeze', 'squeeze2');
-    if (w && t.offsetParent && w.clientWidth) { if (t.scrollWidth > w.clientWidth + 1) t.classList.add('dense'); if (t.scrollWidth > w.clientWidth + 1) t.classList.add('squeeze'); if (t.scrollWidth > w.clientWidth + 1) t.classList.add('squeeze2'); }
+    t.classList.remove('squeeze', 'squeeze2');
+    return true;
+  }
+  /* still wider than its box on screen: tighten, then let text columns give up their minimum width.
+     Done for all the tables of a screen together: every check reads the layout, and reading it after a change forces the browser
+     to lay the page out again. Table by table that was up to 3 full layouts per table (100 journal cards = 300 layouts); in
+     three rounds it is at most 3 layouts for the whole screen. Each table still gets the same classes. */
+  function squeezeTables(list) {
+    let left = list.filter(t => { const w = t.parentElement; return w && t.offsetParent && w.clientWidth; });
+    for (const cls of ['dense', 'squeeze', 'squeeze2']) {
+      if (!left.length) return;
+      const over = left.filter(t => t.scrollWidth > t.parentElement.clientWidth + 1);   // reads only: one layout for the whole round
+      over.forEach(t => t.classList.add(cls));                                           // writes only
+      left = over;
+    }
   }
   function fitTables(root) {
-    (root || document).querySelectorAll('table').forEach(t => { if (t.dataset.fitRows !== String(t.rows.length) || !t.classList.contains('fit')) fitTable(t); });
+    const done = [];
+    (root || document).querySelectorAll('table').forEach(t => { if ((t.dataset.fitRows !== String(t.rows.length) || !t.classList.contains('fit')) && fitTable(t)) done.push(t); });
+    squeezeTables(done);
     /* a printed page whose table is too wide for portrait turns to landscape */
     if (root && root.id === 'print' && root.firstElementChild) root.firstElementChild.classList.toggle('landscape', !!root.querySelector('table[data-wide]'));
   }
@@ -622,11 +646,20 @@
   };
   window.addEventListener('hashchange', resetFromHash);
   window.addEventListener('hashchange', () => { const m = /^#([a-z]+)$/.exec(location.hash); if (m && S.user && VIEWS[m[1]] && m[1] !== S.tab) { S.tab = m[1]; render(); } });
+  /* erp.js calls boot() before the later scripts (books-ui, more-ui, …) have registered their screens. If the server answered
+     first, the menu lacked those screens and a link such as #jbook fell back to the dashboard. The session is fetched at once,
+     but the first screen waits until every app script has run (page: DOMContentLoaded; Artifact page: its loader's event). */
+  const scriptsReady = () => new Promise((ok) => {
+    if (window.__FP_APP_FILES && !window.__FP_APP_LOADED) { addEventListener('fp:app-loaded', ok, { once: true }); setTimeout(ok, 5000); return; }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', ok, { once: true }); return; }
+    ok();
+  });
   async function boot() {
     applyPrefs();
     if (resetFromHash()) return;
     const m = /^#([a-z]+)$/.exec(location.hash); if (m) S.tab = m[1];
-    try { await loadBase(); S.user && S.sid ? render() : authScreen(); } catch { authScreen(); }
+    const ready = scriptsReady();
+    try { await loadBase(); await ready; S.user && S.sid ? render() : authScreen(); } catch { await ready; authScreen(); }
   }
   document.addEventListener('pointerdown', (e) => {
     const b = e.target.closest && e.target.closest('button.btn, .iconbtn'); if (!b || calm()) return;

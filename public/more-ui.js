@@ -4,8 +4,8 @@
 (function () {
   const F = window.FP; if (!F) return;
   const { h, T, P, S, api, sp, guard, toast, field, sel, table, sec, modal, render, cd, vol, volNum, dec, fdate, todayIso, csv, priceShow } = F;
-  const nf = (v) => { const d = dec(), dd = Math.min(d, S.st.disp_dec ?? d); return new Intl.NumberFormat('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format((v || 0) / 10 ** d); };
-  const nf0 = (v, d = 2) => new Intl.NumberFormat('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }).format((v || 0) / 10 ** d);
+  const nf = (v) => { const d = dec(), dd = Math.min(d, S.st.disp_dec ?? d); return FPFMT.nf('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format((v || 0) / 10 ** d); };
+  const nf0 = (v, d = 2) => FPFMT.nf('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }).format((v || 0) / 10 ** d);
   const dateIn = (id, v) => h('input', { id, type: 'date', value: v, max: todayIso() });
   const monthStart = () => todayIso().slice(0, 8) + '01';
   const addDay = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
@@ -209,20 +209,28 @@
     const ty = sel('jbType', [['', T('allTypes')]], S.jbType || '');
     const MAX = 3000;
     const shown = () => js.filter(j => !ty.value || (j.doc_type || T('src.' + j.source)) === ty.value);
+    /* on screen: the first STEP entries, then «show more / show all» — a month can hold 2,000+ lines, and laying out that many rows
+       took seconds on a phone. The totals still count every entry, and the printed book always holds all of them. */
+    const STEP = 150; let showN = STEP;
     const tbl = (forPrint) => { const list = shown(); let td = 0; const hn = list.some(j => j.lines.some(l => l.memo));
-      const body = list.flatMap((j, n) => { const d = j.lines.reduce((s, l) => s + l.debit, 0); td += d;
+      for (const j of list) for (const l of j.lines) td += l.debit;
+      const body = (forPrint ? list : list.slice(0, showN)).flatMap((j, n) => {
         return j.lines.map((l, i) => h('tr', { class: (n % 2 ? 'zb ' : '') + (i === 0 ? 'jfirst' : '') },
           i === 0 ? h('td', { rowspan: j.lines.length, class: 'nowrap' }, forPrint ? slash(j.business_date) : fdate(j.business_date)) : null,
           i === 0 ? h('td', { rowspan: j.lines.length, class: 'ltr-num' }, j.ref || '#' + j.id) : null,
           i === 0 ? h('td', { rowspan: j.lines.length, class: 'small' }, j.doc_type || T('src.' + j.source), j.memo ? h('div', { class: 'muted' }, j.memo) : null) : null,
           h('td', { class: 'ltr-num' }, l.code), h('td', null, l.name_ar, l.party_name ? h('small', { class: 'muted' }, ' · ' + l.party_name) : null), hn ? h('td', { class: 'small' }, l.memo || '') : null,
           h('td', { class: 'num' }, l.debit ? nf(l.debit) : ''), h('td', { class: 'num' }, l.credit ? nf(l.credit) : ''))); });
-      return h('div', { class: forPrint ? 'tw-print' : 'tw' }, h('table', { class: 'stmt jbook' },
+      const rest = forPrint ? 0 : list.length - Math.min(showN, list.length);
+      const more = rest > 0 ? h('div', { class: 'row noprint' }, h('span', { class: 'muted small' }, T('shownOf', { n: Math.min(showN, list.length), m: list.length })),
+        h('button', { class: 'btn ghost sm', onclick: () => { showN += STEP; draw(true); } }, T('loadMore'), ` (+${Math.min(STEP, rest)})`),
+        h('button', { class: 'btn ghost sm', 'data-expand': '1', onclick: () => { showN = list.length; draw(true); } }, T('showAllN', { n: list.length }))) : null;
+      return h('div', null, h('div', { class: forPrint ? 'tw-print' : 'tw' }, h('table', { class: 'stmt jbook' },
         h('thead', null, h('tr', null, [T('date'), T('docNo'), T('docType'), T('code'), T('account'), hn ? T('note') : null, T('debit'), T('creditCol')].filter(x => x !== null).map((x, i, a) => h('th', { class: i >= a.length - 2 ? 'num' : '' }, x)))),
         h('tbody', null, body.length ? body : h('tr', null, h('td', { colspan: hn ? 8 : 7, class: 'muted' }, T('noData')))),
-        h('tfoot', null, h('tr', null, h('td', { colspan: hn ? 6 : 5 }, T('total'), ' — ', T('entriesN'), ': ', list.length), h('td', { class: 'num' }, nf(td)), h('td', { class: 'num' }, nf(td))))));
+        h('tfoot', null, h('tr', null, h('td', { colspan: hn ? 6 : 5 }, T('total'), ' — ', T('entriesN'), ': ', list.length), h('td', { class: 'num' }, nf(td)), h('td', { class: 'num' }, nf(td)))))), more);
     };
-    const draw = () => { S.jbType = ty.value; out.replaceChildren(...(capped ? [h('p', { class: 'note' }, T('tooMany', { n: MAX }))] : []), tbl(false)); };
+    const draw = (keep) => { if (!keep) showN = STEP; S.jbType = ty.value; out.replaceChildren(...(capped ? [h('p', { class: 'note' }, T('tooMany', { n: MAX }))] : []), tbl(false)); };
     const run = guard(async () => {
       S.jbFrom = from.value; S.jbTo = to.value; S.jbQ = q.value; js = []; capped = false; let before = '';
       for (;;) { const page = await api('GET', sp(`/journals?from=${from.value}&to=${to.value}&status=posted&limit=200${before}${q.value.trim() ? '&q=' + encodeURIComponent(q.value.trim()) : ''}`));
@@ -231,7 +239,7 @@
       const types = [...new Set(js.map(j => j.doc_type || T('src.' + j.source)))].sort((a, b) => a.localeCompare(b, 'ar'));
       ty.replaceChildren(h('option', { value: '' }, T('allTypes')), ...types.map(t => h('option', { value: t, selected: t === S.jbType ? '' : null }, t))); draw();
     });
-    ty.onchange = draw; q.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+    ty.onchange = () => draw(); q.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
     const doPrint = async () => { await brand(); F.printDoc(`${T('jbook')} ${from.value}_${to.value}`, h('div', { class: 'a4 wide-doc xdoc' }, F.letterhead(T('jbook'), slash(from.value) + ' — ' + slash(to.value) + (ty.value ? ' · ' + ty.value : '')), tbl(true), signs('accountantSig', 'auditorSig', 'managerSig'), foot())); };
     main.append(sec(T('jbook'), h('p', { class: 'hint' }, T('jbookHelp')), h('div', { class: 'row' }, field(T('from'), from), field(T('to'), to), field(T('docType'), ty), field(T('search'), q), h('button', { class: 'btn', onclick: run }, T('run')),
       h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')))), out);

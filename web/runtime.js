@@ -240,6 +240,7 @@
       installFetch();
       say('تحميل الواجهة…');
       for (const f of window.__FP_APP_FILES) await loadScript(f);
+      window.__FP_APP_LOADED = true; dispatchEvent(new Event('fp:app-loaded'));   // app.js shows the first screen only now (every screen registered)
       $('fpBoot').remove();
       status(store ? 'ok' : 'warn', store ? (gen ? 'محفوظ ✓' : 'بيانات تجريبية — تُحفظ بعد أول عملية') : 'وضع مؤقت: لا يوجد تخزين');
       addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && dirty) save(); });

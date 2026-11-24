@@ -2,7 +2,7 @@
 /* global document, location  */   // used inside page.evaluate (runs in the browser)
 /* Repeatable page-speed benchmark in a real browser (Playwright + the pre-installed Chromium). docs/PERFORMANCE.md.
    Measures: first open (cold cache) until the dashboard is on screen, bytes transferred, reload with a warm cache,
-   then every screen in the menu: time from clicking the menu link until the screen replaced its skeleton.
+   then every screen in the menu: time from opening it until it replaced its skeleton (median of --repeat runs, a light screen in between).
    Two profiles: "desktop" (no throttling) and "phone" (4x CPU slowdown + ~1.6 Mbps / 150 ms network, a mid-range phone on 3G/4G).
    Usage:  node scripts/bench-pages.js --db <copy> --password <pw> [--email dev@local.test] [--profile phone|desktop|both] [--json out.json]
    Needs the dev dependency playwright (npm ci). Never point it at data/fuelpro.db. */
@@ -17,6 +17,7 @@ const password = arg('--password', process.env.BENCH_PASSWORD || '');
 const profileArg = arg('--profile', 'both');
 const jsonOut = arg('--json', '');
 const only = (arg('--tabs', '') || '').split(',').filter(Boolean);
+const repeat = Math.max(1, Number(arg('--repeat', 3)));   // each screen is opened this many times; the median is reported
 if (!dbPath || !fs.existsSync(dbPath)) { console.error('--db <copy of a FuelPro database> is required'); process.exit(1); }
 if (/[\\/]data[\\/]fuelpro\.db$/.test(dbPath)) { console.error('refusing to benchmark the live database'); process.exit(1); }
 
@@ -43,13 +44,21 @@ async function runProfile(browser, base, name) {
   bytes = 0; t = Date.now(); await page.reload(); await shown(); const warm = Date.now() - t; const warmBytes = bytes;
   const tabs = await page.$$eval('aside.side a[href^="#"]', (as) => as.map((a) => a.getAttribute('href').slice(1)).filter((k) => /^[a-z]+$/.test(k)));
   const screens = [];
+  const open = async (k) => {
+    await page.evaluate(() => { const m = document.getElementById('main'); if (m) m.id = 'old-main'; });
+    bytes = 0; const t0 = Date.now();
+    await page.evaluate((key) => { location.hash = '#' + key; }, k);
+    await shown(); const ms = Date.now() - t0; await page.waitForTimeout(150); return { ms, kb: +(bytes / 1024).toFixed(1) };
+  };
+  const rest = tabs.find((k) => k === 'users') || tabs[tabs.length - 1];   // a light screen between two measurements
   for (const k of tabs) {
     if (only.length && !only.includes(k)) continue;
-    await page.evaluate(() => { const m = document.getElementById('main'); if (m) m.id = 'old-main'; });
-    bytes = 0; t = Date.now();
-    await page.evaluate((key) => { location.hash = '#' + key; }, k);
-    try { await shown(); screens.push({ tab: k, ms: Date.now() - t, kb: +(bytes / 1024).toFixed(1) }); } catch { screens.push({ tab: k, ms: null }); }
-    await page.waitForTimeout(150);
+    try {
+      const runs = [];
+      for (let i = 0; i < repeat; i++) { await open(k === rest ? 'dash' : rest); runs.push(await open(k)); }
+      runs.sort((a, b) => a.ms - b.ms);
+      screens.push({ tab: k, ...runs[Math.floor(runs.length / 2)] });   // median of the runs
+    } catch { screens.push({ tab: k, ms: null }); }
   }
   const heap = await page.evaluate(() => (performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null));
   const dom = await page.evaluate(() => document.getElementsByTagName('*').length);

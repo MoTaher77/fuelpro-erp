@@ -116,6 +116,7 @@ window.FP_I18N = {
   auOrigin: ["المصدر","Origin","Origine"],
   auLines: ["سطر","lines","lignes"],
   loadMore: ["عرض المزيد","Load more","Afficher plus"],
+  shownOf: ['المعروض {n} من {m}', 'Showing {n} of {m}', '{n} sur {m} affichés'], showAllN: ['عرض الكل ({n})', 'Show all ({n})', 'Tout afficher ({n})'],
   jHistory: ["سجل القيد","Entry history","Historique de l'écriture"],
   jHistoryNone: ["لا توجد تعديلات مسجلة لهذا القيد.","No recorded changes for this entry.","Aucune modification enregistrée."],
   jOldCopy: ["النسخة قبل التعديل في النظام القديم","Version before the edit in the old system","Version avant modification (ancien système)"],
