@@ -1,5 +1,5 @@
 # PROGRESS — FuelPro
-Updated 2026-11-23. No percentages: each line is VERIFIED (code + test), REPORTED, or PLANNED.
+Updated 2026-11-24. No percentages: each line is VERIFIED (code + test), REPORTED, or PLANNED.
 
 ## Done
 | Area | Status | Evidence |
@@ -23,6 +23,10 @@ Updated 2026-11-23. No percentages: each line is VERIFIED (code + test), REPORTE
 | Import of the real M7 year for محطة التميز; balances match except 33807/411005 | REPORTED (checked in earlier sessions with `scripts/reconcile-m7.js`) | — |
 | UI: 3 languages, dark mode, PWA, phone layout, emerald/gold identity | REPORTED + browser sweeps | — |
 | Column auto-fit + unified print + Dubai font (0.6.1): 39 screens with no overflow in the owner's Chrome | REPORTED (checked 2026-11-22 in the owner's Chrome) | — |
+| Speed 0.26.0: compression + ETag, schema v16 covering indexes, N+1 removed (ageing, integrity, party lists, dashboard), faster balances/ledger/integrity, cached formatters, batched table fitting, long lists in parts | VERIFIED (identical answers on the snapshot copy and at 100k journals; numbers in PERFORMANCE.md) | `test/perf.test.js`, `test-e2e/ui.e2e.test.js`, `scripts/compare-dump.js` |
+| Fixes 0.26.0: boot race (KI-13), CSP-blocked styles (KI-14), (date,id) paging (KI-15), double submit (KI-16) | VERIFIED | `test/perf.test.js`, e2e tests (the double-submit test fails without the fix: 3 expenses) |
+| Concurrency: 20 users, reads + writes + sale retries | VERIFIED: 0 5xx, 0 duplicates, retries answered with the first sale, books balanced | `scripts/stress-api.js` |
+| CI: lint, typecheck, audit, unit + PostgreSQL bridge, e2e, perf report, Artifact | VERIFIED locally; GitHub run pending on the PR | `.github/workflows/test.yml` |
 | Windows install/run scripts | VERIFIED (scripts exist and are in use) | `Downloads\start-fuelpro.ps1` |
 
 ## Open / not built (PLANNED unless noted)

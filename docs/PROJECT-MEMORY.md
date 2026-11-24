@@ -58,3 +58,6 @@ Smart alerts (bell, `/alerts`, ADR-16), 69 tests, 133 routes, service-worker cac
 
 ## 0.11.0 (2026-11-23)
 Online via `start-fuelpro-online.bat` (Cloudflare tunnel, ADR-17). 70 tests. Secret for 2FA in data\app-secret.txt (never print it).
+
+## 0.26.0 (2026-11-24) — speed and quality
+Schema **v16** (covering indexes), service-worker cache **v41**, 80 unit tests + 5 browser tests (`npm run test:e2e`). Measured before/after in `docs/PERFORMANCE.md`; every API answer proved identical (`scripts/compare-dump.js`). Decisions: no cached balances (ADR-23), vanilla JS front end kept (ADR-24), SQLite stays, PostgreSQL = Phase 2 (ADR-25). Speed tooling: `scripts/bench-api.js`, `bench-pages.js`, `stress-api.js`; skill `fuelpro-performance`; review agents in `.claude/agents/`.

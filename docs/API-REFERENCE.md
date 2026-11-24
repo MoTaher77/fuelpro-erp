@@ -9,6 +9,8 @@ Generated from `src/server.js` on 2026-11-23 (124 routes). VERIFIED route list; 
 - Money in replies = integer minor units; quantities in ml; prices `*_e4`. The UI formats them (`money()` in `app.js`).
 - Lists accept paging/date filters (`from`, `to`, `limit`, `before` …) via `pageArgs`/`resolveDate` in `services.js` — exact names per handler.
 - Sales use an idempotency key `client_id` (unique per station): retrying the same POST returns the same sale.
+- 0.26: `limit` (≤ 200) + `before_id` page **in the list's own order**. Journals, vouchers and expenses are ordered by (business_date DESC, id DESC): the next page starts after the `before_id` row in that order (earlier versions used `id < before_id`, which skipped back-dated entries).
+- 0.26: replies ≥ 1.4 KB are gzip-compressed when the request has `Accept-Encoding: gzip` (browsers always send it); `Cache-Control: no-store` on every API reply.
 
 ## Routes by area
 

@@ -17,9 +17,10 @@ In real use at **محطة التميز** with one year of data imported from the
   **on every start**. If you edit files in place, rebuild or remove that zip, or your edits are reverted (KI-02).
 
 ## 3. Stack (verified)
-Node.js ≥ 22.5, built-in `node:sqlite` (WAL). **Libraries are allowed (owner, 2026-11-23, ADR-22)** but the SQLite mode must keep running with nothing installed: the runtime dependency `pg` (PostgreSQL, Phase 2) is `require`d lazily, only when a PostgreSQL URL is configured. Dev tools (`npm ci`): `eslint`, `sql.js` (pinned 1.10.3 = the page engine), `playwright`. Plain HTTP server `src/server.js`
+Node.js ≥ 22.5, built-in `node:sqlite` (WAL). **Libraries are allowed (owner, 2026-11-23, ADR-22)** but the SQLite mode must keep running with nothing installed: the runtime dependency `pg` (PostgreSQL, Phase 2) is `require`d lazily, only when a PostgreSQL URL is configured. Dev tools (`npm ci`): `eslint`, `sql.js` (pinned 1.10.3 = the page engine), `playwright`, `typescript` (type check only, no build). Plain HTTP server `src/server.js`
 (133 routes). Front end: vanilla JS SPA in `public/` (no framework, no build step), PWA service worker.
-Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 15; `openDb` also runs `PRAGMA optimize`).
+Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 16 = covering indexes; `openDb` also runs `PRAGMA optimize`).
+Front end stays vanilla JS, no framework/build (ADR-24); SQLite stays the engine, PostgreSQL = Phase 2 (ADR-25). Speed work: `docs/PERFORMANCE.md`.
 
 ## 4. Non-negotiable invariants
 1. Money = integers in minor units (`stations.cur_dec`; YER uses 3 stored / `disp_dec` 2 shown). Quantities in ml, prices `*_e4`, rates `*_e6`. Never floats — use `src/money.js`.
@@ -38,17 +39,23 @@ Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 15; `openDb` 
 - Customer/supplier names and balances are private: never publish, upload, or paste them into docs.
 - **Demo Artifact page deleted 2026-11-23 (owner); only the station page below remains.**
 - **Online demo = Claude Artifact only (owner, 2026-11-23, ADR-20):** the Artifact edition (`web/`, `docs/ARTIFACT-EDITION.md`) runs the unchanged `src/` in a claude.ai page on **demo data only**, saved in the Artifact's own storage. Do **not** use Render, Railway, ChatGPT Sites or Codex (owner's instruction; supersedes the Render plan in ADR-19). Real station data is allowed **only** in the owner's separate private page «FuelPro المحطة» (https://claude.ai/artifact/Dbe4L4cWnvRSbeswvYAENF, owner's explicit OK 2026-11-23), built from the password-free snapshot with `web/build.js --seed-db` and a throwaway admin from `scripts/dev-admin.js`, and refreshed by the owner himself from a laptop backup (chip menu → «تحديث البيانات من نسخة اللابتوب», 0.17; the file then carries the users' password hashes, which stay in the owner's private page storage); never in the demo page, never shared or made public, never re-seeded over saved data without the owner. It is a copy: it does not sync with the laptop. **Moving real data anywhere off the laptop needs the owner's separate OK each time** (backup first, then `--dry-run`). Never commit or print passwords, keys, `APP_SECRET`, SMTP credentials or real customer/financial data; verify a deployment with `node scripts/smoke-online.js <url> <email> <password>`.
-- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v40`) or users keep the old UI.
+- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v41`) or users keep the old UI.
+- **Never cache balances or report totals** (ADR-23). A query rewrite must be proved with `scripts/compare-dump.js` (all responses identical).
 
-## 6. Commands (verified 2026-11-23)
+## 6. Commands (verified 2026-11-24)
 ```
 npm ci                   # installs pg + dev tools (lock file committed); not needed just to run the SQLite app
 npm run lint             # eslint (errors fail CI)
-npm test                 # node:test, 77 tests, ~9 s, in-memory DBs — must stay green
+npm test                 # node:test, 80 pass + 1 skipped (PostgreSQL), ~6 s, in-memory DBs — must stay green
+npm run test:e2e         # Playwright on a seeded demo DB, 5 tests, ~25 s
+npm run typecheck        # tsc on files marked // @ts-check
 npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default
 DB_PATH=/tmp/demo.db DEMO_PASSWORD=... node scripts/seed-demo.js --days 365   # throwaway demo DB
 npm run backup           # consistent copy into data/backups/ (server also makes 1 auto copy/day, keeps 30)
 node scripts/schema-doc.js > docs/DATABASE-SCHEMA.generated.md   # refresh the table list
+node scripts/bench-api.js --db <copy> --password <pw> [--dump f.json]   # API p50/p95 (+ answers for compare-dump.js)
+node scripts/bench-pages.js --db <copy> --password <pw>                # screens in Chromium, desktop + phone profile
+node scripts/stress-api.js --db <demo copy> --password <pw>            # 20 concurrent users, then checks the books (writes!)
 ```
 Windows: `start-fuelpro-online.bat` (project root, online via Cloudflare tunnel), `start-fuelpro.bat` / `start-fuelpro.ps1` in `Downloads` (real data), `start-fuelpro-demo.bat` (demo).
 
@@ -66,7 +73,7 @@ Build: `DEMO_PASSWORD=<pw> node web/build.js` → `web/dist/` (git-ignored), the
 ## 8. Documentation map → `docs/00-MASTER-INDEX.md`
 Stable: ARCHITECTURE, PROJECT-STRUCTURE, DATABASE-SCHEMA, MODULES, API-REFERENCE, ACCOUNTING-RULES, SECURITY,
 TESTING, DEPLOYMENT, DECISIONS. Moving: PROJECT-MEMORY, PROGRESS, NEXT-TASK, KNOWN-ISSUES, SESSION-HISTORY.
-On-demand skills: `.claude/skills/fuelpro-*`.
+On-demand skills: `.claude/skills/fuelpro-*` (incl. `fuelpro-performance`). Review agents: `.claude/agents/fuelpro-ledger-guard`, `fuelpro-perf-profiler`.
 Old-system (M7) history is carried into the normal tables by `scripts/import-m7-history.js` → `src/m7archive.js` (ADR-14). Hash routes are letters only (`#[a-z]+`).
 Root files `ARCHITECTURE.md DATABASE_SCHEMA.md PROJECT_PROGRESS.md RESUME.md QA_REPORT.md` are **legacy (v0.4.0)**; `docs/` wins.
 

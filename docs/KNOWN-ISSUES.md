@@ -1,5 +1,5 @@
 # KNOWN-ISSUES — FuelPro
-Updated 2026-11-23. Severity: High (money/data risk) · Medium · Low.
+Updated 2026-11-24. Severity: High (money/data risk) · Medium · Low.
 
 | ID | Issue | Severity | Area | Root cause | Workaround | Status |
 |---|---|---|---|---|---|---|
@@ -15,3 +15,8 @@ Updated 2026-11-23. Severity: High (money/data risk) · Medium · Low.
 | KI-12 | Eight keys are defined twice in `public/i18n-erp.js` (`deposit`, `withdrawal`, `avgCost`, `received`, `box`, `openingBal`, `closingBal`, `cashierSig`); the later one silently wins and five of them differ in wording (found by eslint `no-dupe-keys`, reported as warnings) | Low | i18n | copy-paste over time | pick the intended wording and delete the other | open |
 | KI-10 | Backups are on the same disk as the DB | Medium | backup | single laptop | second copy (0.21): `data\backup-copy-dir.txt` or `BACKUP_COPY_DIR` → a Drive/OneDrive/USB folder | mitigated 2026-11-23 — owner must set the folder (screen shows the status) |
 | KI-11 | Artifact edition: printing, file backups, SMTP not available in a claude.ai page; one writer at a time | Low | artifact | claude.ai page sandbox (VERIFIED by contract) | print/backup on the laptop; chip menu downloads the DB | accepted (ADR-20) |
+| KI-13 | First screen could be drawn before `books-ui.js`/`more-ui.js`… registered their screens: menu missing screens, a link such as `#jbook` fell back to the dashboard (page and Artifact edition) | Medium | front end | `erp.js` called `boot()` before the later scripts ran | — | **closed 2026-11-24 (0.26.0)**: `boot()` waits for `DOMContentLoaded` / `fp:app-loaded`; e2e test opens every screen |
+| KI-14 | `style="…"` set through `h()` was silently blocked by the CSP (`style-src 'self'`) in ~20 places (WhatsApp/PDF dialogs, backup-mirror notice) | Low | front end | `setAttribute('style')` is an inline style for CSP | — | **closed 2026-11-24 (0.26.0)**: `h()` uses `el.style.cssText` (CSSOM, allowed) |
+| KI-15 | Journal/voucher/expense lists paged with `id < before_id` while sorted by date: an entry dated earlier but typed later was skipped between pages (real data unaffected: imported in date order, checked) | Medium | API | keyset did not match the sort | — | **closed 2026-11-24 (0.26.0)**: (date, id) keyset, test in `test/perf.test.js` |
+| KI-16 | Two quick taps on «save» posted vouchers/payments/expenses twice (only sales have `client_id`) | Medium | front end | no re-entry guard | — | **closed 2026-11-24 (0.26.0)**: `guard()` ignores re-entry for submit/click; e2e test. Server-side idempotency keys for all documents: open, see PERFORMANCE §Next |
+| KI-17 | At ≈100k journals (7 years) the analytics dashboard (~260 ms) and the bell's alert check (~240 ms) are just above the 250 ms read target | Low | speed | they read every journal of the period/org by design | the bell re-checks at most every 2 min | open — PERFORMANCE §Next |
