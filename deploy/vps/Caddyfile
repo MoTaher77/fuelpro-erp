@@ -1,0 +1,23 @@
+# FuelPro behind Caddy: automatic HTTPS (Let's Encrypt) for __DOMAIN__, everything forwarded to the app on 127.0.0.1:3000.
+# The app itself compresses and sets its security headers (CSP, HSTS, nosniff, frame-deny).
+{
+	email __EMAIL__
+}
+
+__DOMAIN__ {
+	reverse_proxy 127.0.0.1:3000 {
+		# the app takes the client address from the last X-Forwarded-For hop (TRUST_PROXY=1): Caddy appends it
+		header_up X-Forwarded-For {remote_host}
+		# not behind Cloudflare here: drop a client-supplied CF-Connecting-IP, which the app would otherwise trust first
+		header_up -CF-Connecting-IP
+	}
+	request_body {
+		max_size 2MB
+	}
+	log {
+		output file /var/log/caddy/fuelpro.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}

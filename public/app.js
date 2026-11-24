@@ -84,7 +84,7 @@ window.FPFMT = (function () {
     'err.BAD_CREDENTIALS': ['البريد أو كلمة المرور غير صحيحة', 'Email or password is incorrect', 'E-mail ou mot de passe incorrect'], 'err.TOO_MANY_ATTEMPTS': ['محاولات كثيرة. حاول لاحقاً.', 'Too many attempts. Try again later.', 'Trop de tentatives. Réessayez plus tard.'],
     'err.BAD_NUMBER': ['رقم غير صالح (تحقق من الخانات العشرية)', 'Invalid number (check the decimals)', 'Nombre invalide (vérifiez les décimales)'], 'err.STOCK_ALREADY_SOLD': ['بيع جزء من هذه الكمية. استخدم الجرد للتصحيح.', 'Part of this delivery was sold. Use a stock count to correct.', 'Une partie a déjà été vendue. Utilisez un inventaire.'],
     'err.WEAK_PASSWORD': ['كلمة المرور ضعيفة (10 أحرف على الأقل)', 'Password too weak (10+ characters)', 'Mot de passe trop faible (10 caractères min.)'], 'err.EMAIL_TAKEN': ['هذا البريد مسجّل مسبقاً', 'This email is already registered', 'Cet e-mail est déjà enregistré'],
-    'err.FUTURE_DATE': ['التاريخ لا يمكن أن يكون في المستقبل', 'The date cannot be in the future', 'La date ne peut pas être dans le futur'], 'err.FORBIDDEN': ['ليست لديك صلاحية لهذا الإجراء', 'You do not have permission', "Vous n'avez pas la permission"],
+    'err.FUTURE_DATE': ['التاريخ لا يمكن أن يكون في المستقبل', 'The date cannot be in the future', 'La date ne peut pas être dans le futur'], 'err.FORBIDDEN': ['ليست لديك صلاحية لهذا الإجراء', 'You do not have permission', "Vous n'avez pas la permission"], 'err.REGISTRATION_CLOSED': ['إنشاء حساب جديد مغلق على هذا الخادم. اطلب من مالك المنشأة إضافتك مستخدماً.', 'New accounts cannot be created on this server. Ask the owner to add you as a user.', 'La création de compte est fermée sur ce serveur.'],
     'err.UNAUTHENTICATED': ['انتهت الجلسة. سجّل الدخول من جديد.', 'Session expired. Please sign in again.', 'Session expirée. Reconnectez-vous.'],
     'au.sale.create': ['تسجيل بيع', 'Sale recorded', 'Vente enregistrée'], 'au.sales.void': ['إلغاء بيع', 'Sale voided', 'Vente annulée'], 'au.delivery.create': ['توريد', 'Delivery received', 'Livraison reçue'], 'au.deliveries.void': ['إلغاء توريد', 'Delivery voided', 'Livraison annulée'],
     'au.expense.create': ['مصروف', 'Expense recorded', 'Dépense enregistrée'], 'au.expenses.void': ['إلغاء مصروف', 'Expense voided', 'Dépense annulée'], 'au.payment.create': ['دفعة', 'Payment recorded', 'Paiement enregistré'], 'au.payments.void': ['إلغاء دفعة', 'Payment voided', 'Paiement annulé'],
@@ -289,6 +289,9 @@ window.FPFMT = (function () {
     }
     const mk = (id, type = 'text', val = '') => (f[id] = h('input', { id, type, value: val, autocomplete: type === 'password' ? (reg ? 'new-password' : 'current-password') : type === 'email' ? 'username' : 'off' }));
     const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return 'UTC'; } })();
+    let regBtn = null;
+    /* a server with REGISTRATION=first|closed says so on /api/health: then «create an account» is not offered on the sign-in page */
+    if (!reg) fetch('/api/health').then(r => r.json()).then(j => { if (j && j.register === false && regBtn) regBtn.remove(); }).catch(() => {});
     const codeBox = h('div', { hidden: true }, field(T('code2fa'), (f.code = otpInput('loginCode'))), h('p', { class: 'hint' }, T('code2faHelp')));
     const form = h('form', { class: 'card', onsubmit: guard(async (e) => {
       e.preventDefault();
@@ -301,7 +304,7 @@ window.FPFMT = (function () {
     }) }, h('h2', null, reg ? T('register') : T('signIn')), opts.notice && h('p', { class: 'note' }, opts.notice),
       h('div', { class: 'grid' }, reg && field(T('orgName'), mk('org')), reg && field(T('yourName'), mk('nm')), reg && field(T('stationName'), mk('st')), reg && field(T('currency'), (f.cur = sel('cur', CURS.map(c => [c, c]), 'USD'))), reg && field(T('timezone'), mk('tz', 'text', tz)), field(T('email'), mk('em', 'email')), field(T('password'), mk('pw', 'password'))),
       !reg && codeBox,
-      h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, reg ? T('register') : T('signIn')), h('button', { class: 'btn ghost', type: 'button', onclick: () => authScreen(reg ? 'login' : 'register') }, reg ? T('haveAcct') : T('noAcct')), prefsBtn()),
+      h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, reg ? T('register') : T('signIn')), (regBtn = h('button', { class: 'btn ghost', type: 'button', onclick: () => authScreen(reg ? 'login' : 'register') }, reg ? T('haveAcct') : T('noAcct'))), prefsBtn()),
       !reg && h('p', { class: 'hint' }, h('button', { class: 'linkbtn', type: 'button', onclick: () => authScreen('forgot', { email: f.em.value }) }, T('forgot'))));
     shell(form);
   }

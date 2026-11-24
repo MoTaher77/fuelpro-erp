@@ -1,32 +1,40 @@
 # TESTING — FuelPro
 
-## Commands (VERIFIED 2026-11-23)
+## Commands (VERIFIED 2026-11-24)
 | Command | What | Result |
 |---|---|---|
-| `npm test` | `node --test test/*.test.js` — real HTTP server on a random port, in-memory SQLite per test | **70 pass / 0 fail, ~9 s** (2026-11-23) |
-| `node --test test/reports.test.js` | one file | |
-| `DB_PATH=/tmp/demo.db DEMO_PASSWORD=ci-only-password-123 node scripts/seed-demo.js --days 60` | demo smoke test: generates 60 days through real logic; books must balance | used in CI |
-| CI | `.github/workflows/ci.yml`: npm test + demo seed + docker build | never run on GitHub (no repo) |
+| `npm test` | `node --test test/*.test.js` — real HTTP server on a random port, in-memory SQLite per test | **83 pass, 1 skipped (PostgreSQL, needs `FUELPRO_TEST_PG`), 0 fail, ~6 s** |
+| `npm run test:e2e` | `test-e2e/*.test.js` — Playwright + Chromium on a freshly seeded **demo** DB (120 days) | **5 pass, ~25 s** |
+| `npm run test:artifact` | the whole suite on sql.js (the Artifact page engine), file backups excluded | **77 pass, 1 skipped** |
+| `npm run lint` | eslint (errors fail CI) | 0 errors |
+| `npm run typecheck` | `tsc` on files that start with `// @ts-check` (money, validate, errors, bench/stress scripts) | 0 errors |
+| `npm audit --omit=dev --audit-level=high` | runtime dependencies | 0 vulnerabilities |
+| `node scripts/stress-api.js --db <demo copy> --password <pw>` | 20 concurrent users, reads + writes + sale retries, then checks the books | PASS (see PERFORMANCE.md) |
+| `node scripts/check-books.js <db>` | read-only: SQLite integrity + the books' self-check for every organisation | used by `fuelpro-update` / `fuelpro-restore` |
+| `node scripts/bench-api.js` / `bench-pages.js` / `compare-dump.js` | speed + "same answers" proof | see [PERFORMANCE.md](PERFORMANCE.md) |
+
+CI (`.github/workflows/test.yml`): `test` (lint, typecheck, audit, unit + PostgreSQL bridge tests), `e2e` (Playwright), `perf` (seeded 365-day demo → API + page report as a build artifact, informative), `artifact` (sql.js suite + bundle).
 
 ## Suites
-| File | Tests | Covers |
-|---|---|---|
-| `test/api.test.js` | 23 | register/login, meter sales, stock limits, idempotent `client_id`, VAT, void, cashier limits, org isolation, credit/overpayment, deliveries, stock count, summary, throttling, CSRF, validation, statements, password change/reset, 2FA |
-| `test/erp.test.js` | 11 | balanced journals + weighted average, void reversal + append-only, stock count, transfers, shifts, suppliers/ageing/credit limit, manual journals + period lock, roles, parallel duplicates, v2→v3 upgrade, backup restore |
-| `test/books.test.js` | 10 | account tree/boxes, vouchers, manual journal rules, meter sheet, price history, sales register/purchases/profit by month, FX boxes + revaluation, fixed assets, monthly stock, backups API |
-| `test/money.test.js` | 9 | rounding, `amountMinor` exactness, `vatSplit` |
-| `test/auth-units.test.js` | 4 | TOTP vectors, SMTP client |
-| `test/reports.test.js` | 2 | daily/box/collections agree with the day's operations; year close + reopen + statements + integrity |
+| File | Covers |
+|---|---|
+| `test/api.test.js` | register/login, meter sales, stock limits, idempotent `client_id`, VAT, void, cashier limits, org isolation, credit/overpayment, deliveries, stock count, summary, throttling, CSRF, validation, statements, password change/reset, 2FA |
+| `test/erp.test.js` | balanced journals + weighted average, void reversal + append-only, stock count, transfers, shifts, suppliers/ageing/credit limit, manual journals + period lock, roles, parallel duplicates, v2→v3 upgrade, backup restore |
+| `test/books.test.js` | account tree/boxes, vouchers, manual journal rules, meter sheet, price history, sales register/purchases/profit by month, FX boxes + revaluation, fixed assets, monthly stock, backups API |
+| `test/reports.test.js` | daily/box/collections agree with the day's operations; year close + reopen + statements + integrity |
+| `test/perf.test.js` | 0.26: brotli/gzip + ETag/304 for app files, content-hashed `?v=` URLs (immutable), gzip for big API answers, journal paging in (date, id) order (back-dated entries not skipped) |
+| `test/speed.test.js` | v15 index + planner statistics |
+| `test/vps.test.js` | 0.27: `REGISTRATION=first` (first organisation only, then 403 `REGISTRATION_CLOSED`), `closed`, `open`; `/api/health` tells the sign-in page |
+| others | money, auth units, alerts, discounts + bank reconciliation, M7 history, xlsx, proxy, backup mirror, PostgreSQL bridge, Artifact runtime |
+| `test-e2e/ui.e2e.test.js` | every menu screen at 1366 px and 390 px without script errors; long statement / journal book / journal list in parts with «show all»; Excel export expands first; compressed app files + 304 on reload; a triple-submitted expense is saved once |
 
 ## Financial correctness — what a new accounting change must test
 Balanced journal per operation · exact reversal on void · stock value = account 1200 · customers = 1100 · suppliers = 2010 ·
 trial balance balances · `GET /api/accounting/integrity` all green. Copy the pattern from `test/erp.test.js`.
+For a query rewrite: `scripts/compare-dump.js` before/after on the snapshot copy must print **all responses identical**.
 
-## Browser / UI / print tests (manual or ad-hoc, not in the repo)
-- Playwright sweeps were run from the cloud container in earlier sessions (scripts in a temp folder, not kept) against an import of the real data: every screen and sub-tab in Arabic/English, phone and desktop, no console errors, no table overflow (REPORTED 2026-11-22).
-- Real-Chrome check through Claude in Chrome on `http://localhost:3000`: 39 screens, no overflow, no clipped tiles (REPORTED 2026-11-22).
-- **Print preview cannot be checked from the cloud**; the Dubai font only exists on Windows. Owner's printouts are the acceptance test (open — NEXT-TASK A).
-- Recommendation (not done): add a small Playwright smoke script in a new `test/ui` folder.
+## Not testable from the cloud
+- **Print preview** and the Dubai font (Windows only): the owner's printouts are the acceptance test (KI-07).
 
 ## Known failures
-None as of 2026-11-23.
+None as of 2026-11-24.

@@ -22,7 +22,7 @@ const zlib = require('node:zlib');
 const HAS_ZLIB = typeof zlib.gzip === 'function' && typeof zlib.brotliCompress === 'function';   // the Artifact page has no zlib
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.svg', '.json', '.webmanifest']);
 
-function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'fuelpro.db'), secureCookie = process.env.COOKIE_SECURE === '1', trustProxy = process.env.TRUST_PROXY === '1', mailer = createMailer(), appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}` } = {}) {
+function createApp({ registration = String(process.env.REGISTRATION || 'open').toLowerCase(), dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'fuelpro.db'), secureCookie = process.env.COOKIE_SECURE === '1', trustProxy = process.env.TRUST_PROXY === '1', mailer = createMailer(), appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}` } = {}) {
   const db = openDb(dbPath);
   const BK = require('./backup');
   const backupTimer = BK.schedule(db, dbPath);
@@ -36,7 +36,10 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
   const id = (v) => { const n = Number(v); if (!Number.isSafeInteger(n) || n < 1) throw new HttpError(400, 'VALIDATION', 'Invalid id'); return n; };
 
   /* ----- auth ----- */
+  /* REGISTRATION: 'open' (default: anyone may create an organisation — the laptop's first run), 'first' (only while the
+     database has no organisation yet: a fresh public server), 'closed'. Users of an existing organisation are added by its owner. */
   route('POST', '/api/auth/register', (c) => {
+    if (registration === 'closed' || (registration === 'first' && db.prepare('SELECT 1 FROM orgs LIMIT 1').get())) throw new HttpError(403, 'REGISTRATION_CLOSED', 'New organisations cannot be registered on this server');
     const r = S.registerOrg(db, c.body, c.ip);
     const l = S.login(db, { email: c.body.email, password: c.body.password }, c.ip);
     c.setSession(l.token); return { status: 201, body: { ...r, user: l.user } };
@@ -191,7 +194,7 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
   route('GET', '/api/stations/:sid/dashboard', (c) => ({ body: S.dashboard(db, c.user, st(c)) }));
   route('GET', '/api/stations/:sid/summary', (c) => ({ body: S.summary(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/audit', (c) => ({ body: S.auditLog(db, c.user, st(c), c.q) }));
-  route('GET', '/api/health', () => ({ body: { ok: true } }), { public: true });
+  route('GET', '/api/health', () => ({ body: { ok: true, register: registration === 'open' || (registration === 'first' && !db.prepare('SELECT 1 FROM orgs LIMIT 1').get()) } }), { public: true });
   route('GET', '/healthz', () => { db.prepare('SELECT 1').get(); return { body: { ok: true } }; }, { public: true });
 
   /* ----- plumbing ----- */
@@ -228,36 +231,52 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
       ...(secureCookie ? { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' } : {})
     };
   }
-  /* App files: kept in memory per version (size + modification time), with an ETag so a reload costs a 304 instead of
-     the whole 530 KB, and pre-compressed once (brotli, else gzip). 'no-cache' still makes the browser ask every time,
-     so a new version is picked up at once (the service worker is network-first as well). */
+  /* App files: kept in memory per version (size + modification time), with an ETag so a revalidation costs a 304 instead of
+     the whole 530 KB, and pre-compressed once (brotli, else gzip).
+     index.html names every script and style with its content hash (/app.js?v=<hash>); a request that carries the current hash is
+     cached as immutable, so a reload asks only for index.html (one round trip instead of 17). index.html itself is 'no-cache':
+     after an update it names the new hashes, so the new version shows at once. Without ?v= a file is 'no-cache' as before. */
   const staticCache = new Map();
-  function staticEntry(file, st, done) {
+  const hashOf = (buf) => '"' + require('node:crypto').createHash('sha1').update(buf).digest('base64url').slice(0, 22) + '"';
+  function entrySync(file, st) {
     const key = st.size + '-' + Math.floor(st.mtimeMs);
     const hit = staticCache.get(file);
-    if (hit && hit.key === key) return done(null, hit);
-    fs.readFile(file, (err, raw) => {
-      if (err) return done(err);
-      const ext = path.extname(file);
-      const e = { key, raw, type: MIME[ext] || 'application/octet-stream', etag: '"' + require('node:crypto').createHash('sha1').update(raw).digest('base64url').slice(0, 22) + '"' };
-      staticCache.set(file, e);
-      if (!HAS_ZLIB || !COMPRESSIBLE.has(ext) || raw.length < 1024) return done(null, e);
-      zlib.brotliCompress(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.length } }, (e1, br) => {
-        if (!e1) e.br = br;
-        zlib.gzip(raw, { level: 9 }, (e2, gz) => { if (!e2) e.gz = gz; done(null, e); });
-      });
+    if (hit && hit.key === key) return hit;
+    const raw = fs.readFileSync(file);
+    const e = { key, raw, type: MIME[path.extname(file)] || 'application/octet-stream', etag: hashOf(raw) };
+    staticCache.set(file, e); return e;
+  }
+  const INDEX = path.join(PUBLIC, 'index.html');
+  function indexEntry(st) {
+    const base = entrySync(INDEX, st), html = base.raw.toString('utf8');
+    const refs = [...new Set([...html.matchAll(/(?:src|href)="\/([\w.-]+\.(?:js|css))"/g)].map(m => m[1]))];
+    const vers = refs.map((n) => { try { const f = path.join(PUBLIC, n); return [n, entrySync(f, fs.statSync(f)).etag.slice(1, -1)]; } catch { return [n, null]; } });
+    const key = 'idx|' + base.key + '|' + vers.map(v => v.join('=')).join('|');
+    const hit = staticCache.get('index:versioned');
+    if (hit && hit.key === key) return hit;
+    const map = new Map(vers);
+    const raw = Buffer.from(html.replace(/((?:src|href)=")\/([\w.-]+\.(?:js|css))"/g, (m, a, n) => map.get(n) ? `${a}/${n}?v=${map.get(n)}"` : m), 'utf8');
+    const e = { key, raw, type: MIME['.html'], etag: hashOf(raw) };
+    staticCache.set('index:versioned', e); return e;
+  }
+  function compressed(e, file, done) {
+    if (e.br || e.gz || !HAS_ZLIB || !COMPRESSIBLE.has(path.extname(file)) || e.raw.length < 1024) return done(e);
+    zlib.brotliCompress(e.raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: e.raw.length } }, (e1, br) => {
+      zlib.gzip(e.raw, { level: 9 }, (e2, gz) => { if (!e1) e.br = br; if (!e2) e.gz = gz; done(e); });
     });
   }
-  function serveStatic(req, res, pathname) {
+  function serveStatic(req, res, pathname, search) {
     let p; try { p = decodeURIComponent(pathname); } catch { res.writeHead(400, secHeaders()); return res.end(); }
     if (p === '/' || !path.extname(p)) p = '/index.html';
     const file = path.normalize(path.join(PUBLIC, p));
     if (!file.startsWith(PUBLIC + path.sep)) { res.writeHead(403); return res.end(); }
     fs.stat(file, (err, st) => {
       if (err || !st.isFile()) { res.writeHead(404, secHeaders()); return res.end('Not found'); }
-      staticEntry(file, st, (err2, e) => {
-        if (err2) { res.writeHead(404, secHeaders()); return res.end('Not found'); }
-        const head = { 'Content-Type': e.type, 'Cache-Control': 'no-cache', 'ETag': e.etag, 'Vary': 'Accept-Encoding', ...secHeaders() };
+      let e0; try { e0 = file === INDEX ? indexEntry(st) : entrySync(file, st); } catch { res.writeHead(404, secHeaders()); return res.end('Not found'); }
+      compressed(e0, file, (e) => {
+        const v = new URLSearchParams(search || '').get('v');
+        const immutable = v && v === e.etag.slice(1, -1);
+        const head = { 'Content-Type': e.type, 'Cache-Control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache', 'ETag': e.etag, 'Vary': 'Accept-Encoding', ...secHeaders() };
         if (String(req.headers['if-none-match'] || '').split(/\s*,\s*/).includes(e.etag)) { res.writeHead(304, head); return res.end(); }
         const ae = String(req.headers['accept-encoding'] || '');
         const [body, enc] = e.br && /\bbr\b/.test(ae) ? [e.br, 'br'] : e.gz && /\bgzip\b/.test(ae) ? [e.gz, 'gzip'] : [e.raw, null];
@@ -275,7 +294,7 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
     try {
       if (!url.pathname.startsWith('/api/') && url.pathname !== '/healthz') {
         if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
-        return serveStatic(req, res, url.pathname);
+        return serveStatic(req, res, url.pathname, url.search);
       }
       let matched = null;
       for (const r of routes) {
@@ -317,16 +336,20 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
     }
   });
   server.on('close', () => { if (backupTimer) clearInterval(backupTimer); });
-  return { server, db };
+  /* compress the app files once in the background, so the first visitor after a start does not wait for it (~0.7 s of brotli) */
+  const warmStatic = () => { try { const ix = fs.statSync(INDEX); compressed(indexEntry(ix), INDEX, () => {});
+    for (const n of fs.readdirSync(PUBLIC)) { const f = path.join(PUBLIC, n), st = fs.statSync(f); if (st.isFile() && COMPRESSIBLE.has(path.extname(f))) compressed(entrySync(f, st), f, () => {}); } } catch { /* optional */ } };
+  return { server, db, warmStatic };
 }
 
 if (require.main === module) {
-  const { server } = createApp();
+  const { server, warmStatic } = createApp();
   if (!process.env.SMTP_HOST) console.warn('[mail] SMTP_HOST is not set: password-reset emails are printed to this log instead of being sent.');
   if (!process.env.APP_URL) console.warn('[mail] APP_URL is not set: reset links will point to http://localhost. Set APP_URL=https://your-domain.');
+  if (!['open', 'first', 'closed'].includes(String(process.env.REGISTRATION || 'open').toLowerCase())) console.warn('[auth] REGISTRATION must be open, first or closed; treating an unknown value as open.');
   if (!process.env.APP_SECRET) console.warn('[2fa] APP_SECRET is not set: two-factor secrets are stored unencrypted in the database.');
   const port = Number(process.env.PORT || 3000);
-  server.listen(port, process.env.HOST || '0.0.0.0', () => console.log(`FuelPro listening on :${port}`));
+  server.listen(port, process.env.HOST || '0.0.0.0', () => { console.log(`FuelPro listening on :${port}`); warmStatic(); });
   const stop = () => server.close(() => process.exit(0)); process.on('SIGTERM', stop); process.on('SIGINT', stop);
 }
 module.exports = { createApp };

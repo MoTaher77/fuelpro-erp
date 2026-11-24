@@ -22,12 +22,16 @@ Start with [`../CLAUDE.md`](../CLAUDE.md). Read **only** what the task needs.
 | [SECURITY.md](SECURITY.md) | touch roles, auth, scoping, secrets |
 | [TESTING.md](TESTING.md) | run/add tests |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | ship to the laptop or the cloud, backups |
+| [VPS.md](VPS.md) | run FuelPro on the owner's own server (install, move the data, update, backups) — Arabic |
+| [PERFORMANCE.md](PERFORMANCE.md) | measured speed before/after, how to measure, what is left |
+| [DATABASE.md](DATABASE.md) | engine choice (SQLite vs PostgreSQL vs D1), v16 indexes, query rules |
 | [PHASE2-POSTGRES.md](PHASE2-POSTGRES.md) | measured scope and recommendation for the PostgreSQL move |
 | [ARTIFACT-EDITION.md](ARTIFACT-EDITION.md) | the claude.ai Artifact edition: how it runs, what it stores, rebuild and republish |
 | [DECISIONS.md](DECISIONS.md) | wonder "why is it like this?" / make a decision |
 
 ## Skills (`.claude/skills/`, loaded on demand)
-`fuelpro-accounting` · `fuelpro-testing` · `fuelpro-printing` · `fuelpro-import-export` · `fuelpro-deployment` · `fuelpro-project-handoff`
+`fuelpro-accounting` · `fuelpro-testing` · `fuelpro-performance` · `fuelpro-printing` · `fuelpro-import-export` · `fuelpro-deployment` · `fuelpro-project-handoff`
+Review agents (`.claude/agents/`): `fuelpro-ledger-guard` (accounting/isolation review of a diff), `fuelpro-perf-profiler` (finds the cause of a slow screen). No account-level plugin is required; Playwright's Chromium is pre-installed in Claude cloud sessions (`/opt/pw-browsers/chromium`), elsewhere `npx playwright install chromium`.
 (database and security guidance are folded into accounting, deployment and the docs above, to avoid duplicates.)
 
 ## Other files

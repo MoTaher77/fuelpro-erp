@@ -691,22 +691,30 @@
     const fu = sel('srFuel', [['', T('all')], ...fuels.map(f => [f.id, f.name])], S.srFuel || ''), pt = sel('srPay', [['', T('all')], ['cash', T('cash')], ['credit', T('credit')]], S.srPay || '');
     const cu = sel('srCust', [['', T('all')], ...(S.customers || []).map(c => [c.id, c.name])], S.srCust || ''), q = h('input', { type: 'search', placeholder: T('srSearch'), value: S.srQ || '' });
     const out = h('div', { class: 'stack' }); let r = null;
+    /* on screen: the first 300 bills, then «show more / show all»; totals, printing and the PDF always use every bill */
+    const STEP = 300; let showN = STEP;
     const qs = () => `from=${from.value}&to=${to.value}${fu.value ? '&fuel_id=' + fu.value : ''}${pt.value ? '&pay_type=' + pt.value : ''}${cu.value ? '&customer_id=' + cu.value : ''}${q.value.trim() ? '&q=' + encodeURIComponent(q.value.trim()) : ''}`;
     const tbl = (forPrint) => h('div', { class: forPrint ? 'tw-print' : 'tw' }, h('table', { class: 'stmt' },
       h('thead', null, h('tr', null, [T('billNo'), T('date'), T('fuel'), T('pumps'), T('qty'), T('price', { u: F.uLbl() }), T('cashSales'), T('creditSales'), T('total'), T('grossProfit'), forPrint ? null : ''].filter(x => x !== null).map((x, i) => h('th', { class: i >= 4 && i <= 9 ? 'num' : '' }, x)))),
-      h('tbody', null, r.bills.map(b => h('tr', null, h('td', { class: 'ref' }, b.bill), h('td', { class: 'nowrap' }, forPrint ? b.date.replace(/-/g, '/') : fdate(b.date)), h('td', { class: 'fuel' }, b.fuel_name), h('td', { class: 'small nowrap pumps', title: b.pumps }, String(b.pumps || '').split(',').length > 1 ? T('nPumps', { n: String(b.pumps).split(',').length }) : String(b.pumps || '').replace(/ — عداد \d+$/, '')),
+      h('tbody', null, (forPrint ? r.bills : r.bills.slice(0, showN)).map(b => h('tr', null, h('td', { class: 'ref' }, b.bill), h('td', { class: 'nowrap' }, forPrint ? b.date.replace(/-/g, '/') : fdate(b.date)), h('td', { class: 'fuel' }, b.fuel_name), h('td', { class: 'small nowrap pumps', title: b.pumps }, String(b.pumps || '').split(',').length > 1 ? T('nPumps', { n: String(b.pumps).split(',').length }) : String(b.pumps || '').replace(/ — عداد \d+$/, '')),
         h('td', { class: 'num' }, volNum(b.qty_ml, 2)), h('td', { class: 'num' }, priceShow(b.price_e4)), h('td', { class: 'num' }, nf(b.cash)), h('td', { class: 'num cr' }, b.credit ? nf(b.credit) : ''), h('td', { class: 'num bal' }, nf(b.amount)),
         h('td', { class: 'num' }, nf(b.amount - (b.cogs || 0))), forPrint ? null : h('td', null, h('button', { class: 'btn ghost sm', onclick: () => billModal(b.bill) }, T('open')))))),
       h('tfoot', null, h('tr', null, h('td', { colspan: 4 }, T('total'), ' (', r.bills.length, ')'), h('td', { class: 'num' }, volNum(r.totals.qty_ml, 2)), h('td'), h('td', { class: 'num' }, nf(r.totals.cash)), h('td', { class: 'num' }, nf(r.totals.credit)),
         h('td', { class: 'num' }, nf(r.totals.amount)), h('td', { class: 'num' }, nf(r.totals.amount - r.totals.cogs)), forPrint ? null : h('td')))));
     const run = guard(async () => {
-      Object.assign(S, { srFrom: from.value, srTo: to.value, srFuel: fu.value, srPay: pt.value, srCust: cu.value, srQ: q.value });
+      Object.assign(S, { srFrom: from.value, srTo: to.value, srFuel: fu.value, srPay: pt.value, srCust: cu.value, srQ: q.value }); showN = STEP;
       r = await api('GET', sp('/sales-register?' + qs())); const t = r.totals;
       out.replaceChildren(h('div', { class: 'grid' }, F.statN(T('volSold'), t.qty_ml, (v) => vol(v, 0)), F.statN(T('sales'), t.amount, nf), F.statN(T('cashSales'), t.cash, nf), F.statN(T('creditSales'), t.credit, nf),
           F.statN(T('grossProfit'), t.amount - t.cogs, nf), stat(T('marginPct'), pct(t.amount - t.cogs, t.amount))),
         r.by_fuel.length > 1 ? h('div', { class: 'chips' }, r.by_fuel.map(f => h('span', { class: 'chip' }, h('b', null, f.fuel_name), ': ', vol(f.qty_ml, 0), ' · ', money(f.amount), ' · ', T('grossProfit'), ' ', money(f.amount - f.cogs)))) : null,
-        tbl(false), r.bills.length >= 2000 ? h('p', { class: 'hint' }, T('first2000')) : null);
+        tblBox, r.bills.length >= 2000 ? h('p', { class: 'hint' }, T('first2000')) : null);
+      drawTbl();
     });
+    const tblBox = h('div');
+    const drawTbl = () => { const rest = r.bills.length - Math.min(showN, r.bills.length);
+      tblBox.replaceChildren(tbl(false), rest > 0 ? h('div', { class: 'row noprint' }, h('span', { class: 'muted small' }, T('shownOf', { n: Math.min(showN, r.bills.length), m: r.bills.length })),
+        h('button', { class: 'btn ghost sm', onclick: () => { showN += STEP; drawTbl(); } }, T('loadMore'), ` (+${Math.min(STEP, rest)})`),
+        h('button', { class: 'btn ghost sm', 'data-expand': '1', onclick: () => { showN = Infinity; drawTbl(); } }, T('showAllN', { n: r.bills.length }))) : ''); };
     const sregPdf = () => { if (!r) return; const t = r.totals, per = `${from.value.split('-').reverse().join('-')} — ${to.value.split('-').reverse().join('-')}`;
       return reportPdf({ title: T('sreg'), periodText: per, key: 'sales-register',
         summary: [{ k: T('volSold'), v: vol(t.qty_ml, 0) }, { k: T('cashSales'), v: nf(t.cash) }, { k: T('creditSales'), v: nf(t.credit) }, { k: T('sales'), v: nf(t.amount), main: true }],

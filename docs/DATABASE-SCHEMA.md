@@ -1,6 +1,6 @@
 # DATABASE-SCHEMA — FuelPro
 Engine: SQLite (built-in `node:sqlite`), WAL, foreign keys on. One file per install (`DB_PATH`, default `data/fuelpro.db`).
-Migrations: `MIGRATIONS` array in `src/db.js`, applied at startup inside a transaction, tracked by `PRAGMA user_version` (= **12**, VERIFIED 2026-11-23).
+Migrations: `MIGRATIONS` array in `src/db.js`, applied at startup inside a transaction, tracked by `PRAGMA user_version` (= **16**, VERIFIED 2026-11-24).
 Migration 3 rebuilt `users` with SQLite's 12-step procedure and opened the books from existing balances (tested: "upgrade from a v2 database").
 
 **Full column list (generated, always exact): [DATABASE-SCHEMA.generated.md](DATABASE-SCHEMA.generated.md)** — refresh with
@@ -15,6 +15,12 @@ Migration 3 rebuilt `users` with SQLite's 12-step procedure and opened the books
 | Parties | `customers`, `suppliers`, `supplier_payments` |
 | Stock ledger | `stock_moves` |
 | Accounting | `accounts`, `journals`, `journal_lines`, `vouchers`, `voucher_lines`, `currencies`, `exchange_rates`, `fixed_assets` |
+
+## Indexes that carry the reports (v16, 0.26.0 — VERIFIED)
+`jl_journal_cover(journal_id, account_id, debit, credit)`, `jl_account_cover(account_id, journal_id, debit, credit)`,
+`jl_party_cover(party_type, party_id, account_id, journal_id, debit, credit)` (they replace `jl_journal`, `jl_account`, `jl_party`,
+of which they are exact prefixes), `journals_post_day(org_id, station_id, status, business_date, source)`, `sales_tank_day(tank_id, business_date)`.
+The amounts are inside the index, so totals never read the table row. Why and how measured: [DATABASE](DATABASE.md), [PERFORMANCE](PERFORMANCE.md).
 
 ## Integrity enforced by the database (VERIFIED)
 - Triggers: `stock_moves_append_only_u/_d`; `journal_post_balanced`, `journal_no_unpost`, `journal_no_edit`, `journal_no_delete`, `jl_no_insert_posted`, `jl_no_update_posted`, `jl_no_delete_posted`.

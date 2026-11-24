@@ -1,0 +1,35 @@
+# FuelPro on a VPS (installed by deploy/vps/install.sh). Listens on 127.0.0.1 only; Caddy serves it over HTTPS.
+[Unit]
+Description=FuelPro fuel-station ERP
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=fuelpro
+Group=fuelpro
+WorkingDirectory=/opt/fuelpro
+EnvironmentFile=/etc/fuelpro/fuelpro.env
+ExecStart=/usr/local/bin/node --disable-warning=ExperimentalWarning src/server.js
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+# backups and the database readable by the admin group, nobody else
+UMask=0027
+# hardening: the app can write only its data folder
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/fuelpro
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target
