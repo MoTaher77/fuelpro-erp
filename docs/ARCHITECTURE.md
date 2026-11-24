@@ -28,7 +28,9 @@ flowchart LR
 - **No framework.** `node:http` server built in `createApp()` (`src/server.js`). Routes registered with
   `route(method, pattern, handler, {public})`; `:param` patterns compiled to regexes, first match wins.
 - **Static files** (0.26): kept in memory per version (size + mtime), ETag = SHA-1 of the content, pre-compressed once
-  (brotli q11, else gzip 9) → `304` on revalidation; `Cache-Control: no-cache` so a new version is picked up at once.
+  (brotli q11, else gzip 9) → `304` on revalidation. `index.html` is served with each script/style named by its content hash
+  (`/app.js?v=<hash>`); that exact URL is `immutable`, so a reload asks only for `index.html` (no-cache) — a new version changes the
+  hashes and shows at once. Files requested without `?v=` stay `no-cache`.
 - **API answers** ≥ 1.4 KB are gzip-compressed (level 1, on the libuv thread pool) when the client sends `Accept-Encoding: gzip`;
   `Cache-Control: no-store` always. Both are skipped where `zlib` is absent (the Artifact page). Details: [PERFORMANCE](PERFORMANCE.md).
 - **Request pipeline:** static files (GET only, path-traversal check) → route match (404/405) → CSRF check for writes
@@ -54,10 +56,10 @@ flowchart LR
 - `app.js` owns the shell: `h()` DOM helper, dictionary `D` (`[ar,en,fr]`), prefs (language, unit L/gal, Hijri calendar, theme),
   `api()` wrapper, `NAV` (groups gOps/gStock/gParties/gFinance/gAdmin), `render()`, `fitTables` (column auto-fit), `printNode`.
   Other files add screens to the shared `VIEWS` registry (`F.VIEWS.<key>`). Hash routing `#<key>`.
-- PWA: `manifest.webmanifest`, `sw.js` caches the shell only (cache name `fuelpro-shell-v41`); data always from the server.
+- PWA: `manifest.webmanifest`, `sw.js` caches the shell only (cache name `fuelpro-shell-v43`); data always from the server.
 - Speed rules (0.26, [PERFORMANCE](PERFORMANCE.md)): numbers and dates through `FPFMT.nf / FPFMT.dt` (one cached `Intl` formatter per
   locale + options); `fitTables` checks overflow for all tables of a screen in 3 rounds (no layout per table); long lists
-  (journal book 150, journal cards 25, statements and GL 500) show a first part + «show more / show all» (`data-expand`;
+  (journal book 150, journal cards 25, sales register 300, statements and GL 500) show a first part + «show more / show all» (`data-expand`;
   the top-bar Excel export clicks it first; printing and PDF always use every row); `guard()` ignores a second submit/click
   while the first save is in flight; `boot()` shows the first screen only after every app script has registered its views
   (`DOMContentLoaded`, or `fp:app-loaded` from `web/runtime.js` in the Artifact page); `h()` applies `style` through the CSSOM
