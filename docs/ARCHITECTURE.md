@@ -56,7 +56,7 @@ flowchart LR
 - `app.js` owns the shell: `h()` DOM helper, dictionary `D` (`[ar,en,fr]`), prefs (language, unit L/gal, Hijri calendar, theme),
   `api()` wrapper, `NAV` (groups gOps/gStock/gParties/gFinance/gAdmin), `render()`, `fitTables` (column auto-fit), `printNode`.
   Other files add screens to the shared `VIEWS` registry (`F.VIEWS.<key>`). Hash routing `#<key>`.
-- PWA: `manifest.webmanifest`, `sw.js` caches the shell only (cache name `fuelpro-shell-v43`); data always from the server.
+- PWA: `manifest.webmanifest`, `sw.js` caches the shell only (cache name `fuelpro-shell-v44`); data always from the server.
 - Speed rules (0.26, [PERFORMANCE](PERFORMANCE.md)): numbers and dates through `FPFMT.nf / FPFMT.dt` (one cached `Intl` formatter per
   locale + options); `fitTables` checks overflow for all tables of a screen in 3 rounds (no layout per table); long lists
   (journal book 150, journal cards 25, sales register 300, statements and GL 500) show a first part + «show more / show all» (`data-expand`;

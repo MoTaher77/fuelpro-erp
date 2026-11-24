@@ -22,7 +22,7 @@ const zlib = require('node:zlib');
 const HAS_ZLIB = typeof zlib.gzip === 'function' && typeof zlib.brotliCompress === 'function';   // the Artifact page has no zlib
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.svg', '.json', '.webmanifest']);
 
-function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'fuelpro.db'), secureCookie = process.env.COOKIE_SECURE === '1', trustProxy = process.env.TRUST_PROXY === '1', mailer = createMailer(), appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}` } = {}) {
+function createApp({ registration = String(process.env.REGISTRATION || 'open').toLowerCase(), dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'fuelpro.db'), secureCookie = process.env.COOKIE_SECURE === '1', trustProxy = process.env.TRUST_PROXY === '1', mailer = createMailer(), appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}` } = {}) {
   const db = openDb(dbPath);
   const BK = require('./backup');
   const backupTimer = BK.schedule(db, dbPath);
@@ -36,7 +36,10 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
   const id = (v) => { const n = Number(v); if (!Number.isSafeInteger(n) || n < 1) throw new HttpError(400, 'VALIDATION', 'Invalid id'); return n; };
 
   /* ----- auth ----- */
+  /* REGISTRATION: 'open' (default: anyone may create an organisation — the laptop's first run), 'first' (only while the
+     database has no organisation yet: a fresh public server), 'closed'. Users of an existing organisation are added by its owner. */
   route('POST', '/api/auth/register', (c) => {
+    if (registration === 'closed' || (registration === 'first' && db.prepare('SELECT 1 FROM orgs LIMIT 1').get())) throw new HttpError(403, 'REGISTRATION_CLOSED', 'New organisations cannot be registered on this server');
     const r = S.registerOrg(db, c.body, c.ip);
     const l = S.login(db, { email: c.body.email, password: c.body.password }, c.ip);
     c.setSession(l.token); return { status: 201, body: { ...r, user: l.user } };
@@ -191,7 +194,7 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
   route('GET', '/api/stations/:sid/dashboard', (c) => ({ body: S.dashboard(db, c.user, st(c)) }));
   route('GET', '/api/stations/:sid/summary', (c) => ({ body: S.summary(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/audit', (c) => ({ body: S.auditLog(db, c.user, st(c), c.q) }));
-  route('GET', '/api/health', () => ({ body: { ok: true } }), { public: true });
+  route('GET', '/api/health', () => ({ body: { ok: true, register: registration === 'open' || (registration === 'first' && !db.prepare('SELECT 1 FROM orgs LIMIT 1').get()) } }), { public: true });
   route('GET', '/healthz', () => { db.prepare('SELECT 1').get(); return { body: { ok: true } }; }, { public: true });
 
   /* ----- plumbing ----- */
@@ -343,6 +346,7 @@ if (require.main === module) {
   const { server, warmStatic } = createApp();
   if (!process.env.SMTP_HOST) console.warn('[mail] SMTP_HOST is not set: password-reset emails are printed to this log instead of being sent.');
   if (!process.env.APP_URL) console.warn('[mail] APP_URL is not set: reset links will point to http://localhost. Set APP_URL=https://your-domain.');
+  if (!['open', 'first', 'closed'].includes(String(process.env.REGISTRATION || 'open').toLowerCase())) console.warn('[auth] REGISTRATION must be open, first or closed; treating an unknown value as open.');
   if (!process.env.APP_SECRET) console.warn('[2fa] APP_SECRET is not set: two-factor secrets are stored unencrypted in the database.');
   const port = Number(process.env.PORT || 3000);
   server.listen(port, process.env.HOST || '0.0.0.0', () => { console.log(`FuelPro listening on :${port}`); warmStatic(); });
