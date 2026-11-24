@@ -69,8 +69,8 @@ async function runProfile(browser, base, name) {
 
 (async () => {
   const { chromium } = require('playwright');
-  const { server, db } = createApp({ dbPath, mailer: { kind: 'none', send: async () => {} } });
-  await new Promise((r) => server.listen(0, '127.0.0.1', () => r(null)));
+  const { server, db, warmStatic } = createApp({ dbPath, mailer: { kind: 'none', send: async () => {} } });
+  await new Promise((r) => server.listen(0, '127.0.0.1', () => r(null))); warmStatic(); await new Promise((r) => setTimeout(r, 1500));   // as npm start does
   const base = `http://127.0.0.1:${/** @type {import('net').AddressInfo} */ (server.address()).port}`;
   const exe = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined);
   const browser = await chromium.launch(exe && fs.statSync(exe).isFile() ? { executablePath: exe } : {});

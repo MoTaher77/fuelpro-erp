@@ -333,16 +333,19 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
     }
   });
   server.on('close', () => { if (backupTimer) clearInterval(backupTimer); });
-  return { server, db };
+  /* compress the app files once in the background, so the first visitor after a start does not wait for it (~0.7 s of brotli) */
+  const warmStatic = () => { try { const ix = fs.statSync(INDEX); compressed(indexEntry(ix), INDEX, () => {});
+    for (const n of fs.readdirSync(PUBLIC)) { const f = path.join(PUBLIC, n), st = fs.statSync(f); if (st.isFile() && COMPRESSIBLE.has(path.extname(f))) compressed(entrySync(f, st), f, () => {}); } } catch { /* optional */ } };
+  return { server, db, warmStatic };
 }
 
 if (require.main === module) {
-  const { server } = createApp();
+  const { server, warmStatic } = createApp();
   if (!process.env.SMTP_HOST) console.warn('[mail] SMTP_HOST is not set: password-reset emails are printed to this log instead of being sent.');
   if (!process.env.APP_URL) console.warn('[mail] APP_URL is not set: reset links will point to http://localhost. Set APP_URL=https://your-domain.');
   if (!process.env.APP_SECRET) console.warn('[2fa] APP_SECRET is not set: two-factor secrets are stored unencrypted in the database.');
   const port = Number(process.env.PORT || 3000);
-  server.listen(port, process.env.HOST || '0.0.0.0', () => console.log(`FuelPro listening on :${port}`));
+  server.listen(port, process.env.HOST || '0.0.0.0', () => { console.log(`FuelPro listening on :${port}`); warmStatic(); });
   const stop = () => server.close(() => process.exit(0)); process.on('SIGTERM', stop); process.on('SIGINT', stop);
 }
 module.exports = { createApp };
