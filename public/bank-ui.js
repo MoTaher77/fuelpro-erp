@@ -6,7 +6,7 @@
   const { h, T, P, S, api, sp, guard, toast, field, sec, modal, render, cd, dec, parseDec, fdate, todayIso, printNode } = F;
   const tile = (k, v, cls) => h('div', { class: 'xtile ' + (cls || '') }, h('span', null, k), h('b', null, v));
   const nm = (a) => (P.lang === 'ar' ? a.name_ar : a.name_en) || a.name_ar;
-  const fmt = (v, d, shown) => { const dd = shown ?? d; return new Intl.NumberFormat('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format((v || 0) / 10 ** d); };   // d = stored scale, shown = digits displayed
+  const fmt = (v, d, shown) => { const dd = shown ?? d; return FPFMT.nf('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format((v || 0) / 10 ** d); };   // d = stored scale, shown = digits displayed
   const decOf = (acct) => acct.currency ? (acct.decimals ?? 2) : dec();
   const money = (v, acct) => acct.currency ? fmt(v, acct.decimals ?? 2) + ' ' + acct.currency : fmt(v, dec(), Math.min(dec(), S.st.disp_dec ?? dec()));
 

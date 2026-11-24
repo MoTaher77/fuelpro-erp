@@ -5,7 +5,7 @@
   const F = window.FP; if (!F) return;
   const { h, T, D, S, P, api, sp, guard, toast, field, sel, table, stat, sec, modal, voidBtn, refresh, render, cd, money, vol, volNum, volMl, parseDec, dec, fdate, fdt, todayIso, num, priceShow, priceE4, uLbl, csv, printNode } = F;
   const amt = (v) => num(v, (x) => parseDec(x, dec()));
-  const mf = (cur, d) => (v) => { const dd = Math.min(d, S.st && S.st.disp_dec != null ? S.st.disp_dec : d); try { return new Intl.NumberFormat((P.lang === 'ar' ? 'ar' : P.lang) + '-u-nu-' + P.nums, { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(v / 10 ** d); } catch { return String(v / 10 ** d); } };
+  const mf = (cur, d) => (v) => { const dd = Math.min(d, S.st && S.st.disp_dec != null ? S.st.disp_dec : d); try { return FPFMT.nf((P.lang === 'ar' ? 'ar' : P.lang) + '-u-nu-' + P.nums, { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(v / 10 ** d); } catch { return String(v / 10 ** d); } };
   const pill = (cls, text) => h('span', { class: 'pill ' + cls }, text);
   const tabs = (key, list, onPick) => { S[key] = S[key] || list[0][0]; return h('div', { class: 'tabs', role: 'tablist' }, list.map(([k, label]) => h('button', { role: 'tab', 'aria-selected': S[key] === k ? 'true' : 'false', onclick: () => { S[key] = k; onPick ? onPick(k) : render(); } }, label))); };
   const dateIn = (id, v) => h('input', { id, type: 'date', value: v, max: todayIso() });
@@ -185,7 +185,9 @@
       const run = guard(async () => {
         S.jSrc = src.value; S.jSt = st.value; S.jFrom = from.value; S.jTo = to.value; S.jQ = jq.value;
         const js = await api('GET', sp(`/journals?from=${from.value}&to=${to.value}&limit=100${src.value ? '&source=' + src.value : ''}${st.value ? '&status=' + st.value : ''}${jq.value.trim() ? '&q=' + encodeURIComponent(jq.value.trim()) : ''}`));
-        out.replaceChildren(...(js.length ? js.map(j => {
+        /* 25 cards first, more on request: each card is a table, and 100 at once took seconds to lay out on a phone */
+        let shownN = 0; const STEP = 25, moreBox = h('div', { class: 'row noprint' });
+        const card = (j) => {
           const d = j.lines.reduce((a, l) => a + l.debit, 0);
           return h('div', { class: 'card' }, h('div', { class: 'row between' }, h('div', null, h('b', null, j.ref ? T('docNo') + ' ' + j.ref : '#' + j.id, ' · ', fdate(j.business_date)), ' ', pill(j.status, T('js.' + j.status)), ' ', h('span', { class: 'chip' }, T('src.' + j.source)), j.reversed_by ? [' ', pill('closed', T('reversed'))] : null, j.reversal_of ? [' ', h('span', { class: 'muted small' }, T('reverse'), ' #', j.reversal_of)] : null,
             h('div', { class: 'muted small' }, j.memo || '', j.user_name ? ' · ' + j.user_name : '')),
@@ -193,7 +195,11 @@
               j.status === 'draft' && cd('journal.create') ? h('button', { class: 'btn danger sm', onclick: guard(async () => { await api('DELETE', `/api/journals/${j.id}`); run(); }) }, T('delete')) : null,
               j.status === 'posted' && (j.source === 'manual' || j.source === 'import') && !j.reversed_by && !j.reversal_of && cd('journal.reverse') ? h('button', { class: 'btn ghost sm', onclick: () => F.askReason(guard(async (r) => { await api('POST', `/api/journals/${j.id}/reverse`, { reason: r }); run(); })) }, T('reverse')) : null)),
             table([T('code'), T('account'), T('note'), T('debit'), T('creditCol')], [...j.lines.map(l => [l.code, [P.lang === 'ar' ? l.name_ar : l.name_en, l.party_name ? h('div', { class: 'muted small' }, l.party_name) : null], h('span', { class: 'small' }, l.memo || ''), l.debit ? money(l.debit) : '', l.credit ? money(l.credit) : '']), ['', h('b', null, T('total')), '', h('b', null, money(d)), h('b', null, money(d))]]));
-        }) : [h('p', { class: 'muted' }, T('noData'))]));
+        };
+        const addMore = (all) => { const next = js.slice(shownN, all === true ? js.length : shownN + STEP); shownN += next.length; moreBox.before(...next.map(card));
+          const rest = js.length - shownN; moreBox.replaceChildren(...(rest > 0 ? [h('span', { class: 'muted small' }, T('shownOf', { n: shownN, m: js.length })), h('button', { class: 'btn ghost sm', onclick: addMore }, T('loadMore'), ` (+${Math.min(STEP, rest)})`),
+            h('button', { class: 'btn ghost sm', 'data-expand': '1', onclick: () => addMore(true) }, T('showAllN', { n: js.length }))] : [])); };
+        if (!js.length) out.replaceChildren(h('p', { class: 'muted' }, T('noData'))); else { out.replaceChildren(moreBox); addMore(); }
       });
       box.append(sec(null, h('div', { class: 'row' }, field(T('source'), src), field(T('status'), st), field(T('from'), from), field(T('to'), to), field(T('search'), jq), h('button', { class: 'btn', onclick: run }, T('run')))), out); await run();
     }
@@ -295,9 +301,14 @@
       }
       if (S.finTab === 'gl') {
         const r = await api('GET', `/api/accounting/ledger?${q()}&account_id=${ac.value}`); const m = mf(r.currency, r.cur_dec);
-        out.replaceChildren(sec(acctName(r.account) + ` — ${fdate(r.from)} → ${fdate(r.to)}`, table([T('date'), T('source'), T('memo'), T('debit'), T('creditCol'), T('runningBal')],
-          [['', h('b', null, T('openingCol')), '', '', '', h('b', null, m(r.opening))], ...r.lines.map(l => [fdate(l.business_date), T('src.' + l.source) + (l.source_id ? ' #' + l.source_id : ''), l.jmemo || '', l.debit ? m(l.debit) : '', l.credit ? m(l.credit) : '', m(l.balance)]),
-            ['', h('b', null, T('closingCol')), '', '', '', h('b', null, m(r.closing))]])), r.lines.length >= 5000 ? h('p', { class: 'hint' }, '5000+') : '');
+        let showN = 500;   // the first 500 lines, then more on request (opening and closing balances always shown)
+        const drawGl = () => { const rest = r.lines.length - Math.min(showN, r.lines.length);
+          out.replaceChildren(sec(acctName(r.account) + ` — ${fdate(r.from)} → ${fdate(r.to)}`, table([T('date'), T('source'), T('memo'), T('debit'), T('creditCol'), T('runningBal')],
+            [['', h('b', null, T('openingCol')), '', '', '', h('b', null, m(r.opening))], ...r.lines.slice(0, showN).map(l => [fdate(l.business_date), T('src.' + l.source) + (l.source_id ? ' #' + l.source_id : ''), l.jmemo || '', l.debit ? m(l.debit) : '', l.credit ? m(l.credit) : '', m(l.balance)]),
+              ['', h('b', null, T('closingCol')), '', '', '', h('b', null, m(r.closing))]]),
+            rest > 0 ? h('div', { class: 'row noprint' }, h('span', { class: 'muted small' }, T('shownOf', { n: showN, m: r.lines.length })), h('button', { class: 'btn ghost sm', onclick: () => { showN += 500; drawGl(); } }, T('loadMore'), ` (+${Math.min(500, rest)})`),
+              h('button', { class: 'btn ghost sm', 'data-expand': '1', onclick: () => { showN = Infinity; drawGl(); } }, T('showAllN', { n: r.lines.length }))) : null), r.lines.length >= 5000 ? h('p', { class: 'hint' }, '5000+') : ''); };
+        drawGl();
       }
     });
     main.append(sec(null, h('div', { class: 'row' }, field(T('scope'), scope), S.finTab !== 'bs' ? field(T('from'), from) : null, field(S.finTab === 'bs' ? T('asOf') : T('to'), to), S.finTab === 'gl' ? field(T('account'), ac) : null,

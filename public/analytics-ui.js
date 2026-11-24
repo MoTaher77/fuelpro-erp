@@ -7,7 +7,7 @@
   const { h, T, P, S, api, sp, guard, field, sec, dec, todayIso, printNode, volNum } = F;
   const NS = 'http://www.w3.org/2000/svg';
   const s = (tag, attrs, ...kids) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs || {})) if (v != null) e.setAttribute(k, v); for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(String(c))); return e; };
-  const nf = (v, d) => { const dd = d ?? Math.min(dec(), S.st.disp_dec ?? dec()); return new Intl.NumberFormat('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format((v || 0) / 10 ** dec()); };
+  const nf = (v, d) => { const dd = d ?? Math.min(dec(), S.st.disp_dec ?? dec()); return FPFMT.nf('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format((v || 0) / 10 ** dec()); };
   const nf0 = (v) => nf(v, 0);
   const short = (v) => { const x = Math.abs(v || 0) / 10 ** dec(); const sg = v < 0 ? '-' : ''; return sg + (x >= 1e9 ? (x / 1e9).toFixed(1) + 'B' : x >= 1e6 ? (x / 1e6).toFixed(1) + 'M' : x >= 1e3 ? (x / 1e3).toFixed(0) + 'K' : x.toFixed(0)); };
   const lit = (ml) => volNum(ml, 0);
@@ -139,7 +139,7 @@
       out.replaceChildren(h('p', { class: 'hint' }, `${r.station.name} · ${r.from} → ${r.to} (${r.days} ${T('anDays')}) · ${T('anVsPrev')}: ${r.previous.from} → ${r.previous.to}`),
         kpis, trendCard, h('div', { class: 'an-grid' }, fuelCard, coverCard), yearsCard || '', h('div', { class: 'an-grid' }, wdCard, payCard), h('div', { class: 'an-grid' }, ageCard, pumpCard), custCard);
     };
-    const num = (v) => new Intl.NumberFormat('en-US').format(v || 0);
+    const num = (v) => FPFMT.nf('en-US').format(v || 0);
     main.append(sec(T('ana'), h('div', { class: 'row' }, field(T('from'), from), field(T('to'), to), h('button', { class: 'btn', onclick: run }, T('run')),
       h('button', { class: 'btn gold-btn', onclick: () => r && printNode(T('ana') + ' ' + r.from + '_' + r.to, out) }, '⎙ ', T('print'))),
       h('div', { class: 'presets' }, preset(T('anThisMonth'), today.slice(0, 8) + '01', today), preset(T('anPrevMonth'), pm + '-01', pmEnd),

@@ -1,3 +1,4 @@
+// @ts-check
 'use strict';
 /*
  * All money is an integer in the currency's minor unit (cents, fils, rials...).

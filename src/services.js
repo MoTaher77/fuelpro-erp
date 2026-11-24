@@ -49,6 +49,14 @@ function customerBalance(db, cid, asOf) {
   return db.prepare(`SELECT COALESCE(SUM(l.debit-l.credit),0) v FROM journal_lines l JOIN journals j ON j.id=l.journal_id JOIN accounts a ON a.id=l.account_id
     WHERE l.party_type='customer' AND l.party_id=? AND a.sys='ar' AND j.status='posted' AND j.business_date<=?`).get(cid, asOf || '9999-12-31').v;
 }
+/** Every balance of one station's customers (or suppliers) in ONE grouped query — the same sum as customerBalance /
+    supplierBalance per party, without one query per party (N+1). Map(party id → balance); parties with no lines are absent (= 0). */
+function partyBalances(db, type, sid, asOf) {
+  const [tbl, sys, sign] = type === 'customer' ? ['customers', 'ar', 'l.debit-l.credit'] : ['suppliers', 'ap', 'l.credit-l.debit'];
+  return new Map(db.prepare(`SELECT l.party_id id, SUM(${sign}) v FROM journal_lines l JOIN journals j ON j.id=l.journal_id JOIN accounts a ON a.id=l.account_id
+    WHERE l.party_type=? AND l.party_id IN (SELECT id FROM ${tbl} WHERE station_id=?) AND a.sys=? AND j.status='posted' AND j.business_date<=? GROUP BY l.party_id`)
+    .all(type, sid, sys, asOf || '9999-12-31').map(r => [r.id, r.v]));
+}
 /* the station's open shift, if any; SHIFT_REQUIRED when the station requires one for this action */
 function openShift(db, st, required) {
   const sh = db.prepare("SELECT * FROM shifts WHERE station_id=? AND status='open'").get(st.id);
@@ -59,6 +67,13 @@ function pageArgs(q) {
   const limit = Math.min(Math.max(parseInt(q.limit, 10) || 100, 1), 200);
   const before = parseInt(q.before_id, 10) || Number.MAX_SAFE_INTEGER;
   return { limit, before };
+}
+/** Keyset for lists ordered by (business_date DESC, id DESC): the date of the before_id row, so the next page starts right
+    after it in that order. Paging by id alone skipped rows dated earlier but entered later. Unknown id → no limit by date. */
+function beforeDate(db, table, before, scopeSql, scopeArg) {
+  if (before >= Number.MAX_SAFE_INTEGER) return '9999-12-31';
+  const r = db.prepare(`SELECT business_date d FROM ${table} WHERE id=? AND ${scopeSql}`).get(before, scopeArg);
+  return r ? r.d : '9999-12-31';
 }
 
 /* ---------- organisation / auth ---------- */
@@ -260,7 +275,8 @@ function correctMeter(db, user, sid, pid, b) {
 }
 function listCustomers(db, user, sid) {
   station(db, user, sid);
-  return db.prepare('SELECT id,name,phone,credit_limit,terms_days,opening_balance,ref FROM customers WHERE station_id=? AND active=1 ORDER BY name').all(sid).map(c => ({ ...c, balance: customerBalance(db, c.id) }));
+  const bal = partyBalances(db, 'customer', sid);
+  return db.prepare('SELECT id,name,phone,credit_limit,terms_days,opening_balance,ref FROM customers WHERE station_id=? AND active=1 ORDER BY name').all(sid).map(c => ({ ...c, balance: bal.get(c.id) || 0 }));
 }
 function createCustomer(db, user, sid, b) {
   need(user, 'customer.create'); const st = station(db, user, sid); V.obj(b, 'body');
@@ -463,7 +479,8 @@ function voidExpense(db, user, sid, id, reason) { return voidRow(db, user, sid, 
 function listExpenses(db, user, sid, q) {
   station(db, user, sid); const { limit, before } = pageArgs(q);
   const from = V.date(q.from, 'from', { optional: true }) || '0000-01-01', to = V.date(q.to, 'to', { optional: true }) || '9999-12-31';
-  return db.prepare('SELECT * FROM expenses WHERE station_id=? AND business_date BETWEEN ? AND ? AND id<? ORDER BY business_date DESC, id DESC LIMIT ?').all(sid, from, to, before, limit);
+  const bd = beforeDate(db, 'expenses', before, 'station_id=?', sid);
+  return db.prepare('SELECT * FROM expenses WHERE station_id=? AND business_date BETWEEN ? AND ? AND (business_date<? OR (business_date=? AND id<?)) ORDER BY business_date DESC, id DESC LIMIT ?').all(sid, from, to, bd, bd, before, limit);
 }
 function createPayment(db, user, sid, b) {
   need(user, 'payment.create'); const st = station(db, user, sid); V.obj(b, 'body');
@@ -495,7 +512,7 @@ function dashboard(db, user, sid) {
     const daily = sold / 7;
     return { ...k, pct: Math.round(k.level_ml * 1000 / k.capacity_ml) / 10, low: k.min_ml > 0 ? k.level_ml <= k.min_ml : k.level_ml < k.capacity_ml * 0.2, days_left: daily > 0 ? Math.round(k.level_ml / daily * 10) / 10 : null };
   });
-  const receivables = db.prepare('SELECT id FROM customers WHERE station_id=?').all(sid).reduce((a, c) => a + Math.max(0, customerBalance(db, c.id)), 0);
+  let receivables = 0; for (const v of partyBalances(db, 'customer', sid).values()) receivables += Math.max(0, v);
   const series = []; for (let i = 6; i >= 0; i--) { const d = addDays(today, -i), r = days.find(x => x.d === d); series.push({ date: d, gross: r ? r.gross : 0, qty_ml: r ? r.qty : 0 }); }
   return { today, currency: st.currency, cur_dec: st.cur_dec, sales: t, expenses: exp, receivables, tanks, series };
 }
@@ -690,5 +707,5 @@ function resetPassword(db, input, ip) {
   });
 }
 
-module.exports = { openShift, customerBalance, scoped, need, audit, tzToday, addDays, resolveDate, pageArgs, voidRow, forgotPassword, resetPassword, twoFactorSetup, twoFactorEnable, twoFactorDisable, twoFactorNewCodes, recoveryLeft, statement, exportSales, changePassword, registerOrg, login, listUsers, createUser, updateUser, listStations, createStation, updateStation, station, listFuels, createFuel, updateFuelPrice, listTanks, createTank, listPumps, createPump, correctMeter,
+module.exports = { openShift, customerBalance, partyBalances, beforeDate, scoped, need, audit, tzToday, addDays, resolveDate, pageArgs, voidRow, forgotPassword, resetPassword, twoFactorSetup, twoFactorEnable, twoFactorDisable, twoFactorNewCodes, recoveryLeft, statement, exportSales, changePassword, registerOrg, login, listUsers, createUser, updateUser, listStations, createStation, updateStation, station, listFuels, createFuel, updateFuelPrice, listTanks, createTank, listPumps, createPump, correctMeter,
   listCustomers, createCustomer, createSale, voidSale, listSales, createDelivery, voidDelivery, listDeliveries, createAdjustment, createExpense, voidExpense, listExpenses, createPayment, voidPayment, dashboard, summary, auditLog };

@@ -283,7 +283,7 @@
 
   /* ================================ STATEMENT SCREEN (any account, customer or supplier) ================================ */
   const addDay = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
-  const nf = (v) => { const d = dec(), dd = Math.min(d, S.st.disp_dec ?? d); return new Intl.NumberFormat('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(v / 10 ** d); };
+  const nf = (v) => { const d = dec(), dd = Math.min(d, S.st.disp_dec ?? d); return FPFMT.nf('en-US', { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(v / 10 ** d); };
   /**
    * One statement layout for every kind of account: period, opening balance, rows in the source documents' own wording,
    * totals, search, print / PDF with the letterhead, CSV.
@@ -375,11 +375,18 @@
         h('div', { class: 'row', style: 'margin-top:0' }, shareBtn, saveBtn, chat),
         h('p', { class: 'hint', style: 'margin:0' }, canShare ? T('pdfShareHint') : T('pdfSaveHint'))));
     });
+    /* on screen: the first STEP movements, then «show more / show all» (a year of the cash account is 12,000 lines, seconds to lay out
+       on a phone). Totals and balances come from all rows; printing, the PDF and Excel always take every row. */
+    const STEP = 500; let showN = STEP;
     const draw = () => {
       const term = q.value.trim(); shown = term ? r.rows.filter(e => (e.desc + ' ' + (e.ref || '')).includes(term)) : r.rows;
-      out.replaceChildren(h('div', { class: 'stmt-screen' }, infoBox(), summary(), tableFor(shown, false), r.truncated ? h('p', { class: 'hint' }, T('stmtTruncated')) : null));
+      const rest = shown.length - Math.min(showN, shown.length);
+      const more = rest > 0 ? h('div', { class: 'row noprint' }, h('span', { class: 'muted small' }, T('shownOf', { n: Math.min(showN, shown.length), m: shown.length })),
+        h('button', { class: 'btn ghost sm', onclick: () => { showN += STEP; draw(); } }, T('loadMore'), ` (+${Math.min(STEP, rest)})`),
+        h('button', { class: 'btn ghost sm', 'data-expand': '1', onclick: () => { showN = Infinity; draw(); } }, T('showAllN', { n: shown.length }))) : null;
+      out.replaceChildren(h('div', { class: 'stmt-screen' }, infoBox(), summary(), tableFor(rest > 0 ? shown.slice(0, showN) : shown, false), more, r.truncated ? h('p', { class: 'hint' }, T('stmtTruncated')) : null));
     };
-    const run = guard(async () => { S.psFrom = from.value; S.psTo = to.value; r = await cfg.load(from.value, to.value); r.from = r.from || from.value; r.to = r.to || to.value; draw(); title.lastChild.textContent = r.name; });
+    const run = guard(async () => { S.psFrom = from.value; S.psTo = to.value; showN = STEP; r = await cfg.load(from.value, to.value); r.from = r.from || from.value; r.to = r.to || to.value; draw(); title.lastChild.textContent = r.name; });
     q.addEventListener('input', () => { S.psQ = q.value; if (r) draw(); });
     const doPrint = () => { if (!r) return; printDoc(`${cfg.title} - ${r.name} - ${r.from} - ${r.to}`, classicStatement(cfg, r, shown, nature)); };
     const exp = h('button', { class: 'btn ghost sm', onclick: () => r && csv(`statement-${r.name}-${r.from}_${r.to}.csv`, ['date', 'doc_no', 'description', 'debit', 'credit', 'balance'],
@@ -401,7 +408,7 @@
     const natS = (v) => { const n = nature(v); return n ? (n === T('natDr') ? T('natDrS') : T('natCrS')) : ''; };
     const badge = (v) => { const n = natS(v); return n ? h('i', { class: 'nb ' + (n === T('natDrS') ? 'dr' : 'cr') }, n) : null; };
     const bal = (v) => [nf(Math.abs(v)), ' ', badge(v)];
-    const amtC = (v) => { const d = dec(); if (!v) return h('span', { class: 'z' }, '0'); return v % 10 ** d === 0 ? new Intl.NumberFormat('en-US').format(v / 10 ** d) : nf(v); };
+    const amtC = (v) => { const d = dec(); if (!v) return h('span', { class: 'z' }, '0'); return v % 10 ** d === 0 ? FPFMT.nf('en-US').format(v / 10 ** d) : nf(v); };
     const now = new Date(), hh = now.getHours(), stamp = `${dmy(todayIso())}  ${String(hh % 12 || 12).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${hh < 12 ? 'ص' : 'م'}`;
     const cols = ['#', T('date'), T('mvType'), T('entryNo'), T('docRef'), T('desc'), ...(fc ? [T('debit') + ' ' + fc, T('creditCol') + ' ' + fc] : []), T('debit'), T('creditCol'), T('balance')];
     const n = cols.length;

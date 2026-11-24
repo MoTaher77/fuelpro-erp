@@ -151,14 +151,15 @@ for (const st of STATIONS) O.openShiftCmd(db, st.supervisor, st.id, { float_amou
 /* ---- verification ---- */
 const integ = O.integrity(db, owner);
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Aden' }).format(new RealDate());
+const lastYear = startDay > addDays(today, -365) ? startDay : addDays(today, -365);   // reports are limited to one year (--days > 365)
 const timed = (label, fn) => { const a = performance.now(); const r = fn(); return [label, Math.round(performance.now() - a) + ' ms', r]; };
 const perf = [
   timed('dashboard', () => S.dashboard(db, owner, STATIONS[0].id)),
-  timed('summary (1 year)', () => S.summary(db, owner, STATIONS[0].id, { from: startDay, to: today })),
-  timed('trial balance (org, 1 year)', () => O.trialBalance(db, owner, { from: startDay, to: today })),
+  timed('summary (1 year)', () => S.summary(db, owner, STATIONS[0].id, { from: lastYear, to: today })),
+  timed('trial balance (org, 1 year)', () => O.trialBalance(db, owner, { from: lastYear, to: today })),
   timed('balance sheet', () => O.balanceSheet(db, owner, { as_of: today })),
   timed('customer ageing', () => O.ageing(db, owner, STATIONS[0].id, { type: 'customer' })),
-  timed('stock reconciliation (1 year)', () => O.stockReconciliation(db, owner, STATIONS[0].id, { from: startDay, to: today }))
+  timed('stock reconciliation (1 year)', () => O.stockReconciliation(db, owner, STATIONS[0].id, { from: lastYear, to: today }))
 ];
 const n = (t) => db.prepare(`SELECT COUNT(*) n FROM ${t}`).get().n;
 console.log('\nDEMO tenant created in', dbPath, `(${Math.round((RealDate.now() - t0) / 1000)} s)`);
