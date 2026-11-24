@@ -15,6 +15,20 @@
 | الجدار الناري | SSH و80 و443 فقط |
 | تحديثات الأمان | `unattended-upgrades` |
 
+## 0) الطريق الأسرع: أمران تلصقهما في طرفية السيرفر (من الهاتف أيضاً)
+ادخل إلى السيرفر بمستخدم root، إما من «Console» في لوحة شركة الاستضافة، أو من تطبيق SSH على الهاتف مثل Termius.
+**الأمر 1** — يجهّز git ويصنع مفتاح قراءة ويطبعه:
+```
+apt-get update -y && apt-get install -y git openssh-client && mkdir -p /root/.ssh && ([ -f /root/.ssh/fuelpro_deploy ] || ssh-keygen -q -t ed25519 -N "" -f /root/.ssh/fuelpro_deploy -C fuelpro-vps) && cat /root/.ssh/fuelpro_deploy.pub
+```
+انسخ السطر الذي يبدأ بـ`ssh-ed25519`، ثم في GitHub: المستودع ← Settings ← Deploy keys ← Add deploy key. الصق المفتاح **دون** تفعيل «Allow write access».
+**الأمر 2** — يجلب الكود ويثبّت كل شيء:
+```
+export GIT_SSH_COMMAND="ssh -i /root/.ssh/fuelpro_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" && rm -rf /root/fuelpro-src && git clone -q git@github.com:MoTaher77/fuelpro-erp.git /root/fuelpro-src && cd /root/fuelpro-src && ([ -f deploy/vps/install.sh ] || git checkout -q claude/wonderful-pascal-jfuqxu) && bash deploy/vps/install.sh --branch "$(git rev-parse --abbrev-ref HEAD)"
+```
+بعده يكون البرنامج على `https://<IP-بشرطات>.sslip.io`، مثلاً `https://212-90-120-15.sslip.io`. أضف `--domain fuel.example.com` آخر الأمر إن كان لديك نطاق.
+بعد التثبيت غيّر كلمة مرور root بالأمر `passwd`، خصوصاً إن كانت قد كُتبت في أي محادثة أو رسالة.
+
 ## 1) التثبيت (مرة واحدة)
 1. **اسم النطاق (مستحسن):** أنشئ سجل DNS من نوع `A` يشير إلى IP السيرفر، مثلاً `fuel.example.com`. بدونه يستخدم السكربت `<ip>.sslip.io` (يعمل بـHTTPS، لكنه ليس اسماً تجارياً).
 2. انسخ السكربت إلى السيرفر. المستودع خاص، فانسخه من اللابتوب:
