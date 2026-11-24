@@ -125,3 +125,4 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - App: `REGISTRATION=open|first|closed` (+ /api/health `register`, sign-in page hides «create account»); Caddy strips client `CF-Connecting-IP`; `scripts/check-books.js`.
 - Verified: 83 tests; smoke-online 14/14 with the VPS settings; scripts run in an Ubuntu 24.04 container with stubbed systemd/ufw/caddy. Not verified: real systemd, Let's Encrypt, firewall (KI-19).
 - Resume: `docs/NEXT-TASK.md` → "Handoff 2026-11-24 (0.27.0)".
+- 2026-11-24 later: owner ran the kit on his VPS. App + systemd + ufw OK; Caddy stopped on `/var/log/caddy/fuelpro.log: permission denied` (file created by root during `caddy validate`). 0.27.1: log to journald, fix ownership, verify HTTPS at the end. Owner given a one-line fix for his server.
