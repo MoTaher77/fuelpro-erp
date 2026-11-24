@@ -112,6 +112,7 @@ say "service (systemd)"
 install -m 644 "$APP/deploy/vps/fuelpro.service" /etc/systemd/system/fuelpro.service
 install -m 755 "$APP/deploy/vps/update.sh" /usr/local/sbin/fuelpro-update
 install -m 755 "$APP/deploy/vps/restore.sh" /usr/local/sbin/fuelpro-restore
+install -m 755 "$APP/deploy/vps/domain.sh" /usr/local/sbin/fuelpro-domain
 systemctl daemon-reload
 systemctl enable -q --now fuelpro
 systemctl restart fuelpro
