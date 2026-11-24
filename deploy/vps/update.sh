@@ -28,7 +28,10 @@ rollback() {
   echo "!! $1 — going back to $(git log --oneline -1 "$PREV")"
   git checkout -q --detach "$PREV"
   install -m 644 "$APP/deploy/vps/fuelpro.service" /etc/systemd/system/fuelpro.service && systemctl daemon-reload
-  systemctl restart fuelpro; exit 1
+  systemctl restart fuelpro
+  for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/healthz >/dev/null 2>&1 && break; sleep 1; done
+  curl -fsS http://127.0.0.1:3000/healthz >/dev/null && echo "previous version running again" || echo "!! previous version is not answering: journalctl -u fuelpro -n 50"
+  exit 1
 }
 
 say "tests on the new code"
