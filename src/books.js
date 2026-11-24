@@ -23,6 +23,19 @@ function partyExtras(db, type, id, asOf) {
     .map(r => ({ kind: 'journal', id: r.id, date: r.date, created_at: r.created_at, debit: r.debit, credit: r.credit, source: r.source, note: r.lmemo || r.memo || '', ref_no: r.ref_no || null, doc_type: r.doc_type || null, doc_ref: r.doc_ref || null, exact: !!r.lmemo, voided: false }));
 }
 
+/** partyExtras for every active party of a station in one query: Map(party id → the same rows, in the same order). */
+function partyExtrasMany(db, type, sid, asOf) {
+  const src = DOC_SOURCES[type];
+  const m = new Map();
+  for (const r of db.prepare(`SELECT l.party_id pid, j.business_date date, l.debit, l.credit
+    FROM journal_lines l JOIN journals j ON j.id=l.journal_id JOIN accounts a ON a.id=l.account_id
+    WHERE l.party_type=? AND l.party_id IN (SELECT id FROM ${type === 'customer' ? 'customers' : 'suppliers'} WHERE station_id=? AND active=1) AND a.sys=? AND j.status='posted' AND j.business_date<=? AND j.source NOT IN (${src.map(() => '?').join(',')})
+    ORDER BY l.party_id, j.business_date, j.id, l.id`).all(type, sid, PARTY_SYS[type], asOf || '9999-12-31', ...src)) {
+    const a = m.get(r.pid); if (a) a.push(r); else m.set(r.pid, [r]);
+  }
+  return m;
+}
+
 /* ============================== ACCOUNT TREE ============================== */
 const NORMAL_DEBIT = new Set(['asset', 'expense']);
 function accountTree(db, user, q) {
@@ -122,12 +135,13 @@ function listVouchers(db, user, sid, q) {
   const kind = q.kind ? V.oneOf(q.kind, 'kind', ['receipt', 'payment']) : null;
   const box = q.box_account_id ? V.int(Number(q.box_account_id), 'box_account_id', { min: 1 }) : null;
   const term = q.q ? '%' + V.str(q.q, 'q', { max: 60 }) + '%' : null;
+  const bd = S.beforeDate(db, 'vouchers', before, 'station_id=?', sid);
   const rows = db.prepare(`SELECT v.*, a.code box_code, a.name_ar box_name_ar, a.name_en box_name_en, u.name user_name FROM vouchers v JOIN accounts a ON a.id=v.box_account_id LEFT JOIN users u ON u.id=v.user_id
     WHERE v.station_id=? AND v.business_date BETWEEN ? AND ? AND (? IS NULL OR v.kind=?) AND (? IS NULL OR v.box_account_id=?)
       AND (? IS NULL OR v.memo LIKE ? OR v.ref_no LIKE ? OR EXISTS(SELECT 1 FROM voucher_lines l JOIN accounts la ON la.id=l.account_id LEFT JOIN customers c ON l.party_type='customer' AND c.id=l.party_id LEFT JOIN suppliers s ON l.party_type='supplier' AND s.id=l.party_id
         WHERE l.voucher_id=v.id AND (l.memo LIKE ? OR la.name_ar LIKE ? OR c.name LIKE ? OR s.name LIKE ?)))
-      AND v.id<? ORDER BY v.business_date DESC, v.id DESC LIMIT ?`)
-    .all(sid, from, to, kind, kind, box, box, term, term, term, term, term, term, term, before, limit);
+      AND (v.business_date<? OR (v.business_date=? AND v.id<?)) ORDER BY v.business_date DESC, v.id DESC LIMIT ?`)
+    .all(sid, from, to, kind, kind, box, box, term, term, term, term, term, term, term, bd, bd, before, limit);
   const totals = db.prepare(`SELECT kind, COUNT(*) n, SUM(amount) amount FROM vouchers WHERE station_id=? AND business_date BETWEEN ? AND ? AND voided_at IS NULL AND (? IS NULL OR box_account_id=?) GROUP BY kind`).all(sid, from, to, box, box);
   return { rows: rows.map(v => voucherWithLines(db, v)), totals: Object.fromEntries(totals.map(t => [t.kind, { count: t.n, amount: t.amount }])) };
 }
@@ -487,4 +501,4 @@ function periodize(st, q) {
   return { ...st, from, to, opening, entries: rows, balance: closing, total_debit: live.reduce((s, e) => s + e.debit, 0), total_credit: live.reduce((s, e) => s + e.credit, 0) };
 }
 
-module.exports = { stockMonthly, rateOn, listCurrencies, saveCurrency, setRate, revaluation, listAssets, saveAsset, runDepreciation, salesRegister, salesBill, purchases, purchaseDetail, profitByMonth, priceHistory, getBrand, setBrand, periodize, DOC_SOURCES, partyExtras, accountTree, createAccount, updateAccount, checkLine, boxes, listVouchers, getVoucher, createVoucher, voidVoucher, shiftVoucherCash, meterSheet };
+module.exports = { stockMonthly, rateOn, listCurrencies, saveCurrency, setRate, revaluation, listAssets, saveAsset, runDepreciation, salesRegister, salesBill, purchases, purchaseDetail, profitByMonth, priceHistory, getBrand, setBrand, periodize, DOC_SOURCES, partyExtras, partyExtrasMany, accountTree, createAccount, updateAccount, checkLine, boxes, listVouchers, getVoucher, createVoucher, voidVoucher, shiftVoucherCash, meterSheet };

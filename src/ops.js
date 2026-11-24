@@ -7,7 +7,7 @@ const V = require('./validate');
 const auth = require('./auth');
 const L = require('./ledger');
 const S = require('./services');
-const { need, audit, scoped, tzToday, addDays, pageArgs, voidRow, openShift, customerBalance } = S;
+const { need, audit, scoped, tzToday, addDays, pageArgs, voidRow, openShift, partyBalances } = S;
 const station = S.station;
 
 /* =============================== SHIFTS =============================== */
@@ -144,7 +144,8 @@ function supplierBalance(db, id, asOf) {
 }
 function listSuppliers(db, user, sid) {
   station(db, user, sid);
-  return db.prepare('SELECT * FROM suppliers WHERE station_id=? AND active=1 ORDER BY name').all(sid).map(s => ({ ...s, balance: supplierBalance(db, s.id) }));
+  const bal = partyBalances(db, 'supplier', sid);
+  return db.prepare('SELECT * FROM suppliers WHERE station_id=? AND active=1 ORDER BY name').all(sid).map(s => ({ ...s, balance: bal.get(s.id) || 0 }));
 }
 function createSupplier(db, user, sid, b) {
   need(user, 'supplier.manage'); const st = station(db, user, sid); V.obj(b, 'body');
@@ -209,20 +210,21 @@ function ageing(db, user, sid, q) {
   const days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
   const rows = [], tot = { current: 0, d30: 0, d60: 0, d90: 0, over90: 0, advance: 0, balance: 0 };
   const parties = db.prepare(`SELECT * FROM ${type === 'customer' ? 'customers' : 'suppliers'} WHERE station_id=? AND active=1 ORDER BY name`).all(sid);
+  /* everything for all parties at once (one query per kind instead of three per party), grouped by party in the same order */
+  const group = (rows) => { const m = new Map(); for (const r of rows) { const a = m.get(r.pid); if (a) a.push(r); else m.set(r.pid, [r]); } return m; };
+  const tbl = type === 'customer' ? 'customers' : 'suppliers';
+  const docs = group(type === 'customer'
+    ? db.prepare(`SELECT customer_id pid, business_date d, gross amt FROM sales WHERE customer_id IN (SELECT id FROM customers WHERE station_id=? AND active=1) AND pay_type='credit' AND voided_at IS NULL AND business_date<=? ORDER BY customer_id, business_date, id`).all(sid, asOf)
+    : db.prepare(`SELECT supplier_id pid, business_date d, due_date, COALESCE(payable, net+vat) amt FROM deliveries WHERE supplier_id IN (SELECT id FROM suppliers WHERE station_id=? AND active=1) AND pay_type='credit' AND voided_at IS NULL AND business_date<=? ORDER BY supplier_id, business_date, id`).all(sid, asOf));
+  const paidBy = new Map(db.prepare(`SELECT ${type}_id pid, SUM(amount) v FROM ${type === 'customer' ? 'payments' : 'supplier_payments'} WHERE ${type}_id IN (SELECT id FROM ${tbl} WHERE station_id=? AND active=1) AND voided_at IS NULL AND business_date<=? GROUP BY 1`).all(sid, asOf).map(r => [r.pid, r.v]));
+  const extras = require('./books').partyExtrasMany(db, type, sid, asOf);
   for (const p of parties) {
     const debts = [];   // amounts owed (to us for customers, by us for suppliers), oldest first, each with a due date
     if (p.opening_balance > 0) debts.push({ date: '', due: p.created_on || asOf, amt: p.opening_balance });   // the opening balance is the oldest debt
     let paid = p.opening_balance < 0 ? -p.opening_balance : 0;
-    if (type === 'customer') {
-      for (const s of db.prepare("SELECT business_date d, gross FROM sales WHERE customer_id=? AND pay_type='credit' AND voided_at IS NULL AND business_date<=? ORDER BY business_date, id").all(p.id, asOf))
-        debts.push({ date: s.d, due: addDays(s.d, p.terms_days), amt: s.gross });
-      paid += db.prepare('SELECT COALESCE(SUM(amount),0) v FROM payments WHERE customer_id=? AND voided_at IS NULL AND business_date<=?').get(p.id, asOf).v;
-    } else {
-      for (const d of db.prepare("SELECT business_date d, due_date, COALESCE(payable, net+vat) amt FROM deliveries WHERE supplier_id=? AND pay_type='credit' AND voided_at IS NULL AND business_date<=? ORDER BY business_date, id").all(p.id, asOf))
-        debts.push({ date: d.d, due: d.due_date || addDays(d.d, p.terms_days), amt: d.amt });
-      paid += db.prepare('SELECT COALESCE(SUM(amount),0) v FROM supplier_payments WHERE supplier_id=? AND voided_at IS NULL AND business_date<=?').get(p.id, asOf).v;
-    }
-    for (const x of require('./books').partyExtras(db, type, p.id, asOf)) {   // vouchers, journals and imported history
+    for (const d of docs.get(p.id) || []) debts.push({ date: d.d, due: (type === 'supplier' && d.due_date) || addDays(d.d, p.terms_days), amt: d.amt });
+    paid += paidBy.get(p.id) || 0;
+    for (const x of extras.get(p.id) || []) {   // vouchers, journals and imported history
       const owed = type === 'customer' ? x.debit - x.credit : x.credit - x.debit;
       if (owed > 0) debts.push({ date: x.date, due: addDays(x.date, p.terms_days), amt: owed }); else paid += -owed;
     }
@@ -389,12 +391,15 @@ function listJournals(db, user, sid, q) {
   const src = q.source ? V.str(q.source, 'source', { max: 30 }) : null, status = q.status ? V.oneOf(q.status, 'status', ['draft', 'posted']) : null;
   const term = q.q ? '%' + V.str(q.q, 'q', { max: 60 }) + '%' : null;
   const acc = q.account_id ? V.int(Number(q.account_id), 'account_id', { min: 1 }) : null;
+  /* the next page starts after the last journal shown, in the list's own order (date, then id): an entry dated earlier
+     but typed later (larger id) used to fall between two pages and never appear */
+  const bDate = S.beforeDate(db, 'journals', before, 'org_id=?', user.org_id);
   return db.prepare(`SELECT j.*, u.name user_name FROM journals j LEFT JOIN users u ON u.id=j.user_id WHERE j.org_id=? AND j.station_id=? AND j.business_date BETWEEN ? AND ?
     AND (? IS NULL OR j.source=?) AND (? IS NULL OR j.status=?)
     AND (? IS NULL OR j.memo LIKE ? OR j.ref = ? OR CAST(j.id AS TEXT) = ? OR EXISTS(SELECT 1 FROM journal_lines l WHERE l.journal_id=j.id AND l.memo LIKE ?))
     AND (? IS NULL OR EXISTS(SELECT 1 FROM journal_lines l WHERE l.journal_id=j.id AND l.account_id=?))
-    AND j.id<? ORDER BY j.business_date DESC, j.id DESC LIMIT ?`)
-    .all(user.org_id, sid, from, to, src, src, status, status, term, term, q.q || null, q.q || null, term, acc, acc, before, limit).map(j => journalWithLines(db, j));
+    AND (j.business_date<? OR (j.business_date=? AND j.id<?)) ORDER BY j.business_date DESC, j.id DESC LIMIT ?`)
+    .all(user.org_id, sid, from, to, src, src, status, status, term, term, q.q || null, q.q || null, term, acc, acc, bDate, bDate, before, limit).map(j => journalWithLines(db, j));
 }
 function getJournal(db, user, id) {
   need(user, 'journal.read');
@@ -465,10 +470,11 @@ function scope(db, user, q) {
 }
 const inList = (ids) => ids.map(() => '?').join(',');
 function balances(db, user, ids, from, to, noClose) {
-  return db.prepare(`SELECT a.id, a.code, a.name_ar, a.name_en, a.type, COALESCE(SUM(l.debit),0) debit, COALESCE(SUM(l.credit),0) credit
-    FROM journal_lines l JOIN journals j ON j.id=l.journal_id JOIN accounts a ON a.id=l.account_id
+  /* add the lines up per account first, then name the accounts: half the work of joining every line to its account (same rows, same order) */
+  return db.prepare(`SELECT a.id, a.code, a.name_ar, a.name_en, a.type, t.debit, t.credit FROM (SELECT l.account_id id, SUM(l.debit) debit, SUM(l.credit) credit
+    FROM journals j JOIN journal_lines l ON l.journal_id=j.id
     WHERE j.org_id=? AND j.status='posted' AND j.station_id IN (${inList(ids)}) AND j.business_date BETWEEN ? AND ?${noClose ? " AND j.source<>'year_close'" : ''}
-    GROUP BY a.id ORDER BY a.code`).all(user.org_id, ...ids, from, to);
+    GROUP BY l.account_id) t JOIN accounts a ON a.id=t.id ORDER BY a.code`).all(user.org_id, ...ids, from, to);
 }
 function trialBalance(db, user, q) {
   need(user, 'report.read'); const sc = scope(db, user, q);
@@ -540,8 +546,9 @@ function cashFlow(db, user, q) {
   };
   const boxIds = accts.filter(isBox).map(a => a.id);
   const ph = inList(sc.ids);
+  /* `+l.account_id`: walk the period's journals and filter their lines, rather than probe the account index once per journal and box (3-5x slower) */
   const boxBal = (cond, ...args) => boxIds.length ? db.prepare(`SELECT l.account_id id, COALESCE(SUM(l.debit-l.credit),0) v FROM journal_lines l JOIN journals j ON j.id=l.journal_id
-      WHERE j.org_id=? AND j.status='posted' AND j.station_id IN (${ph}) AND l.account_id IN (${inList(boxIds)}) AND ${cond} GROUP BY l.account_id`).all(user.org_id, ...sc.ids, ...boxIds, ...args) : [];
+      WHERE j.org_id=? AND j.status='posted' AND j.station_id IN (${ph}) AND +l.account_id IN (${inList(boxIds)}) AND ${cond} GROUP BY l.account_id`).all(user.org_id, ...sc.ids, ...boxIds, ...args) : [];
   const openMap = new Map(boxBal('j.business_date<?', from).map(r => [r.id, r.v]));
   const moveMap = new Map(boxBal('j.business_date BETWEEN ? AND ?', from, to).map(r => [r.id, r.v]));
   const contrib = boxIds.length ? db.prepare(`SELECT l.account_id id, CASE WHEN j.source LIKE '%opening%' OR j.source='migration' THEN 'opening' WHEN j.source='fx_reval' THEN 'fx' ELSE '' END k,
@@ -572,14 +579,15 @@ function accountLedger(db, user, q) {
   const sign = NORMAL_DEBIT.has(a.type) ? 1 : -1;
   const ob = db.prepare(`SELECT COALESCE(SUM(l.debit-l.credit),0) v FROM journal_lines l JOIN journals j ON j.id=l.journal_id WHERE l.account_id=? AND j.status='posted' AND j.station_id IN (${inList(sc.ids)}) AND j.business_date<?`).get(a.id, ...sc.ids, from).v * sign;
   let bal = ob;
+  /* one primary-key join per source table instead of five correlated look-ups per line (the same values) */
   const lines = db.prepare(`SELECT l.*, j.business_date, j.source, j.source_id, j.memo jmemo, j.station_id, j.created_at,
-      COALESCE((SELECT ref_no FROM vouchers v WHERE j.source='voucher' AND v.id=j.source_id), (SELECT ref FROM sales s WHERE j.source='sale' AND s.id=j.source_id), j.ref) ref,
-      (SELECT note FROM sales s WHERE j.source='sale' AND s.id=j.source_id) sale_note, j.doc_type,
-      COALESCE(j.doc_ref, (SELECT bill FROM sales s WHERE j.source='sale' AND s.id=j.source_id)) doc_ref,
-      CASE l.party_type WHEN 'customer' THEN (SELECT name FROM customers WHERE id=l.party_id) WHEN 'supplier' THEN (SELECT name FROM suppliers WHERE id=l.party_id) END party_name
+      COALESCE(v.ref_no, s.ref, j.ref) ref, s.note sale_note, j.doc_type, COALESCE(j.doc_ref, s.bill) doc_ref,
+      CASE l.party_type WHEN 'customer' THEN c.name WHEN 'supplier' THEN su.name END party_name
     FROM journal_lines l JOIN journals j ON j.id=l.journal_id
-    WHERE l.account_id=? AND j.status='posted' AND j.station_id IN (${inList(sc.ids)}) AND j.business_date BETWEEN ? AND ? ORDER BY j.business_date, j.created_at, j.id, l.id LIMIT 30000`).all(a.id, ...sc.ids, from, to)
-    .map(l => { bal += (l.debit - l.credit) * sign; return { ...l, balance: bal }; });
+      LEFT JOIN vouchers v ON j.source='voucher' AND v.id=j.source_id LEFT JOIN sales s ON j.source='sale' AND s.id=j.source_id
+      LEFT JOIN customers c ON l.party_type='customer' AND c.id=l.party_id LEFT JOIN suppliers su ON l.party_type='supplier' AND su.id=l.party_id
+    WHERE l.account_id=? AND j.status='posted' AND j.station_id IN (${inList(sc.ids)}) AND j.business_date BETWEEN ? AND ? ORDER BY j.business_date, j.created_at, j.id, l.id LIMIT 30000`).all(a.id, ...sc.ids, from, to);
+  for (const l of lines) { bal += (l.debit - l.credit) * sign; l.balance = bal; }
   return { account: a, from, to, currency: sc.currency, cur_dec: sc.cur_dec, opening: ob, closing: bal, lines };
 }
 function lockPeriod(db, user, b) {
@@ -604,13 +612,15 @@ function integrity(db, user) {
     const gl = (sys, party) => db.prepare(`SELECT COALESCE(SUM(l.debit-l.credit),0) v FROM journal_lines l JOIN journals j ON j.id=l.journal_id JOIN accounts a ON a.id=l.account_id WHERE j.org_id=? AND j.station_id=? AND j.status='posted' AND a.sys=?`).get(user.org_id, st.id, sys).v;
     const tanks = db.prepare('SELECT id, level_ml, value FROM tanks WHERE station_id=?').all(st.id);
     const stockValue = tanks.reduce((s, t) => s + t.value, 0);
-    add(`${st.name}: GL inventory = stock value`, gl('inventory') === stockValue, { gl: gl('inventory'), stock: stockValue }, `${st.name}: رصيد حساب المخزون = قيمة المخزون في الخزانات`);
-    const ledgerOk = tanks.every(t => { const m = db.prepare('SELECT COALESCE(SUM(qty_ml),0) q, COALESCE(SUM(value),0) v FROM stock_moves WHERE tank_id=?').get(t.id); return m.q === t.level_ml && m.v === t.value; });
+    const glInv = gl('inventory'), glAr = gl('ar'), glAp = gl('ap');
+    add(`${st.name}: GL inventory = stock value`, glInv === stockValue, { gl: glInv, stock: stockValue }, `${st.name}: رصيد حساب المخزون = قيمة المخزون في الخزانات`);
+    const mv = new Map(db.prepare('SELECT tank_id id, SUM(qty_ml) q, SUM(value) v FROM stock_moves WHERE tank_id IN (SELECT id FROM tanks WHERE station_id=?) GROUP BY tank_id').all(st.id).map(r => [r.id, r]));
+    const ledgerOk = tanks.every(t => { const m = mv.get(t.id) || { q: 0, v: 0 }; return m.q === t.level_ml && m.v === t.value; });
     add(`${st.name}: stock ledger = tank levels`, ledgerOk, null, `${st.name}: سجل حركة المادة = أرصدة الخزانات`);
-    const ar = db.prepare('SELECT id FROM customers WHERE station_id=?').all(st.id).reduce((s, c) => s + customerBalance(db, c.id), 0);
-    add(`${st.name}: GL receivables = customer balances`, gl('ar') === ar, { gl: gl('ar'), customers: ar }, `${st.name}: حساب ذمم العملاء = مجموع أرصدة العملاء`);
-    const ap = db.prepare('SELECT id FROM suppliers WHERE station_id=?').all(st.id).reduce((s, c) => s + supplierBalance(db, c.id), 0);
-    add(`${st.name}: GL payables = supplier balances`, -gl('ap') === ap, { gl: -gl('ap'), suppliers: ap }, `${st.name}: حساب ذمم الموردين = مجموع أرصدة الموردين`);
+    let ar = 0; for (const v of partyBalances(db, 'customer', st.id).values()) ar += v;
+    add(`${st.name}: GL receivables = customer balances`, glAr === ar, { gl: glAr, customers: ar }, `${st.name}: حساب ذمم العملاء = مجموع أرصدة العملاء`);
+    let ap = 0; for (const v of partyBalances(db, 'supplier', st.id).values()) ap += v;
+    add(`${st.name}: GL payables = supplier balances`, -glAp === ap, { gl: -glAp, suppliers: ap }, `${st.name}: حساب ذمم الموردين = مجموع أرصدة الموردين`);
   }
   return { ok: checks.every(c => c.ok), checks };
 }

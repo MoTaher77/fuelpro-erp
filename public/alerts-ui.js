@@ -34,7 +34,15 @@
     b.textContent = n ? String(n) : ''; b.classList.toggle('on', n > 0); b.classList.toggle('crit', c.critical > 0);
     btn.title = n ? T('alerts') + ': ' + n : T('alerts');
   }
-  F.bellRefresh = async () => { if (!document.getElementById('bell')) return; await load(); paint(); clearTimeout(timer); timer = setTimeout(F.bellRefresh, 300000); };
+  /* The badge is a reminder, not a figure: it is re-checked at most every 2 minutes (and every 5 minutes on its own), not after
+     every screen change — the check reads the whole books and used to delay the next screen. Opening the bell always re-checks. */
+  let loadedAt = 0, loadedFor = '';
+  F.bellRefresh = async () => {
+    if (!document.getElementById('bell')) return;
+    const key = S.sid + '|' + (S.user && S.user.id);
+    if (key !== loadedFor || Date.now() - loadedAt > 120000) { loadedFor = key; loadedAt = Date.now(); await load(); }
+    paint(); clearTimeout(timer); timer = setTimeout(() => { loadedAt = 0; F.bellRefresh(); }, 300000);
+  };
 
   F.showAlerts = async () => {
     await load(); paint();

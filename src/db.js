@@ -390,6 +390,19 @@ CREATE INDEX bank_cleared_rec ON bank_cleared(rec_id);
    and the planner gets table statistics (without them it walked every journal of a station to total one account). */
 `CREATE INDEX m7_results_latest ON m7_results(station_id, acno, as_of, kind, made_at, id);
 ANALYZE;
+`,
+/* v16 (0.26.0): covering indexes for the books (docs/PERFORMANCE.md). Every report adds up journal lines by account, by
+   journal or by party; with the amounts inside the index SQLite never has to read the table row itself.
+   The three replaced indexes are exact prefixes of the new ones, so no query loses an index. No data changes. */
+`CREATE INDEX jl_journal_cover ON journal_lines(journal_id, account_id, debit, credit);
+CREATE INDEX jl_account_cover ON journal_lines(account_id, journal_id, debit, credit);
+CREATE INDEX jl_party_cover ON journal_lines(party_type, party_id, account_id, journal_id, debit, credit);
+DROP INDEX jl_journal;
+DROP INDEX jl_account;
+DROP INDEX jl_party;
+CREATE INDEX journals_post_day ON journals(org_id, station_id, status, business_date, source);
+CREATE INDEX sales_tank_day ON sales(tank_id, business_date);
+ANALYZE;
 `
 ];
 

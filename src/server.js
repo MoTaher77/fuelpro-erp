@@ -18,6 +18,9 @@ const { HttpError, unauthorized, notFound } = require('./errors');
 const PUBLIC = path.join(__dirname, '..', 'public');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
 const COOKIE = 'sid';
+const zlib = require('node:zlib');
+const HAS_ZLIB = typeof zlib.gzip === 'function' && typeof zlib.brotliCompress === 'function';   // the Artifact page has no zlib
+const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.svg', '.json', '.webmanifest']);
 
 function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'fuelpro.db'), secureCookie = process.env.COOKIE_SECURE === '1', trustProxy = process.env.TRUST_PROXY === '1', mailer = createMailer(), appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}` } = {}) {
   const db = openDb(dbPath);
@@ -204,9 +207,18 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
       req.on('error', reject);
     });
   }
-  function send(res, status, body, headers = {}) {
+  function send(res, status, body, headers = {}, req) {
     const data = body === undefined ? '' : JSON.stringify(body, (_, v) => typeof v === 'bigint' ? Number(v) : v);
-    res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...secHeaders(), ...headers });
+    const head = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...secHeaders(), ...headers };
+    /* big answers (statements, ledgers, journal books) travel gzip-compressed: ~10x smaller on a phone connection.
+       Level 1 on the libuv thread pool, so the server keeps answering others meanwhile. Skipped where zlib is absent (the Artifact page). */
+    if (req && data.length >= 1400 && HAS_ZLIB && /\bgzip\b/.test(String(req.headers['accept-encoding'] || ''))) {
+      return zlib.gzip(data, { level: 1 }, (err, gz) => {
+        if (err) { res.writeHead(status, head); return res.end(data); }
+        res.writeHead(status, { ...head, 'Content-Encoding': 'gzip', 'Vary': 'Accept-Encoding', 'Content-Length': gz.length }); res.end(gz);
+      });
+    }
+    res.writeHead(status, head);
     res.end(data);
   }
   function secHeaders() {
@@ -216,14 +228,42 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
       ...(secureCookie ? { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' } : {})
     };
   }
+  /* App files: kept in memory per version (size + modification time), with an ETag so a reload costs a 304 instead of
+     the whole 530 KB, and pre-compressed once (brotli, else gzip). 'no-cache' still makes the browser ask every time,
+     so a new version is picked up at once (the service worker is network-first as well). */
+  const staticCache = new Map();
+  function staticEntry(file, st, done) {
+    const key = st.size + '-' + Math.floor(st.mtimeMs);
+    const hit = staticCache.get(file);
+    if (hit && hit.key === key) return done(null, hit);
+    fs.readFile(file, (err, raw) => {
+      if (err) return done(err);
+      const ext = path.extname(file);
+      const e = { key, raw, type: MIME[ext] || 'application/octet-stream', etag: '"' + require('node:crypto').createHash('sha1').update(raw).digest('base64url').slice(0, 22) + '"' };
+      staticCache.set(file, e);
+      if (!HAS_ZLIB || !COMPRESSIBLE.has(ext) || raw.length < 1024) return done(null, e);
+      zlib.brotliCompress(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.length } }, (e1, br) => {
+        if (!e1) e.br = br;
+        zlib.gzip(raw, { level: 9 }, (e2, gz) => { if (!e2) e.gz = gz; done(null, e); });
+      });
+    });
+  }
   function serveStatic(req, res, pathname) {
-    let p = decodeURIComponent(pathname); if (p === '/' || !path.extname(p)) p = '/index.html';
+    let p; try { p = decodeURIComponent(pathname); } catch { res.writeHead(400, secHeaders()); return res.end(); }
+    if (p === '/' || !path.extname(p)) p = '/index.html';
     const file = path.normalize(path.join(PUBLIC, p));
     if (!file.startsWith(PUBLIC + path.sep)) { res.writeHead(403); return res.end(); }
-    fs.readFile(file, (err, buf) => {
-      if (err) { res.writeHead(404, secHeaders()); return res.end('Not found'); }
-      res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', ...secHeaders() });
-      res.end(buf);
+    fs.stat(file, (err, st) => {
+      if (err || !st.isFile()) { res.writeHead(404, secHeaders()); return res.end('Not found'); }
+      staticEntry(file, st, (err2, e) => {
+        if (err2) { res.writeHead(404, secHeaders()); return res.end('Not found'); }
+        const head = { 'Content-Type': e.type, 'Cache-Control': 'no-cache', 'ETag': e.etag, 'Vary': 'Accept-Encoding', ...secHeaders() };
+        if (String(req.headers['if-none-match'] || '').split(/\s*,\s*/).includes(e.etag)) { res.writeHead(304, head); return res.end(); }
+        const ae = String(req.headers['accept-encoding'] || '');
+        const [body, enc] = e.br && /\bbr\b/.test(ae) ? [e.br, 'br'] : e.gz && /\bgzip\b/.test(ae) ? [e.gz, 'gzip'] : [e.raw, null];
+        res.writeHead(200, { ...head, ...(enc ? { 'Content-Encoding': enc } : {}), 'Content-Length': body.length });
+        res.end(req.method === 'HEAD' ? undefined : body);
+      });
     });
   }
 
@@ -268,7 +308,7 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
         res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': st.size, 'Content-Disposition': `attachment; filename="${path.basename(result.file)}"`, 'Cache-Control': 'no-store', ...secHeaders() });
         return fs.createReadStream(result.file).pipe(res);
       }
-      send(res, result.status || 200, result.body, out.headers);
+      send(res, result.status || 200, result.body, out.headers, req);
     } catch (e) {
       if (e instanceof HttpError) return send(res, e.status, { error: { code: e.code, message: e.message, ...(e.extra ? { details: e.extra } : {}) } });
       if (e && /constraint/i.test(String(e.message))) return send(res, 409, { error: { code: 'CONSTRAINT', message: 'The change violates a data integrity rule' } });
