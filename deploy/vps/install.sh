@@ -126,8 +126,27 @@ if ! command -v caddy >/dev/null; then
 fi
 sed -e "s|__DOMAIN__|$DOMAIN|g" -e "s|__EMAIL__|${EMAIL:-}|g" "$APP/deploy/vps/Caddyfile" > /etc/caddy/Caddyfile
 [ -n "$EMAIL" ] || sed -i '/^{$/,/^}$/d' /etc/caddy/Caddyfile   # no e-mail: drop the global block
-caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
-systemctl reload caddy || systemctl restart caddy
+caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1 || { caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile; exit 1; }
+systemctl enable -q caddy
+if ! systemctl restart caddy; then
+  echo; echo "!! Caddy (HTTPS) did not start. Programs holding ports 80/443:"
+  ss -ltnp | grep -E ':(80|443) ' || echo "   (none)"
+  journalctl -u caddy -n 15 --no-pager | grep -iE 'error|bind|address|listen' || journalctl -u caddy -n 15 --no-pager
+  echo "If apache2 or nginx holds the ports and hosts nothing you need:  systemctl disable --now apache2 nginx  then run this script again."
+  exit 1
+fi
+echo "waiting for the HTTPS certificate of $DOMAIN (Let's Encrypt needs ports 80/443 open to the internet)..."
+ok=0
+for i in $(seq 1 45); do
+  if curl -fsS -m 5 --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/healthz" >/dev/null 2>&1; then ok=1; break; fi
+  sleep 2
+done
+if [ "$ok" = 1 ]; then echo "HTTPS works: https://$DOMAIN"
+else
+  echo "!! no certificate yet. Last Caddy messages:"
+  journalctl -u caddy -n 20 --no-pager | grep -iE 'error|obtain|challenge|certificate' | tail -8
+  echo "   Check that the provider's own firewall (control panel) allows ports 80 and 443, then: systemctl restart caddy"
+fi
 
 say "firewall"
 ufw allow OpenSSH >/dev/null; ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null

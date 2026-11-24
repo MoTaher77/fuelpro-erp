@@ -6,8 +6,7 @@
 
 __DOMAIN__ {
 	reverse_proxy 127.0.0.1:3000 {
-		# the app takes the client address from the last X-Forwarded-For hop (TRUST_PROXY=1): Caddy appends it
-		header_up X-Forwarded-For {remote_host}
+		# Caddy sets X-Forwarded-For to the real client address by itself (incoming values are not trusted); the app reads the last hop (TRUST_PROXY=1)
 		# not behind Cloudflare here: drop a client-supplied CF-Connecting-IP, which the app would otherwise trust first
 		header_up -CF-Connecting-IP
 	}
