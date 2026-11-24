@@ -71,6 +71,13 @@ export GIT_SSH_COMMAND="ssh -i /root/.ssh/fuelpro_deploy -o IdentitiesOnly=yes -
    - العنوان القديم يبقى يعمل ويحوّل إلى الجديد.
    - بعد النقل يسجّل المستخدمون الدخول مرة واحدة على العنوان الجديد.
 
+## 2د) مستخدم تجريبي بلا بيانات
+منشأة منفصلة فارغة لها مالكها الخاص، ولا ترى شيئاً من بيانات المحطة. يعمل حتى مع إغلاق التسجيل:
+```
+sudo -u fuelpro node /opt/fuelpro/scripts/new-org.js --db /var/lib/fuelpro/fuelpro.db --email demo@example.com
+```
+يطبع البريد وكلمة مرور عشوائية مرة واحدة. خيارات أخرى: `--org` و`--name` و`--station` و`--currency` و`--tz`.
+
 ## 3) التحديث
 بعد دمج أي تعديل في `main`:
 ```

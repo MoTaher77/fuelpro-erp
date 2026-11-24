@@ -176,3 +176,27 @@ test('staff & payroll screen: add an employee, give an advance, post the month, 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('a dropped connection («Failed to fetch») is retried for reads; a failed save shows a clear message and is not re-sent', async () => {
+  const { ctx, page, errors } = await signedIn();
+  /* the next two reads of the suppliers list fail like a phone waking up, the third goes through */
+  let dropped = 0;
+  await page.route('**/api/stations/*/suppliers', (route) => { if (dropped < 2) { dropped++; return route.abort('failed'); } return route.continue(); });
+  await openTab(page, 'supp');
+  assert.equal(dropped, 2, 'two reads were dropped');
+  assert.ok(await page.$('main#main table, main#main .card'), 'the screen opened anyway');
+  /* a save that cannot reach the server: one attempt only, and an Arabic/English message instead of "Failed to fetch" */
+  let posts = 0;
+  await page.route('**/api/stations/*/expenses', (route) => { if (route.request().method() === 'POST') { posts++; return route.abort('failed'); } return route.continue(); });
+  await openTab(page, 'exp'); await page.waitForSelector('#eAmt');
+  await page.fill('#eAmt', '1000');
+  await page.evaluate(() => document.getElementById('eAmt').closest('form').requestSubmit());
+  await page.waitForSelector('#toast:not([hidden])', { timeout: 10000 });
+  const msg = await page.textContent('#toast');
+  assert.ok(!/failed to fetch/i.test(msg), 'no raw browser error: ' + msg);
+  assert.match(msg, /الاتصال|connection/i);
+  await page.waitForTimeout(3000);
+  assert.equal(posts, 1, 'the save was not sent again by itself');
+  assert.deepEqual(errors.filter((e) => !/Failed to load resource|ERR_FAILED/.test(e)), []);
+  await ctx.close();
+});

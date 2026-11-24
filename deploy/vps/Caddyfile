@@ -2,6 +2,10 @@
 # The app itself compresses and sets its security headers (CSP, HSTS, nosniff, frame-deny).
 {
 	email __EMAIL__
+	# HTTP/1.1 and HTTP/2 only: the firewall opens TCP 443, not UDP 443, so HTTP/3 (QUIC) would be advertised but unreachable
+	servers {
+		protocols h1 h2
+	}
 }
 
 __DOMAIN__ {
