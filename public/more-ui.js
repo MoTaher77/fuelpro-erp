@@ -115,7 +115,18 @@
       out.replaceChildren(h('div', { class: 'xtiles' }, tile(T('openingBal'), nf(r.totals.opening)), tile(T('moneyIn'), nf(r.totals.debit)), tile(T('moneyOut'), nf(r.totals.credit)), tile(T('closingBal'), nf(r.totals.closing), 'gold')),
         h('p', { class: 'hint' }, T('boxKindCash'), ': ', h('b', null, nf(cashT)), ' · ', T('boxKindBank'), ': ', h('b', null, nf(bankT)), ' · ', r.boxes.filter(b => b.fc).map(b => `${b.name_ar}: ${nf0(b.fc.closing)} ${b.currency}`).join(' · ')), tbl(false)); });
     const doPrint = async () => { if (!r) return; await brand(); F.printDoc(`${T('boxesReport')} ${r.from}_${r.to}`, h('div', { class: 'a4 xdoc' }, F.letterhead(T('boxesReport'), slash(r.from) + ' — ' + slash(r.to)), tbl(true), signs('cashierSig', 'accountantSig', 'managerSig'), foot())); };
-    main.append(sec(T('box'), h('p', { class: 'hint' }, T('boxHelp')), h('div', { class: 'row' }, field(T('from'), from), field(T('to'), to), h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')))), out);
+    /* the boxes report as an A4 PDF for WhatsApp (0.25): cash and bank boxes, negative closing balances in red */
+    const boxPdf = () => {
+      if (!r || !F.reportPdf) return; const per = slash(r.from) + ' — ' + slash(r.to);
+      return F.reportPdf({ title: T('boxesReport'), periodText: per, key: 'boxes',
+        summary: [{ k: T('openingBal'), v: nf(r.totals.opening) }, { k: T('moneyIn'), v: nf(r.totals.debit) }, { k: T('moneyOut'), v: nf(r.totals.credit) }, { k: T('closingBal'), v: nf(r.totals.closing), main: true }],
+        cols: [{ k: T('code'), w: 10 }, { k: T('boxCol'), w: 30 }, { k: T('openingBal'), w: 15, num: true }, { k: T('moneyIn'), w: 15, num: true }, { k: T('moneyOut'), w: 15, num: true }, { k: T('closingBal'), w: 15, num: true, bold: true }],
+        rows: r.boxes.map(b => ({ cells: [b.code, b.name_ar, nf(b.opening), b.debit ? nf(b.debit) : '', b.credit ? nf(b.credit) : '', nf(b.closing)], color: [null, null, null, null, null, b.closing < 0 ? '#b4372c' : null] })),
+        total: [T('total'), '', nf(r.totals.opening), nf(r.totals.debit), nf(r.totals.credit), nf(r.totals.closing)],
+        text: `${T('boxesReport')} — ${per}\n${T('closingBal')}: ${nf(r.totals.closing)}` });
+    };
+    main.append(sec(T('box'), h('p', { class: 'hint' }, T('boxHelp')), h('div', { class: 'row' }, field(T('from'), from), field(T('to'), to), h('button', { class: 'btn', onclick: run }, T('run')), h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')),
+      F.reportPdf ? h('button', { class: 'btn wa-btn', onclick: guard(boxPdf) }, F.waIcon(), ' ', T('waPdf')) : null)), out);
     await run();
   };
 

@@ -109,3 +109,6 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - PR #10 merged: daily report / sales register / collections as PDF to WhatsApp (`F.reportPdf`, multi-section `stmt-pdf.js`). 77 tests, CI green.
 - Demo Artifact deleted at the owner's request; station page republished (v15).
 - Resume: `docs/NEXT-TASK.md` → "Handoff 2026-11-23".
+
+## 2026-11-24 — 0.25.0
+- Boxes report (#box) gets «واتساب PDF» (`boxPdf` in `public/more-ui.js`); sw v40. 77 tests. Checked in Chromium on the snapshot: the PDF dialog appears (262 KB).

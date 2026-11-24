@@ -3,7 +3,7 @@
 ## Handoff 2026-11-23 (after 0.24.0, PR #10 merged) — continue on the owner's laptop
 - State: `main` = 0.24.0, 77 tests green, CI green. Demo Artifact page **deleted** (owner's request); only the private station page remains: https://claude.ai/artifact/Dbe4L4cWnvRSbeswvYAENF (build: `node web/build.js --seed-db <snapshot> --out web/dist-station`).
 - Laptop: `git pull`, then `npm run backup`, restart FuelPro (sw `fuelpro-shell-v39`).
-- Owner's open choices: (a) more report PDFs (tanks, cash box) via `F.reportPdf` in `public/books-ui.js`; (b) Phase 2 stage B: port the 9 triggers + migration v3 to PostgreSQL, add `FUELPRO_DB=postgres` (`docs/PHASE2-POSTGRES.md`).
+- 0.25.0: boxes report «واتساب PDF» done. Owner's open choices: (a) more report PDFs (per-box days, stock) via `F.reportPdf` in `public/books-ui.js`; (b) Phase 2 stage B: port the 9 triggers + migration v3 to PostgreSQL, add `FUELPRO_DB=postgres` (`docs/PHASE2-POSTGRES.md`).
 - Waiting on owner: customer phones, KI-06, backup-copy folder, WhatsApp Business API decision.
 
 ## Next candidates (owner chose the setup wizard first; 0.20.0 done)
