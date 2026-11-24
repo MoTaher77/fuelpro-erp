@@ -47,6 +47,7 @@ say "restart"
 install -m 644 deploy/vps/fuelpro.service /etc/systemd/system/fuelpro.service
 install -m 755 deploy/vps/update.sh /usr/local/sbin/fuelpro-update
 install -m 755 deploy/vps/restore.sh /usr/local/sbin/fuelpro-restore
+install -m 755 deploy/vps/domain.sh /usr/local/sbin/fuelpro-domain
 systemctl daemon-reload
 systemctl restart fuelpro
 for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/healthz >/dev/null 2>&1 && break; sleep 1; done
