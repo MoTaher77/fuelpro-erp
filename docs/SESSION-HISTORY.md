@@ -132,3 +132,4 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Owner: «no mistakes; find the missing screens and build them». Audit of all 30 screens × sub-tabs × ar/en × desktop/phone on the snapshot: no script errors, no failed API calls; 20 untranslated audit actions fixed + test/i18n.test.js.
 - Built the only ⛔ module: employees & payroll (src/payroll.js, public/payroll-ui.js, migration v17, ADR-27, ACCOUNTING-RULES §15). 87 unit + 6 e2e; all snapshot API answers identical except 2 new accounts.
 - Found: the real station keeps 37 employee accounts under 125 (KI-20) → owner decision. Resume: NEXT-TASK.
+- Owner chose to carry the 125 accounts over: preview/carry/undo (src/payroll.js carry*, migration v18), rehearsed on the snapshot copy (27 employees, equity/profit unchanged, integrity OK) + browser check; test for undo → re-carry found and fixed a duplicate-employee bug.

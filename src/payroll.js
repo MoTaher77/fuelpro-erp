@@ -214,9 +214,107 @@ function statement(db, user, sid, id, q) {
   return { employee: e, from: from === '0000-01-01' ? null : from, to: to === '9999-12-31' ? null : to, opening: open, closing: bal, advance: b.advance, payable: b.payable, lines };
 }
 
+/* ---------------------------- carry-over of old per-employee accounts (KI-20) ----------------------------
+   Imported charts (M7) kept one ledger account per employee under a group (محطة التميز: 125 «حسابات الموظفين»).
+   carryOver moves each account's balance at this station into the payroll module with ONE journal (source 'emp_carry'):
+     balance > 0 (the employee owes):  Dr 1160 emp_adv (employee) / Cr the old account
+     balance < 0 (the station owes):   Dr the old account / Cr 2200 salaries_payable (employee)
+   The books' totals do not change; each old account ends at 0, keeps its history, and is deactivated so nothing posts to it
+   by mistake. Undo reverses that journal and puts everything back while the carried balances are untouched. */
+const ORG_WIDE = require('./auth').ORG_WIDE;
+function carryPlan(db, user, sid, groupId, today) {
+  const g = db.prepare('SELECT * FROM accounts WHERE id=? AND org_id=?').get(groupId, user.org_id);
+  if (!g) throw notFound('Account');
+  if (!g.is_group) throw bad('VALIDATION', 'Choose the group that holds one account per employee');
+  const leaves = db.prepare(`WITH RECURSIVE t(id) AS (SELECT id FROM accounts WHERE id=? UNION ALL SELECT c.id FROM accounts c JOIN t ON c.parent_id=t.id)
+    SELECT a.* FROM accounts a JOIN t ON t.id=a.id WHERE a.id<>? AND a.is_group=0 ORDER BY a.code`).all(g.id, g.id);
+  const yearAgo = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCFullYear(d.getUTCFullYear() - 1); return d.toISOString().slice(0, 10); })();
+  const stat = db.prepare(`SELECT COALESCE(SUM(l.debit-l.credit),0) bal, COUNT(*) n, MAX(j.business_date) last FROM journal_lines l JOIN journals j ON j.id=l.journal_id
+    WHERE l.account_id=? AND j.station_id=? AND j.status='posted'`);
+  const rows = [], skipped = [];
+  for (const a of leaves) {
+    const s = stat.get(a.id, sid);
+    if (a.currency) { skipped.push({ account_id: a.id, code: a.code, name: a.name_ar, reason: 'foreign_currency', balance: s.bal }); continue; }
+    if (!a.active) { skipped.push({ account_id: a.id, code: a.code, name: a.name_ar, reason: 'inactive', balance: s.bal }); continue; }
+    if (!s.bal && !(s.last && s.last >= yearAgo)) { skipped.push({ account_id: a.id, code: a.code, name: a.name_ar, reason: 'no_balance_no_recent_moves', balance: 0 }); continue; }
+    const linked = db.prepare('SELECT id FROM employees WHERE station_id=? AND legacy_account_id=?').get(sid, a.id)
+      || db.prepare('SELECT id FROM employees WHERE station_id=? AND active=1 AND legacy_account_id IS NULL AND name=?').get(sid, a.name_ar);
+    rows.push({ account_id: a.id, code: a.code, name: a.name_ar, balance: s.bal, last_move: s.last, to: s.bal > 0 ? 'advance' : s.bal < 0 ? 'payable' : 'none', employee_id: linked ? linked.id : null });
+  }
+  const tot = rows.reduce((t, r) => ({ advance: t.advance + Math.max(r.balance, 0), payable: t.payable + Math.max(-r.balance, 0) }), { advance: 0, payable: 0 });
+  return { group: { id: g.id, code: g.code, name_ar: g.name_ar, name_en: g.name_en }, date: today, rows, skipped, totals: tot };
+}
+const activeCarry = (db, orgId, sid) => db.prepare("SELECT * FROM journals WHERE org_id=? AND source='emp_carry' AND source_id=? AND status='posted' AND reversed_by IS NULL AND reversal_of IS NULL").get(orgId, sid);
+function carryGroups(db, user, sid) {
+  need(user, 'payroll.manage'); station(db, user, sid);
+  return db.prepare('SELECT id, code, name_ar, name_en FROM accounts WHERE org_id=? AND is_group=1 AND active=1 ORDER BY code').all(user.org_id)
+    .map(g => ({ ...g, suggested: /موظف|employee|staff|salar/i.test(g.name_ar + ' ' + g.name_en) }));
+}
+function carryPreview(db, user, sid, q) {
+  need(user, 'payroll.manage'); const st = station(db, user, sid);
+  const done = activeCarry(db, user.org_id, sid);
+  if (done) return { done: true, journal_id: done.id, date: done.business_date };
+  return { done: false, ...carryPlan(db, user, sid, V.int(Number(q.group_account_id), 'group_account_id', { min: 1 }), tzToday(st.timezone)) };
+}
+function carryOver(db, user, sid, b) {
+  need(user, 'payroll.manage'); const st = station(db, user, sid); V.obj(b, 'body');
+  if (!ORG_WIDE.has(user.role)) throw require('./errors').forbidden('Only the owner or an administrator can carry old accounts over');
+  const groupId = V.int(b.group_account_id, 'group_account_id', { min: 1 });
+  return tx(db, () => {
+    if (activeCarry(db, user.org_id, sid)) throw conflict('CARRY_DONE', 'The old employee accounts of this station were already carried over (undo it first)');
+    const today = tzToday(st.timezone); L.assertOpen(db, user.org_id, today);
+    const plan = carryPlan(db, user, sid, groupId, today);
+    if (!plan.rows.length) throw bad('VALIDATION', 'Nothing to carry over in this group');
+    const created = [], linked = [], lines = [];
+    const ins = db.prepare('INSERT INTO employees(org_id,station_id,name,salary,note,legacy_account_id) VALUES(?,?,?,0,?,?)');
+    for (const r of plan.rows) {
+      let eid = r.employee_id;
+      if (eid) {   // an employee already tied to this account (or with the same name) continues; one undone earlier is active again
+        const was = db.prepare('SELECT legacy_account_id FROM employees WHERE id=?').get(eid).legacy_account_id;
+        db.prepare('UPDATE employees SET legacy_account_id=?, active=1 WHERE id=?').run(r.account_id, eid); (was === r.account_id ? created : linked).push(eid);
+      }
+      else { eid = Number(ins.run(user.org_id, sid, r.name, 'من الحساب ' + r.code, r.account_id).lastInsertRowid); created.push(eid); }
+      const party = { party_type: 'employee', party_id: eid };
+      if (r.balance > 0) lines.push({ a: 'emp_adv', dr: r.balance, ...party, memo: r.code }, { a: r.account_id, cr: r.balance, memo: 'نقل إلى سلف الموظفين' });
+      else if (r.balance < 0) lines.push({ a: r.account_id, dr: -r.balance, memo: 'نقل إلى رواتب مستحقة' }, { a: 'salaries_payable', cr: -r.balance, ...party, memo: r.code });
+    }
+    const accounts = plan.rows.map(r => r.account_id);
+    let journal_id = null;
+    if (lines.length) journal_id = L.post(db, { org_id: user.org_id, station_id: sid, date: today, source: 'emp_carry', source_id: sid, user_id: user.id, memo: `نقل حسابات الموظفين ${plan.group.code} إلى شاشة الرواتب`, lines });
+    db.prepare(`UPDATE accounts SET active=0 WHERE id IN (${accounts.map(() => '?').join(',')})`).run(...accounts);
+    audit(db, user, sid, 'payroll.carry', 'account', plan.group.id, { group: plan.group.code, journal_id, accounts, created, linked, ...plan.totals });
+    return { journal_id, employees: plan.rows.length, created: created.length, linked: linked.length, ...plan.totals, skipped: plan.skipped.length };
+  });
+}
+function carryUndo(db, user, sid, b) {
+  need(user, 'payroll.manage'); station(db, user, sid);
+  if (!ORG_WIDE.has(user.role)) throw require('./errors').forbidden('Only the owner or an administrator can undo the carry-over');
+  const reason = V.str(b && b.reason, 'reason', { min: 3, max: 200 });
+  return tx(db, () => {
+    const j = activeCarry(db, user.org_id, sid); if (!j) throw conflict('NOTHING_TO_UNDO', 'There is no carry-over to undo');
+    L.assertOpen(db, user.org_id, j.business_date);
+    const a = db.prepare("SELECT detail FROM audit WHERE org_id=? AND action='payroll.carry' AND station_id=? ORDER BY id DESC LIMIT 1").get(user.org_id, sid);
+    const d = JSON.parse(a.detail);
+    /* only while every carried balance is exactly as the carry-over left it (no advance, payroll or payment since) */
+    const carried = new Map(); for (const l of db.prepare("SELECT l.party_id id, a.sys, l.debit, l.credit FROM journal_lines l JOIN accounts a ON a.id=l.account_id WHERE l.journal_id=? AND l.party_type='employee'").all(j.id)) {
+      const c = carried.get(l.id) || { advance: 0, payable: 0 }; if (l.sys === 'emp_adv') c.advance += l.debit - l.credit; else c.payable += l.credit - l.debit; carried.set(l.id, c); }
+    const bal = balances(db, sid);
+    for (const id of [...d.created, ...d.linked]) {
+      const now = bal.get(id) || { advance: 0, payable: 0 }, was = carried.get(id) || { advance: 0, payable: 0 };
+      if (now.advance !== was.advance || now.payable !== was.payable || db.prepare('SELECT 1 FROM employee_moves WHERE employee_id=? AND voided_at IS NULL').get(id) || db.prepare('SELECT 1 FROM payroll_lines l JOIN payroll_runs r ON r.id=l.run_id WHERE l.employee_id=? AND r.voided_at IS NULL').get(id))
+        throw conflict('CARRY_IN_USE', 'Employees carried over already have new movements; the carry-over can no longer be undone');
+    }
+    L.reverseSource(db, user.org_id, 'emp_carry', sid, user.id, 'Undo: ' + reason);
+    if (d.accounts.length) db.prepare(`UPDATE accounts SET active=1 WHERE id IN (${d.accounts.map(() => '?').join(',')})`).run(...d.accounts);
+    if (d.created.length) db.prepare(`UPDATE employees SET active=0 WHERE id IN (${d.created.map(() => '?').join(',')})`).run(...d.created);   // kept tied to their account, so a later carry-over finds them
+    if (d.linked.length) db.prepare(`UPDATE employees SET legacy_account_id=NULL WHERE id IN (${d.linked.map(() => '?').join(',')})`).run(...d.linked);
+    audit(db, user, sid, 'payroll.carry_undo', 'journal', j.id, { reason }); return { ok: true };
+  });
+}
+
 /** Cash taken from the drawer during a shift for advances and salaries (ops.shiftTotals). */
 function shiftCash(db, shiftId) {
   return db.prepare("SELECT COALESCE(SUM(amount),0) v FROM employee_moves WHERE shift_id=? AND method='cash' AND voided_at IS NULL").get(shiftId).v;
 }
 
-module.exports = { listEmployees, createEmployee, updateEmployee, createMove, voidMove, listMoves, payrollDraft, createPayroll, listPayrolls, getPayroll, voidPayroll, statement, shiftCash, balances };
+module.exports = { carryGroups, carryPreview, carryOver, carryUndo, listEmployees, createEmployee, updateEmployee, createMove, voidMove, listMoves, payrollDraft, createPayroll, listPayrolls, getPayroll, voidPayroll, statement, shiftCash, balances };

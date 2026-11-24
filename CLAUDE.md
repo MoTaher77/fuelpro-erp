@@ -19,7 +19,7 @@ In real use at **محطة التميز** with one year of data imported from the
 ## 3. Stack (verified)
 Node.js ≥ 22.5, built-in `node:sqlite` (WAL). **Libraries are allowed (owner, 2026-11-23, ADR-22)** but the SQLite mode must keep running with nothing installed: the runtime dependency `pg` (PostgreSQL, Phase 2) is `require`d lazily, only when a PostgreSQL URL is configured. Dev tools (`npm ci`): `eslint`, `sql.js` (pinned 1.10.3 = the page engine), `playwright`, `typescript` (type check only, no build). Plain HTTP server `src/server.js`
 (133 routes). Front end: vanilla JS SPA in `public/` (no framework, no build step), PWA service worker.
-Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 17 = payroll tables; `openDb` also runs `PRAGMA optimize`).
+Schema migrations in `src/db.js` (`PRAGMA user_version`, currently 18 = payroll tables + employees.legacy_account_id; `openDb` also runs `PRAGMA optimize`).
 Front end stays vanilla JS, no framework/build (ADR-24); SQLite stays the engine, PostgreSQL = Phase 2 (ADR-25). Speed work: `docs/PERFORMANCE.md`.
 
 ## 4. Non-negotiable invariants
@@ -40,14 +40,14 @@ Front end stays vanilla JS, no framework/build (ADR-24); SQLite stays the engine
 - **Demo Artifact page deleted 2026-11-23 (owner); only the station page below remains.**
 - **Own VPS allowed (owner, 2026-11-24, ADR-26):** `deploy/vps/` + `docs/VPS.md` (Ubuntu/Debian, systemd, Caddy HTTPS, `REGISTRATION=first`). The agent has no SSH access: it ships code and scripts; the owner runs them. Real data reaches the VPS only through the owner's own `laptop-send-data.ps1` → `sudo fuelpro-restore` (books checked first, old DB kept); afterwards data is entered on one system only.
 - **Online demo = Claude Artifact only (owner, 2026-11-23, ADR-20):** the Artifact edition (`web/`, `docs/ARTIFACT-EDITION.md`) runs the unchanged `src/` in a claude.ai page on **demo data only**, saved in the Artifact's own storage. Do **not** use Render, Railway, ChatGPT Sites or Codex (owner's instruction; supersedes the Render plan in ADR-19). Real station data is allowed **only** in the owner's separate private page «FuelPro المحطة» (https://claude.ai/artifact/Dbe4L4cWnvRSbeswvYAENF, owner's explicit OK 2026-11-23), built from the password-free snapshot with `web/build.js --seed-db` and a throwaway admin from `scripts/dev-admin.js`, and refreshed by the owner himself from a laptop backup (chip menu → «تحديث البيانات من نسخة اللابتوب», 0.17; the file then carries the users' password hashes, which stay in the owner's private page storage); never in the demo page, never shared or made public, never re-seeded over saved data without the owner. It is a copy: it does not sync with the laptop. **Moving real data anywhere off the laptop needs the owner's separate OK each time** (backup first, then `--dry-run`). Never commit or print passwords, keys, `APP_SECRET`, SMTP credentials or real customer/financial data; verify a deployment with `node scripts/smoke-online.js <url> <email> <password>`.
-- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v45`) or users keep the old UI.
+- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v46`) or users keep the old UI.
 - **Never cache balances or report totals** (ADR-23). A query rewrite must be proved with `scripts/compare-dump.js` (all responses identical).
 
 ## 6. Commands (verified 2026-11-24)
 ```
 npm ci                   # installs pg + dev tools (lock file committed); not needed just to run the SQLite app
 npm run lint             # eslint (errors fail CI)
-npm test                 # node:test, 87 pass + 1 skipped (PostgreSQL), ~6 s, in-memory DBs — must stay green
+npm test                 # node:test, 88 pass + 1 skipped (PostgreSQL), ~6 s, in-memory DBs — must stay green
 npm run test:e2e         # Playwright on a seeded demo DB, 6 tests, ~25 s
 npm run typecheck        # tsc on files marked // @ts-check
 npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default
