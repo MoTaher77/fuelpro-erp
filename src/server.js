@@ -228,36 +228,52 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
       ...(secureCookie ? { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' } : {})
     };
   }
-  /* App files: kept in memory per version (size + modification time), with an ETag so a reload costs a 304 instead of
-     the whole 530 KB, and pre-compressed once (brotli, else gzip). 'no-cache' still makes the browser ask every time,
-     so a new version is picked up at once (the service worker is network-first as well). */
+  /* App files: kept in memory per version (size + modification time), with an ETag so a revalidation costs a 304 instead of
+     the whole 530 KB, and pre-compressed once (brotli, else gzip).
+     index.html names every script and style with its content hash (/app.js?v=<hash>); a request that carries the current hash is
+     cached as immutable, so a reload asks only for index.html (one round trip instead of 17). index.html itself is 'no-cache':
+     after an update it names the new hashes, so the new version shows at once. Without ?v= a file is 'no-cache' as before. */
   const staticCache = new Map();
-  function staticEntry(file, st, done) {
+  const hashOf = (buf) => '"' + require('node:crypto').createHash('sha1').update(buf).digest('base64url').slice(0, 22) + '"';
+  function entrySync(file, st) {
     const key = st.size + '-' + Math.floor(st.mtimeMs);
     const hit = staticCache.get(file);
-    if (hit && hit.key === key) return done(null, hit);
-    fs.readFile(file, (err, raw) => {
-      if (err) return done(err);
-      const ext = path.extname(file);
-      const e = { key, raw, type: MIME[ext] || 'application/octet-stream', etag: '"' + require('node:crypto').createHash('sha1').update(raw).digest('base64url').slice(0, 22) + '"' };
-      staticCache.set(file, e);
-      if (!HAS_ZLIB || !COMPRESSIBLE.has(ext) || raw.length < 1024) return done(null, e);
-      zlib.brotliCompress(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.length } }, (e1, br) => {
-        if (!e1) e.br = br;
-        zlib.gzip(raw, { level: 9 }, (e2, gz) => { if (!e2) e.gz = gz; done(null, e); });
-      });
+    if (hit && hit.key === key) return hit;
+    const raw = fs.readFileSync(file);
+    const e = { key, raw, type: MIME[path.extname(file)] || 'application/octet-stream', etag: hashOf(raw) };
+    staticCache.set(file, e); return e;
+  }
+  const INDEX = path.join(PUBLIC, 'index.html');
+  function indexEntry(st) {
+    const base = entrySync(INDEX, st), html = base.raw.toString('utf8');
+    const refs = [...new Set([...html.matchAll(/(?:src|href)="\/([\w.-]+\.(?:js|css))"/g)].map(m => m[1]))];
+    const vers = refs.map((n) => { try { const f = path.join(PUBLIC, n); return [n, entrySync(f, fs.statSync(f)).etag.slice(1, -1)]; } catch { return [n, null]; } });
+    const key = 'idx|' + base.key + '|' + vers.map(v => v.join('=')).join('|');
+    const hit = staticCache.get('index:versioned');
+    if (hit && hit.key === key) return hit;
+    const map = new Map(vers);
+    const raw = Buffer.from(html.replace(/((?:src|href)=")\/([\w.-]+\.(?:js|css))"/g, (m, a, n) => map.get(n) ? `${a}/${n}?v=${map.get(n)}"` : m), 'utf8');
+    const e = { key, raw, type: MIME['.html'], etag: hashOf(raw) };
+    staticCache.set('index:versioned', e); return e;
+  }
+  function compressed(e, file, done) {
+    if (e.br || e.gz || !HAS_ZLIB || !COMPRESSIBLE.has(path.extname(file)) || e.raw.length < 1024) return done(e);
+    zlib.brotliCompress(e.raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: e.raw.length } }, (e1, br) => {
+      zlib.gzip(e.raw, { level: 9 }, (e2, gz) => { if (!e1) e.br = br; if (!e2) e.gz = gz; done(e); });
     });
   }
-  function serveStatic(req, res, pathname) {
+  function serveStatic(req, res, pathname, search) {
     let p; try { p = decodeURIComponent(pathname); } catch { res.writeHead(400, secHeaders()); return res.end(); }
     if (p === '/' || !path.extname(p)) p = '/index.html';
     const file = path.normalize(path.join(PUBLIC, p));
     if (!file.startsWith(PUBLIC + path.sep)) { res.writeHead(403); return res.end(); }
     fs.stat(file, (err, st) => {
       if (err || !st.isFile()) { res.writeHead(404, secHeaders()); return res.end('Not found'); }
-      staticEntry(file, st, (err2, e) => {
-        if (err2) { res.writeHead(404, secHeaders()); return res.end('Not found'); }
-        const head = { 'Content-Type': e.type, 'Cache-Control': 'no-cache', 'ETag': e.etag, 'Vary': 'Accept-Encoding', ...secHeaders() };
+      let e0; try { e0 = file === INDEX ? indexEntry(st) : entrySync(file, st); } catch { res.writeHead(404, secHeaders()); return res.end('Not found'); }
+      compressed(e0, file, (e) => {
+        const v = new URLSearchParams(search || '').get('v');
+        const immutable = v && v === e.etag.slice(1, -1);
+        const head = { 'Content-Type': e.type, 'Cache-Control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache', 'ETag': e.etag, 'Vary': 'Accept-Encoding', ...secHeaders() };
         if (String(req.headers['if-none-match'] || '').split(/\s*,\s*/).includes(e.etag)) { res.writeHead(304, head); return res.end(); }
         const ae = String(req.headers['accept-encoding'] || '');
         const [body, enc] = e.br && /\bbr\b/.test(ae) ? [e.br, 'br'] : e.gz && /\bgzip\b/.test(ae) ? [e.gz, 'gzip'] : [e.raw, null];
@@ -275,7 +291,7 @@ function createApp({ dbPath = process.env.DB_PATH || path.join(__dirname, '..', 
     try {
       if (!url.pathname.startsWith('/api/') && url.pathname !== '/healthz') {
         if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
-        return serveStatic(req, res, url.pathname);
+        return serveStatic(req, res, url.pathname, url.search);
       }
       let matched = null;
       for (const r of routes) {

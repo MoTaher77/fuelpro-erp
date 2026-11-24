@@ -70,3 +70,17 @@ test('journal list pages in its own order: an entry typed later but dated earlie
   assert.deepEqual(seen.map(j => j.id).sort((a, b) => a - b), made.sort((a, b) => a - b), 'every journal exactly once');
   const dates = seen.map(j => j.business_date); assert.deepEqual(dates, [...dates].sort().reverse(), 'newest date first across pages');
 });
+
+test('index.html names each app file with its content hash; that exact URL is cached as immutable, others are revalidated', async () => {
+  const page = await raw('/');
+  assert.equal(page.status, 200); assert.match(page.headers['cache-control'], /no-cache/);
+  const html = page.body.toString('utf8');
+  const m = /src="\/app\.js\?v=([\w-]+)"/.exec(html); assert.ok(m, 'versioned app.js in index.html');
+  assert.match(html, /href="\/app\.css\?v=[\w-]+"/);
+  const cur = await raw('/app.js?v=' + m[1]);
+  assert.equal(cur.status, 200); assert.match(cur.headers['cache-control'], /immutable/);
+  assert.equal(cur.headers.etag, '"' + m[1] + '"');
+  const stale = await raw('/app.js?v=not-this-one'); assert.equal(stale.headers['cache-control'], 'no-cache');
+  assert.deepEqual(stale.body, cur.body);                                                   // same current file either way
+  const again = await raw('/', { 'if-none-match': page.headers.etag }); assert.equal(again.status, 304);
+});
