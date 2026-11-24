@@ -174,6 +174,11 @@ function createApp({ registration = String(process.env.REGISTRATION || 'open').t
   route('GET', '/api/stations/:sid/employee-moves', (c) => ({ body: PR.listMoves(db, c.user, st(c), c.q) }));
   route('POST', '/api/stations/:sid/employee-moves', (c) => ({ status: 201, body: PR.createMove(db, c.user, st(c), c.body) }));
   route('POST', '/api/stations/:sid/employee-moves/:id/void', (c) => ({ body: PR.voidMove(db, c.user, st(c), id(c.p.id), c.body && c.body.reason) }));
+  route('GET', '/api/stations/:sid/payroll/carry-groups', (c) => ({ body: PR.carryGroups(db, c.user, st(c)) }));
+  route('GET', '/api/stations/:sid/payroll/carry', (c) => ({ body: PR.carryPreview(db, c.user, st(c), c.q) }));
+  /* carrying old accounts over changes the books: a backup first (not for an in-memory test database) */
+  route('POST', '/api/stations/:sid/payroll/carry', (c) => { BK.can(c.user); const pre = dbPath === ':memory:' ? null : BK.make(db, dbPath, 'pre-update'); return { status: 201, body: { ...PR.carryOver(db, c.user, st(c), c.body), backup: pre && pre.name } }; });
+  route('POST', '/api/stations/:sid/payroll/carry/undo', (c) => ({ body: PR.carryUndo(db, c.user, st(c), c.body) }));
   route('GET', '/api/stations/:sid/payroll/draft', (c) => ({ body: PR.payrollDraft(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/payroll', (c) => ({ body: PR.listPayrolls(db, c.user, st(c)) }));
   route('POST', '/api/stations/:sid/payroll', (c) => ({ status: 201, body: PR.createPayroll(db, c.user, st(c), c.body) }));

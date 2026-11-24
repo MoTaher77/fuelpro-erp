@@ -125,3 +125,50 @@ test('payroll isolation and permissions: another organisation gets 404, a cashie
   assert.equal((await cashier.post(`${a.p}/employee-moves`, { kind: 'advance', employee_id: emp, amount: 1, method: 'bank' })).status, 403);
   assert.equal((await cashier.post(`${a.p}/payroll`, { month: today().slice(0, 7), lines: [{ employee_id: emp }] })).status, 403);
 });
+
+test('carry-over of old per-employee accounts (KI-20): balances move to 1160/2200, totals unchanged, old accounts closed; undo puts everything back', async () => {
+  const s = await org();
+  const accts = ok(await s.c.get('/api/accounts')); const cash = accts.find(a => a.sys === 'cash');
+  const grp = ok(await s.c.post('/api/accounts', { code: '125', type: 'asset', name_ar: 'حسابات الموظفين', is_group: true }), 201).id;
+  const mk = async (code, name) => ok(await s.c.post('/api/accounts', { code, type: 'asset', name_ar: name, parent_id: grp }), 201).id;
+  const a1 = await mk('125001', 'Ahmed'), a2 = await mk('125002', 'Badr'), a3 = await mk('125003', 'Old one');
+  /* history like the imported books: a payment voucher gives an advance, a receipt voucher records what the station owes */
+  ok(await s.c.post(`${s.p}/vouchers`, { kind: 'payment', box_account_id: cash.id, lines: [{ account_id: a1, amount: 40_000 }] }), 201);
+  ok(await s.c.post(`${s.p}/vouchers`, { kind: 'receipt', box_account_id: cash.id, lines: [{ account_id: a2, amount: 15_000 }] }), 201);
+  const tbBefore = ok(await s.c.get(`/api/accounting/trial-balance?to=${today()}`));
+  const groups = ok(await s.c.get(`${s.p}/payroll/carry-groups`)); assert.ok(groups.find(g => g.id === grp).suggested, 'the employees group is suggested');
+  const pre = ok(await s.c.get(`${s.p}/payroll/carry?group_account_id=${grp}`));
+  assert.equal(pre.done, false);
+  assert.deepEqual(pre.rows.map(r => [r.code, r.balance, r.to]), [['125001', 40_000, 'advance'], ['125002', -15_000, 'payable']]);
+  assert.deepEqual(pre.skipped.map(r => r.code), ['125003'], 'no balance and no movement: left alone');
+  assert.deepEqual(pre.totals, { advance: 40_000, payable: 15_000 });
+  const r = ok(await s.c.post(`${s.p}/payroll/carry`, { group_account_id: grp }), 201);
+  assert.equal(r.employees, 2); assert.equal(r.created, 2);
+  const emps = ok(await s.c.get(`${s.p}/employees`));
+  assert.deepEqual(emps.map(e => [e.name, e.advance, e.payable]).sort(), [['Ahmed', 40_000, 0], ['Badr', 0, 15_000]]);
+  assert.equal(gl(s.org_id, 'emp_adv'), 40_000); assert.equal(-gl(s.org_id, 'salaries_payable'), 15_000);
+  const old = (id) => db.prepare("SELECT COALESCE(SUM(l.debit-l.credit),0) v FROM journal_lines l JOIN journals j ON j.id=l.journal_id WHERE l.account_id=? AND j.status='posted'").get(id).v;
+  assert.equal(old(a1), 0); assert.equal(old(a2), 0);
+  assert.equal(db.prepare('SELECT active FROM accounts WHERE id=?').get(a1).active, 0, 'old account closed for new postings');
+  assert.equal(db.prepare('SELECT active FROM accounts WHERE id=?').get(a3).active, 1, 'skipped account untouched');
+  const tbAfter = ok(await s.c.get(`/api/accounting/trial-balance?to=${today()}`));
+  assert.ok(tbAfter.balanced); assert.equal(tbAfter.totals.closing_dr - tbAfter.totals.closing_cr, tbBefore.totals.closing_dr - tbBefore.totals.closing_cr);
+  assert.equal(ok(await s.c.post(`${s.p}/payroll/carry`, { group_account_id: grp }), 409).error.code, 'CARRY_DONE');
+  assert.equal(ok(await s.c.get(`${s.p}/payroll/carry?group_account_id=${grp}`)).done, true);
+  /* the carried employee continues in the module: the payroll recovers the carried advance */
+  booksBalanced(s.org_id);
+  assert.ok(ok(await s.c.get('/api/accounting/integrity')).ok);
+  /* undo while untouched: everything back */
+  ok(await s.c.post(`${s.p}/payroll/carry/undo`, { reason: 'try again later' }));
+  assert.equal(old(a1), 40_000); assert.equal(old(a2), -15_000); assert.equal(gl(s.org_id, 'emp_adv'), 0); assert.equal(gl(s.org_id, 'salaries_payable'), 0);
+  assert.equal(db.prepare('SELECT active FROM accounts WHERE id=?').get(a1).active, 1);
+  assert.equal(ok(await s.c.get(`${s.p}/employees`)).length, 0, 'employees created by the carry-over are inactive again');
+  /* carry again, then a new movement makes undo impossible */
+  ok(await s.c.post(`${s.p}/payroll/carry`, { group_account_id: grp }), 201);
+  const ahmed = ok(await s.c.get(`${s.p}/employees`)).find(e => e.name === 'Ahmed');
+  assert.equal(ahmed.advance, 40_000, 'the same employee is linked again, not duplicated');
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM employees WHERE station_id=? AND name='Ahmed'").get(s.sid).n, 1);
+  ok(await s.c.post(`${s.p}/employee-moves`, { kind: 'advance', employee_id: ahmed.id, amount: 1_000, method: 'bank' }), 201);
+  assert.equal(ok(await s.c.post(`${s.p}/payroll/carry/undo`, { reason: 'too late now' }), 409).error.code, 'CARRY_IN_USE');
+  booksBalanced(s.org_id);
+});

@@ -2,7 +2,7 @@
 
 ## 2026-11-24 — 0.28.0 employees & payroll (branch, PR pending)
 - Built and tested (87 unit + 6 e2e). On the server after merge: `sudo fuelpro-update` (migration v17 adds tables only).
-- **Owner decision (KI-20):** the station's 37 employee accounts under 125 (≈ 1,640,627 YER). Options: (a) carry them into the payroll module with one opening journal per employee (125xx → 1160 with the employee; totals unchanged), (b) keep 125 as history and use the module only for new hires/movements.
+- **Owner chose (a) carry-over (KI-20).** After merge + `sudo fuelpro-update` on the server: الموظفون والرواتب ← «نقل حسابات الموظفين القديمة» ← check the preview (27 accounts, 1,667,517.995 / 26,891) ← تنفيذ. Then enter salaries on each employee card, and stop using vouchers on the old 125xx accounts (they are closed).
 - New system accounts 1160/2200 sit at the root of the imported tree; the owner may move them under groups 12/22 from the chart screen.
 
 ## State 2026-11-24 — FuelPro LIVE on the owner's VPS

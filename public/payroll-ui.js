@@ -27,7 +27,8 @@
     const emps = await api('GET', sp('/employees' + (all ? '?all=1' : '')));
     const totals = emps.reduce((t, e) => ({ salary: t.salary + (e.active ? e.salary : 0), advance: t.advance + e.advance, payable: t.payable + e.payable }), { salary: 0, advance: 0, payable: 0 });
     const form = canManage() ? empForm(null) : null;
-    box.append(
+    const carry = canManage() && S.user && ['owner', 'admin'].includes(S.user.role) ? await carryCard() : null;
+    box.append(carry || '',
       h('div', { class: 'grid' }, F.statN(T('empCount'), emps.filter(e => e.active).length, (v) => String(v)), F.statN(T('monthlySalaries'), totals.salary, money), F.statN(T('advancesOut'), totals.advance, money), F.statN(T('salariesOwed'), totals.payable, money)),
       form,
       sec(T('empList'), h('div', { class: 'row' }, h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: all, onchange: (e) => { S.empAll = e.target.checked; F.render(); } }), ' ', T('showInactive'))),
@@ -38,6 +39,29 @@
             h('button', { class: 'btn ghost sm', onclick: () => { S.empStmtId = e.id; S.empTab = 'stmt'; F.render(); } }, T('statement')),
             canPay() && e.active ? h('button', { class: 'btn ghost sm', onclick: () => { S.empMoveFor = e.id; S.empTab = 'moves'; F.render(); } }, T('advanceOrPay')) : null,
             canManage() ? h('button', { class: 'btn ghost sm', onclick: () => { box.prepend(empForm(e)); window.scrollTo(0, 0); } }, T('edit')) : null)])) : h('p', { class: 'muted' }, T('noEmployees'))));
+  }
+  /* «نقل حسابات الموظفين القديمة»: one account per employee in an imported chart (e.g. 125) → this module, after a preview */
+  async function carryCard() {
+    const groups = await api('GET', sp('/payroll/carry-groups'));
+    const pick = groups.find(g => g.suggested); if (!pick) return null;
+    const st = await api('GET', sp('/payroll/carry?group_account_id=' + pick.id));
+    if (st.done) return h('p', { class: 'hint' }, T('carryDone'), ' ', fdate(st.date), ' · ',
+      h('button', { class: 'linkbtn', onclick: () => askReason(guard(async (reason) => { await api('POST', sp('/payroll/carry/undo'), { reason }); toast(T('saved')); F.render(); })) }, T('carryUndo')));
+    if (!st.rows.length) return null;
+    const g = sel('carryGroup', groups.map(x => [x.id, x.code + ' · ' + x.name_ar]), pick.id);
+    const out = h('div');
+    const show = (p) => out.replaceChildren(
+      table([T('code'), T('name'), T('balance'), T('carryTo'), ''], p.rows.map(r => [r.code, r.name, money(Math.abs(r.balance)), T(r.to === 'advance' ? 'empAdvance' : r.to === 'payable' ? 'salaryOwed' : 'carryNoBalance'), r.employee_id ? T('carryLink') : T('carryNew')])),
+      h('p', null, T('advancesOut'), ': ', h('b', null, money(p.totals.advance)), ' · ', T('salariesOwed'), ': ', h('b', null, money(p.totals.payable)), p.skipped.length ? ' · ' + T('carrySkipped', { n: p.skipped.length }) : ''),
+      h('p', { class: 'hint' }, T('carryHelp2')),
+      h('div', { class: 'row' }, h('button', { class: 'btn', onclick: guard(async (ev) => {
+        if (!window.confirm(T('carryConfirm'))) return;
+        const r = await api('POST', sp('/payroll/carry'), { group_account_id: +g.value });
+        toast(T('saved') + ' · ' + r.employees + ' ' + T('empList')); F.render(); void ev;
+      }) }, T('carryRun'))));
+    g.onchange = guard(async () => { const p = await api('GET', sp('/payroll/carry?group_account_id=' + g.value)); if (p.done) return F.render(); show(p); });
+    show(st);
+    return h('div', { class: 'card' }, h('h2', null, T('carryTitle')), h('p', { class: 'hint' }, T('carryHelp')), h('div', { class: 'row' }, field(T('accountGroup'), g)), out);
   }
   function empForm(e) {
     const name = h('input', { id: 'emName', value: e ? e.name : '' }), job = h('input', { id: 'emJob', value: e ? e.job_title || '' : '' }), phone = h('input', { id: 'emPhone', type: 'tel', dir: 'ltr', value: e ? e.phone || '' : '' });

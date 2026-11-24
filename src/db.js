@@ -435,6 +435,10 @@ CREATE TABLE payroll_lines(
 );
 CREATE INDEX payroll_lines_run ON payroll_lines(run_id);
 CREATE INDEX payroll_lines_emp ON payroll_lines(employee_id);
+`,
+/* v18 (0.28.1): an employee carried over from an old per-employee ledger account remembers it (payroll.carryOver, KI-20) */
+`ALTER TABLE employees ADD COLUMN legacy_account_id INTEGER REFERENCES accounts(id);
+CREATE INDEX employees_legacy ON employees(legacy_account_id);
 `
 ];
 
