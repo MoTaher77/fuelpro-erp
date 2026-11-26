@@ -1,5 +1,10 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-26 — 0.29.0 off-site backup (PR pending merge)
+- Built: `fuelpro-offsite` (deploy/vps/offsite.sh + systemd timer), status in `GET /api/backups`, alert `offsite`, backup screen line + «download a fresh copy» button (ADR-28, KI-10). 94 unit + 7 e2e + 89 artifact green. NOT run against real Google Drive from the cloud (no token): only a stub rclone; the first real run is the owner's.
+- **Owner after merge:** `sudo fuelpro-update`, then docs/VPS.md §4 (rclone authorize on the laptop → `sudo fuelpro-offsite setup` on the server). Check Drive shows `FuelPro-backups/…db.gz` and the screen shows the green line. Then try a restore of one copy into a scratch DB (`gunzip`, `node scripts/check-books.js`) once, so the copy is known to be good.
+- Still open with the owner: laptop entries after 2026-11-23? (needs `laptop-send-data.ps1`); run `new-org.js`; try the employee carry-over; change root/app passwords; SSH keys.
+
 ## 2026-11-26 — own domain live
 - **https://fuelpro-ye.com** (GoDaddy DNS: A @ → 212.90.120.15, TTL 600; forwarding removed). Verified from outside: HTTPS 200, HTTP/2, no Alt-Svc, registration closed. Server code at 0.28.1 (PR #17); this PR (0.28.2) only fixes `domain.sh`.
 - Owner to do: tell staff the new address (no `www`; each user signs in once again, phones «Add to home screen» again); create the trial org (`new-org.js`); try «نقل حسابات الموظفين القديمة»; change the root password; SSH keys instead of password.

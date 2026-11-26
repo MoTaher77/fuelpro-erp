@@ -66,4 +66,22 @@ function file(dbPath, name) {
   const f = path.join(dirFor(dbPath), name); if (!fs.existsSync(f)) throw notFound('Backup');
   return f;
 }
-module.exports = { list, make, prune, schedule, can, file, dirFor, syncMirror, mirrorDirFor, mirror };
+/* ---- off-site copy (0.29): on the VPS the program `fuelpro-offsite` (deploy/vps/offsite.sh, a daily systemd timer) uploads a fresh,
+   compressed copy to Google Drive and writes the result into offsite-status.json beside the database. The app only READS that file:
+   it shows the state on the backup screen and raises an alert when the copy fails or stops arriving. No file = not set up. ---- */
+const OFFSITE_STALE_H = 36, OFFSITE_CRITICAL_H = 72;
+function offsiteFile(dbPath) { return process.env.OFFSITE_STATUS_FILE || path.join(path.dirname(path.resolve(dbPath)), 'offsite-status.json'); }
+function offsite(dbPath, now = Date.now()) {
+  let j; try { j = JSON.parse(fs.readFileSync(offsiteFile(dbPath), 'utf8')); } catch { return { configured: false, state: 'none' }; }
+  if (!j || typeof j !== 'object') return { configured: false, state: 'none' };
+  const okMs = Date.parse(j.last_ok_at || ''), age = Number.isFinite(okMs) ? Math.max(0, (now - okMs) / 3600000) : null;
+  const failed = j.ok === false, stale = age == null ? true : age > OFFSITE_STALE_H;
+  return {
+    configured: true, remote: String(j.remote || ''), name: String(j.name || ''), bytes: Number(j.bytes) || 0, kept: Number(j.kept) || 0,
+    at: j.at || null, last_ok_at: j.last_ok_at || null, ok: !failed && !stale, error: failed ? String(j.error || '') : '',
+    age_hours: age == null ? null : Math.round(age), state: failed ? 'failed' : stale ? 'stale' : 'ok',
+    critical: (failed || stale) && (age == null || age > OFFSITE_CRITICAL_H)
+  };
+}
+
+module.exports = { list, make, prune, schedule, can, file, dirFor, syncMirror, mirrorDirFor, mirror, offsite, offsiteFile };

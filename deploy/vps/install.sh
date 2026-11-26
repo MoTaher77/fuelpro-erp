@@ -113,6 +113,9 @@ install -m 644 "$APP/deploy/vps/fuelpro.service" /etc/systemd/system/fuelpro.ser
 install -m 755 "$APP/deploy/vps/update.sh" /usr/local/sbin/fuelpro-update
 install -m 755 "$APP/deploy/vps/restore.sh" /usr/local/sbin/fuelpro-restore
 install -m 755 "$APP/deploy/vps/domain.sh" /usr/local/sbin/fuelpro-domain
+install -m 755 "$APP/deploy/vps/offsite.sh" /usr/local/sbin/fuelpro-offsite
+install -m 644 "$APP/deploy/vps/fuelpro-offsite.service" /etc/systemd/system/fuelpro-offsite.service
+install -m 644 "$APP/deploy/vps/fuelpro-offsite.timer" /etc/systemd/system/fuelpro-offsite.timer
 systemctl daemon-reload
 systemctl enable -q --now fuelpro
 systemctl restart fuelpro

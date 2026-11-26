@@ -8,7 +8,7 @@ const { need, station, tzToday, addDays } = S;
 const SEV = { critical: 0, warning: 1, info: 2 };
 const hoursSince = (sqlUtc) => (Date.now() - Date.parse(sqlUtc.replace(' ', 'T') + 'Z')) / 3600000;
 
-function alerts(db, user, sid) {
+function alerts(db, user, sid, ctx = {}) {
   need(user, 'report.read'); const st = station(db, user, sid); const today = tzToday(st.timezone);
   const out = []; const add = (a) => out.push({ n: 1, items: [], ...a });
   const safe = (fn) => { try { fn(); } catch { /* one failing check must not hide the others */ } };
@@ -79,6 +79,12 @@ function alerts(db, user, sid) {
   safe(() => {
     const r = O.integrity(db, user); const failed = (r.checks || []).filter(c => !c.ok);
     if (!r.ok) add({ id: 'integrity', severity: 'critical', kind: 'integrity', tab: 'fin', n: failed.length, items: failed.slice(0, 5).map(c => ({ name: c.name || c.id || c.key })) });
+  });
+
+  /* 11. the off-site copy (Google Drive) failed or stopped arriving — only the owner/admin, and only where it was set up */
+  safe(() => {
+    const o = ctx.offsite; if (!o || !o.configured || o.state === 'ok' || !(user.role === 'owner' || user.role === 'admin')) return;
+    add({ id: 'offsite', severity: o.critical ? 'critical' : 'warning', kind: 'offsite', tab: 'setup', items: [{ state: o.state, hours: o.age_hours, error: o.error }] });
   });
 
   out.sort((a, b) => SEV[a.severity] - SEV[b.severity]);

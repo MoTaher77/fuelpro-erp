@@ -47,3 +47,5 @@ Updated 2026-11-24. No percentages: each line is VERIFIED (code + test), REPORTE
 - 0.10.0 VERIFIED (69 tests, browser-checked on a copy of the live data): smart alerts + bell; 0.9.2 sidebar keeps its scroll position.
 
 - 0.11.0 VERIFIED: online through Cloudflare quick tunnel on the live laptop (HTTPS 200, HSTS + CSP headers, API 401 without sign-in); proxy test added (70 tests).
+
+- 2026-11-26 — 0.29.0 off-site backup to Google Drive (rclone, daily timer) + status/alert + «download a fresh copy»: VERIFIED with a stub rclone (test/offsite.test.js); real Drive upload PLANNED (owner runs `fuelpro-offsite setup`).

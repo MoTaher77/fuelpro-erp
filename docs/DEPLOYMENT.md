@@ -23,7 +23,7 @@ Env vars: see `.env.example` — `PORT`, `HOST`, `DB_PATH`, `APP_URL`, `APP_SECR
 ## Backup and restore
 - Automatic: one copy per day while the server runs (`src/backup.js`), newest 30 kept, in `data\backups\`. Manual: `npm run backup` or the backups screen (owner/admin).
 - Restore: stop the server → put the copy at `DB_PATH` → start → «القوائم المالية ← فحص سلامة الدفاتر».
-- Copy backups off the laptop (USB / cloud drive) regularly — today they share one disk.
+- Copy backups off the laptop (USB / cloud drive) regularly — today they share one disk. On the VPS the off-site copy is automatic: `sudo fuelpro-offsite setup` (Google Drive, docs/VPS.md §4).
 
 ## Rollback
 Migrations only add. To roll back code: reinstall the previous zip **together with** a DB backup taken before the upgrade (an old version may not understand a newer schema). Take a backup before every update.

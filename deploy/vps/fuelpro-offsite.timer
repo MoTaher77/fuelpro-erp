@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily FuelPro off-site backup (05:40 Yemen time)
+
+[Timer]
+OnCalendar=*-*-* 02:40:00 UTC
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
