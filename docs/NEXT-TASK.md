@@ -1,5 +1,9 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-26 — own domain live
+- **https://fuelpro-ye.com** (GoDaddy DNS: A @ → 212.90.120.15, TTL 600; forwarding removed). Verified from outside: HTTPS 200, HTTP/2, no Alt-Svc, registration closed. Server code at 0.28.1 (PR #17); this PR (0.28.2) only fixes `domain.sh`.
+- Owner to do: tell staff the new address (no `www`; each user signs in once again, phones «Add to home screen» again); create the trial org (`new-org.js`); try «نقل حسابات الموظفين القديمة»; change the root password; SSH keys instead of password.
+
 ## 2026-11-24 — 0.28.0 employees & payroll (branch, PR pending)
 - Built and tested (87 unit + 6 e2e). On the server after merge: `sudo fuelpro-update` (migration v17 adds tables only).
 - **Owner chose (a) carry-over (KI-20).** After merge + `sudo fuelpro-update` on the server: الموظفون والرواتب ← «نقل حسابات الموظفين القديمة» ← check the preview (27 accounts, 1,667,517.995 / 26,891) ← تنفيذ. Then enter salaries on each employee card, and stop using vouchers on the old 125xx accounts (they are closed).
