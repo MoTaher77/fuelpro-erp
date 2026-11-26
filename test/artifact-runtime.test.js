@@ -53,7 +53,7 @@ test('artifact edition: real operations on sql.js, saved, reopened, books still 
   assert.ok(v.status < 300, JSON.stringify(v.body));
   assert.equal((await a.call('POST', `${p}/sales/${s1.body.id}/void`, {})).status, 400, 'void needs a written reason');
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Aden' }).format(new Date());   // the station's day (UTC+3); the UTC date is a day behind from 21:00 to 24:00 UTC
   const tb1 = (await a.call('GET', `/api/accounting/trial-balance?to=${today}`)).body;
   const tanks1 = (await a.call('GET', `${p}/tanks`)).body, custs1 = (await a.call('GET', `${p}/customers`)).body;
   assert.equal(tanks1[0].level_ml, 10_000_000 - 250_000);
