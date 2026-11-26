@@ -20,8 +20,8 @@ OLD=$(sed -n 's|^APP_URL=https\?://||p' "$ENV" | sed 's|/.*$||' | head -1)
 [ -n "$EMAIL" ] || EMAIL=$(sed -n 's/^[[:space:]]*email[[:space:]]\+\([^[:space:]]\+\).*/\1/p' "$CADDYFILE" 2>/dev/null | head -1)
 
 say "DNS of $NEW"
+IP="${FP_IP:-$(curl -fsS4 -m 10 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')}"
 if [ -z "${FP_SKIP_DNS:-}" ]; then
-  IP=$(curl -fsS4 -m 10 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
   GOT=$( { getent ahostsv4 "$NEW" 2>/dev/null || true; } | awk '{print $1}' | sort -u | tr '\n' ' ')   # not found is an answer, not a crash
   if ! printf '%s\n' $GOT | grep -qx "$IP"; then
     echo "!! $NEW points to: ${GOT:-nothing yet}   — this server is: $IP"
@@ -36,9 +36,18 @@ say "Caddy configuration"
 TMP=$(mktemp)
 sed -e "s|__DOMAIN__|$NEW|g" -e "s|__EMAIL__|${EMAIL}|g" "$APP/deploy/vps/Caddyfile" > "$TMP"
 [ -n "$EMAIL" ] || sed -i '/^[[:space:]]*email[[:space:]]*$/d' "$TMP"
-if [ -n "$OLD" ] && [ "$OLD" != "$NEW" ]; then
-  printf '\n# the previous address keeps working and sends everyone to the new one\n%s {\n\tredir https://%s{uri} permanent\n}\n' "$OLD" "$NEW" >> "$TMP"
+# old addresses keep working and send everyone to the new one: the previous address, this server's sslip.io name, and any
+# redirect already in the current config (so running this command twice, or moving to a third name, never drops them)
+LEGACY=()
+add_legacy() { local n="$1"; [ -n "$n" ] && [ "$n" != "$NEW" ] && [[ " ${LEGACY[*]-} " != *" $n "* ]] && LEGACY+=("$n"); return 0; }
+add_legacy "$OLD"
+add_legacy "${IP//./-}.sslip.io"
+if [ -f "$CADDYFILE" ]; then
+  while read -r h; do add_legacy "$h"; done < <(awk '/^[a-z0-9.-]+ \{$/{h=$1} /redir https:\/\//{if(h!="")print h}' "$CADDYFILE")
 fi
+for L in ${LEGACY[@]+"${LEGACY[@]}"}; do
+  printf '\n# the previous address keeps working and sends everyone to the new one\n%s {\n\tredir https://%s{uri} permanent\n}\n' "$L" "$NEW" >> "$TMP"
+done
 if [ -n "${FP_TEST:-}" ]; then cp "$TMP" "$CADDYFILE"; rm -f "$TMP"; sed -i "s|^APP_URL=.*|APP_URL=https://$NEW|" "$ENV"; echo "(test mode: files written, services not touched)"; exit 0; fi
 caddy validate --config "$TMP" --adapter caddyfile >/dev/null 2>&1 || { caddy validate --config "$TMP" --adapter caddyfile; rm -f "$TMP"; exit 1; }
 cp "$CADDYFILE" "$CADDYFILE.before-$NEW" 2>/dev/null || true
@@ -63,5 +72,5 @@ sed -i "s|^APP_URL=.*|APP_URL=https://$NEW|" "$ENV"
 systemctl restart fuelpro
 for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/healthz >/dev/null 2>&1 && break; sleep 1; done
 curl -fsS -m 5 --resolve "$NEW:443:127.0.0.1" "https://$NEW/healthz" >/dev/null && echo "FuelPro: https://$NEW" || { journalctl -u fuelpro -n 20 --no-pager; exit 1; }
-[ -n "$OLD" ] && [ "$OLD" != "$NEW" ] && echo "https://$OLD now redirects to https://$NEW"
+for L in ${LEGACY[@]+"${LEGACY[@]}"}; do echo "https://$L now redirects to https://$NEW"; done
 echo "Sign in again on the new address; on phones, open it and «Add to home screen» again."
