@@ -129,7 +129,7 @@ function createApp({ registration = String(process.env.REGISTRATION || 'open').t
   route('POST', '/api/accounts', (c) => ({ status: 201, body: B.createAccount(db, c.user, c.body) }));
   route('PATCH', '/api/accounts/:id', (c) => ({ body: B.updateAccount(db, c.user, id(c.p.id), c.body) }));
   route('GET', '/api/accounts/tree', (c) => ({ body: B.accountTree(db, c.user, c.q) }));
-  route('GET', '/api/backups', (c) => { BK.can(c.user); return { body: { dir: BK.dirFor(dbPath), rows: BK.list(dbPath), mirror: { ...BK.syncMirror(dbPath) } } }; });
+  route('GET', '/api/backups', (c) => { BK.can(c.user); return { body: { dir: BK.dirFor(dbPath), rows: BK.list(dbPath), mirror: { ...BK.syncMirror(dbPath) }, offsite: BK.offsite(dbPath) } }; });
   route('POST', '/api/backups', (c) => { BK.can(c.user); return { status: 201, body: BK.make(db, dbPath, 'manual') }; });
   route('GET', '/api/backups/:name', (c) => { BK.can(c.user); return { file: BK.file(dbPath, c.p.name) }; });
   route('GET', '/api/stations/:sid/stock/monthly', (c) => ({ body: B.stockMonthly(db, c.user, st(c), c.q) }));
@@ -185,7 +185,7 @@ function createApp({ registration = String(process.env.REGISTRATION || 'open').t
   route('GET', '/api/stations/:sid/payroll/:id', (c) => ({ body: PR.getPayroll(db, c.user, st(c), id(c.p.id)) }));
   route('POST', '/api/stations/:sid/payroll/:id/void', (c) => ({ body: PR.voidPayroll(db, c.user, st(c), id(c.p.id), c.body && c.body.reason) }));
   route('GET', '/api/stations/:sid/analytics', (c) => ({ body: AN.dashboard(db, c.user, st(c), c.q) }));
-  route('GET', '/api/stations/:sid/alerts', (c) => ({ body: AL.alerts(db, c.user, st(c)) }));
+  route('GET', '/api/stations/:sid/alerts', (c) => ({ body: AL.alerts(db, c.user, st(c), { offsite: BK.offsite(dbPath) }) }));
   /* history carried over from the old M7 system */
   route('GET', '/api/stations/:sid/reports/old-results', (c) => ({ body: M7.oldResults(db, c.user, st(c), c.q) }));
   route('GET', '/api/stations/:sid/stock/old-values', (c) => ({ body: M7.oldStockValues(db, c.user, st(c), c.q) }));

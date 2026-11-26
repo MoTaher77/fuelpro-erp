@@ -951,10 +951,20 @@
       const mi = r.mirror || {};   // the second copy: green when working, red with the reason, or a how-to when no folder is set
       const mirrorBox = mi.dir ? h('p', { class: mi.ok ? 'ok' : 'bad', style: 'margin:8px 0;font-weight:700' }, mi.ok ? '✓ ' + T('bkMirrorOk') + ' ' : '⚠ ' + T('bkMirrorBad') + ': ' + (mi.error || '') + ' ', h('span', { class: 'ltr-num small muted' }, mi.dir))
         : h('p', { class: 'hint', style: 'margin:8px 0;border:1px dashed var(--gold);padding:8px 12px;border-radius:10px' }, '⚠ ', T('bkMirrorHow'));
-      box.replaceChildren(h('p', { class: 'hint' }, T('backupHelp'), ' ', h('span', { class: 'ltr-num small' }, r.dir)), mirrorBox,
+      const of = r.offsite || {};   // the Google Drive copy made by the server's daily timer: green when fresh, red with the reason, or a how-to
+      const offBox = of.configured ? h('p', { class: of.state === 'ok' ? 'ok' : 'bad', style: 'margin:8px 0;font-weight:700' },
+        of.state === 'ok' ? '✓ ' + T('bkOffOk') + ' ' : '⚠ ' + (of.state === 'failed' ? T('bkOffBad') + ': ' + (of.error || '') : T('bkOffStale') + ' ' + (of.age_hours == null ? '—' : of.age_hours + ' ' + T('hours'))) + ' ',
+        of.state === 'ok' ? h('span', { class: 'ltr-num small muted' }, fdt(of.last_ok_at) + (of.bytes ? ' · ' + (of.bytes / 1048576).toFixed(1) + ' MB' : '')) : '')
+        : h('p', { class: 'hint', style: 'margin:8px 0;border:1px dashed var(--gold);padding:8px 12px;border-radius:10px' }, '⚠ ', T('bkOffHow'));
+      box.replaceChildren(h('p', { class: 'hint' }, T('backupHelp'), ' ', h('span', { class: 'ltr-num small' }, r.dir)), offBox, mirrorBox,
         r.rows.length ? table([T('date'), T('kind'), T('size'), ''], r.rows.map(b => [b.name.slice(8, 25).replace(/-(\d{2})(\d{2})(\d{2})$/, ' $1:$2:$3'), T('bk.' + b.kind), (b.bytes / 1048576).toFixed(1) + ' MB',
           h('a', { class: 'btn ghost sm', href: '/api/backups/' + encodeURIComponent(b.name), download: b.name }, '⬇ ', T('download'))])) : h('p', { class: 'muted' }, T('noBackups'))); });
-    const card = sec(T('backups'), h('div', { class: 'row' }, h('button', { class: 'btn', onclick: guard(async () => { const r = await api('POST', '/api/backups'); toast(T('saved') + ' · ' + r.name); load(); }) }, T('backupNow'))), box);
+    const fdt = (iso) => { try { return iso ? new Date(iso).toLocaleString('en-GB', { hour12: false }) : ''; } catch { return iso || ''; } };
+    /* a fresh consistent copy, then the browser saves it to the device (the phone's Downloads folder) */
+    const dlNow = guard(async () => { const r = await api('POST', '/api/backups'); load();
+      const a = h('a', { href: '/api/backups/' + encodeURIComponent(r.name), download: r.name, style: 'display:none' }); document.body.append(a); a.click(); setTimeout(() => a.remove(), 4000); toast(T('saved') + ' · ' + r.name); });
+    const card = sec(T('backups'), h('div', { class: 'row' }, h('button', { class: 'btn', onclick: guard(async () => { const r = await api('POST', '/api/backups'); toast(T('saved') + ' · ' + r.name); load(); }) }, T('backupNow')),
+      h('button', { class: 'btn gold', onclick: dlNow }, '⬇ ', T('bkDownloadNow'))), h('p', { class: 'hint small' }, T('bkKeepSafe')), box);
     await load(); return card;
   }
   const setupView2 = F.VIEWS.setup;

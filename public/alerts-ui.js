@@ -18,6 +18,7 @@
       case 'box_negative': return list(x => `${x.code} ${nm(x)}: ${money(x.bal)}`);
       case 'no_sales': return it[0] ? fdate(it[0].date) : '';
       case 'bank_open': return list(x => `${x.code} — ${fdate(x.statement_date)}`);
+      case 'offsite': return it[0] ? (it[0].state === 'failed' ? (it[0].error || '') : (it[0].hours != null ? it[0].hours + ' ' + T('hours') : '')) : '';
       case 'integrity': return list(x => x.name);
       default: return '';
     }

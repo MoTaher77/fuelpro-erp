@@ -177,7 +177,7 @@ Generated from `src/server.js` on 2026-11-23 (124 routes). VERIFIED route list; 
 ### backups
 | Method | Path | Handler | |
 |---|---|---|---|
-| GET | `/api/backups` | backup.js can |  |
+| GET | `/api/backups` | backup.js can | `{dir, rows, mirror, offsite}` — `offsite` = Google Drive copy state from `offsite-status.json` (`configured`, `state` none/ok/stale/failed, `last_ok_at`, `age_hours`, `error`) |
 | POST | `/api/backups` | backup.js can |  |
 | GET | `/api/backups/:name` | backup.js can |  |
 

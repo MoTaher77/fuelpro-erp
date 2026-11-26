@@ -48,6 +48,9 @@ install -m 644 deploy/vps/fuelpro.service /etc/systemd/system/fuelpro.service
 install -m 755 deploy/vps/update.sh /usr/local/sbin/fuelpro-update
 install -m 755 deploy/vps/restore.sh /usr/local/sbin/fuelpro-restore
 install -m 755 deploy/vps/domain.sh /usr/local/sbin/fuelpro-domain
+install -m 755 deploy/vps/offsite.sh /usr/local/sbin/fuelpro-offsite
+install -m 644 deploy/vps/fuelpro-offsite.service /etc/systemd/system/fuelpro-offsite.service
+install -m 644 deploy/vps/fuelpro-offsite.timer /etc/systemd/system/fuelpro-offsite.timer
 systemctl daemon-reload
 systemctl restart fuelpro
 for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/healthz >/dev/null 2>&1 && break; sleep 1; done

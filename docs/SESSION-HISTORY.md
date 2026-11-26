@@ -136,3 +136,8 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 
 ## 2026-11-24 — 0.28.1 (cloud)
 - Owner: trial user with no data → `scripts/new-org.js` (empty org + owner, random password printed once). «Failed to fetch» after idle → `api()` retries reads, clear message on saves, boot keeps the session screen; Caddy template h1/h2 only. 7 e2e. Domain: `domain.sh` merged (#16), waiting for the owner's domain.
+
+## 2026-11-26 — 0.29.0 (cloud)
+- Owner chose off-site backups on Google Drive + a download-to-device button. Added `deploy/vps/offsite.sh` (+ `.service`/`.timer`, installed by install.sh/update.sh), `BK.offsite()` reader, alert `offsite`, backup-screen status + button, i18n, sw v48; ADR-28, KI-10, VPS.md §4.
+- Tests: 94 unit (+6 in test/offsite.test.js with a stub rclone), 7 e2e, 89 artifact, lint 0 errors, tsc clean. Real Google Drive not reachable from the cloud — the owner's first `fuelpro-offsite setup` is the real test.
+- Resume: NEXT-TASK.
