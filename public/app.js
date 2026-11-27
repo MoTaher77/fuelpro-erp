@@ -22,7 +22,7 @@ window.FPFMT = (function () {
     salesToday: ['مبيعات اليوم', 'Sales today', 'Ventes du jour'], volToday: ['الكمية المباعة اليوم', 'Volume sold today', "Volume vendu aujourd'hui"], volSold: ['الكمية المباعة', 'Volume sold', 'Volume vendu'], expToday: ['مصروفات اليوم', 'Expenses today', 'Dépenses du jour'],
     recv: ['ديون العملاء (آجل)', 'Customer credit owed', 'Crédit clients dû'], tanks: ['الخزانات', 'Tanks', 'Cuves'], last7: ['آخر 7 أيام (بالآلاف)', 'Last 7 days (thousands)', '7 derniers jours (milliers)'],
     low: ['مخزون منخفض', 'Low stock', 'Stock bas'], daysLeft: ['يكفي نحو {n} يوم', 'About {n} days left', 'Environ {n} jours restants'], of: ['من', 'of', 'sur'],
-    newSale: ['تسجيل عملية بيع', 'Record a sale', 'Enregistrer une vente'], pump: ['المضخة', 'Pump', 'Pompe'], prevMeter: ['القراءة السابقة ({u})', 'Previous reading ({u})', 'Index précédent ({u})'],
+    fabSale: ['بيع', 'Sale', 'Vente'], 'bn.shift': ['الوردية', 'Shift', 'Poste'], 'bn.cust': ['العملاء', 'Customers', 'Clients'], 'bn.day': ['اليوم', 'Today', 'Jour'], 'bn.stock': ['المخزون', 'Stock', 'Stock'], 'bn.exp': ['المصروفات', 'Expenses', 'Dépenses'], newSale: ['تسجيل عملية بيع', 'Record a sale', 'Enregistrer une vente'], pump: ['المضخة', 'Pump', 'Pompe'], prevMeter: ['القراءة السابقة ({u})', 'Previous reading ({u})', 'Index précédent ({u})'],
     closeMeter: ['القراءة الحالية ({u})', 'Current reading ({u})', 'Index actuel ({u})'], qtyOr: ['أو الكمية ({u})', 'Or quantity ({u})', 'Ou quantité ({u})'],
     payType: ['طريقة الدفع', 'Payment', 'Paiement'], cash: ['نقدي', 'Cash', 'Comptant'], credit: ['آجل', 'Credit', 'Crédit'], customer: ['العميل', 'Customer', 'Client'],
     save: ['حفظ', 'Save', 'Enregistrer'], saved: ['تم الحفظ', 'Saved', 'Enregistré'], add: ['إضافة', 'Add', 'Ajouter'], day: ['اليوم', 'Day', 'Jour'], date: ['التاريخ', 'Date', 'Date'], time: ['الوقت', 'Time', 'Heure'],
@@ -108,11 +108,11 @@ window.FPFMT = (function () {
   const UNITS = { L: { ml: 1000, k: 'uL', n: 'nL' }, galUS: { ml: 3785.411784, k: 'uGalUS', n: 'nGalUS' }, galUK: { ml: 4546.09, k: 'uGalUK', n: 'nGalUK' } };
 
   /* ---------- preferences (per browser) ---------- */
-  const PALETTES = ['royal', 'emerald', 'bordeaux', 'onyx'];   // luxury colour sets (app.css, data-palette)
+  const PALETTES = ['sapphire', 'royal', 'emerald', 'bordeaux', 'onyx'];   // colour sets (app.css + ui-2.css, data-palette); sapphire = the 0.30 look
   const P = (() => {
     let o = {}; try { o = JSON.parse(localStorage.getItem('prefs') || '{}'); } catch {}
     const nav = (navigator.language || 'en').slice(0, 2);
-    return { lang: LANGS.includes(o.lang) ? o.lang : (LANGS.includes(nav) ? nav : 'en'), unit: UNITS[o.unit] ? o.unit : 'L', cal: o.cal === 'islamic-umalqura' ? o.cal : 'gregory', nums: o.nums === 'arab' ? 'arab' : 'latn', theme: ['light', 'dark'].includes(o.theme) ? o.theme : 'system', palette: PALETTES.includes(o.palette) ? o.palette : 'royal' };
+    return { lang: LANGS.includes(o.lang) ? o.lang : (LANGS.includes(nav) ? nav : 'en'), unit: UNITS[o.unit] ? o.unit : 'L', cal: o.cal === 'islamic-umalqura' ? o.cal : 'gregory', nums: o.nums === 'arab' ? 'arab' : 'latn', theme: ['light', 'dark'].includes(o.theme) ? o.theme : 'system', palette: o.uiv >= 2 && PALETTES.includes(o.palette) ? o.palette : 'sapphire', uiv: 2 };   // uiv 2 (0.30): everyone starts on the new look once; Preferences can switch back
   })();
   const savePrefs = () => { try { localStorage.setItem('prefs', JSON.stringify(P)); } catch {} };
   const li = () => LANGS.indexOf(P.lang);
@@ -345,7 +345,7 @@ window.FPFMT = (function () {
     setup: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4',
     users: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM12 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM8 16a4 4 0 0 1 8 0', audit: 'M9 6h12M9 12h12M9 18h12M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2',
     day: 'M4 5h16v15H4zM4 9h16M8 3v4M16 3v4M8 13h3M8 16h6', col: 'M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', box: 'M3 7h18v12H3zM3 11h18M7 15h3M16 4l-4 3-4-3', jbook: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11M9 8h6', yc: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4M12 15v2',
-    emp: 'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 20v-2a4 4 0 0 0-3-3.9M16 2.1a4 4 0 0 1 0 7.8', menu: 'M3 6h18M3 12h18M3 18h18', theme: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z', out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9'
+    emp: 'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 20v-2a4 4 0 0 0-3-3.9M16 2.1a4 4 0 0 1 0 7.8', menu: 'M3 6h18M3 12h18M3 18h18', chev: 'M6 9l6 6 6-6', plus: 'M12 5v14M5 12h14', theme: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z', out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9'
   };
   const icon = (k, size = 20) => { const v = document.createElementNS(NS, 'svg'); v.setAttribute('viewBox', '0 0 24 24'); v.setAttribute('width', size); v.setAttribute('height', size); v.setAttribute('aria-hidden', 'true');
     const p = document.createElementNS(NS, 'path'); p.setAttribute('d', PATHS[k] || PATHS.menu); p.setAttribute('fill', 'none'); p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', '1.8'); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); v.append(p); return v; };
@@ -358,6 +358,43 @@ window.FPFMT = (function () {
   ];
   const allowedTabs = () => NAV.flatMap(([, items]) => items.filter(([k, ps]) => VIEWS[k] && cd(...ps)).map(([k]) => k));
   const closeMenu = () => { document.querySelector('.side')?.classList.remove('open'); document.querySelector('.scrim')?.classList.remove('open'); };
+  /* 0.30 sidebar: groups fold (remembered per device), the group of the open screen always shows; a gold indicator slides to the
+     current item (it starts where the previous one was, so moving between screens reads as one motion) */
+  let navShut; try { navShut = new Set(JSON.parse(localStorage.getItem('navShut') || '[]')); } catch { navShut = new Set(); }
+  const saveShut = () => { try { localStorage.setItem('navShut', JSON.stringify([...navShut])); } catch { /* private mode */ } };
+  let indY = null;
+  function placeInd(side) {
+    const ind = side.querySelector('.ind'), a = side.querySelector('.nav a[aria-current=page]');
+    if (!ind) return;
+    if (!a || !a.offsetParent || a.closest('.gi.shut')) { ind.style.opacity = '0'; side.classList.remove('ind-on'); return; }
+    const y = a.offsetTop, hgt = a.offsetHeight;
+    if (indY != null && indY !== y) { ind.style.transition = 'none'; ind.style.transform = `translateY(${indY}px)`; void ind.offsetWidth; ind.style.transition = ''; }
+    ind.style.opacity = '1'; ind.style.height = hgt + 'px'; ind.style.transform = `translateY(${y}px)`; indY = y; side.classList.add('ind-on');
+  }
+  function navBox(tabs, link) {
+    const box = h('div', { class: 'nav' }, h('div', { class: 'ind', 'aria-hidden': 'true' }));
+    for (const [g, items] of NAV) {
+      const ks = items.map(([k]) => k).filter(k => tabs.includes(k)); if (!ks.length) continue;
+      const open = !navShut.has(g) || ks.includes(S.tab);
+      const gi = h('div', { class: 'gi' + (open ? '' : ' shut'), id: 'gi-' + g }, h('div', null, ks.map(link)));
+      const btn = h('button', { type: 'button', class: 'grp', 'aria-expanded': String(open), 'aria-controls': 'gi-' + g, onclick: () => {
+        const shut = gi.classList.toggle('shut'); btn.setAttribute('aria-expanded', String(!shut)); if (shut) navShut.add(g); else navShut.delete(g); saveShut();
+        const side = box.closest('.side'); if (side) { placeInd(side); setTimeout(() => placeInd(side), 380); } } }, h('span', null, T(g)), icon('chev', 15));
+      box.append(btn, gi);
+    }
+    return box;
+  }
+  /* phone bar: home, shift, a gold «sale» button in the middle, one more screen, and the full menu */
+  function bottomBar(tabs, openMenu) {
+    const a = (k) => h('a', { href: '#' + k, 'aria-current': S.tab === k ? 'page' : null, title: T(k) }, icon(k, 22), D['bn.' + k] ? T('bn.' + k) : T(k));   // short names: one line each
+    const more = h('a', { href: '#', onclick: (e) => { e.preventDefault(); openMenu(); } }, icon('menu', 22), T('more'));
+    if (!tabs.includes('sales')) return h('nav', { class: 'bottom', 'aria-label': T('menu') }, ['dash', 'shift'].filter(k => tabs.includes(k)).map(a), more);
+    const extra = ['cust', 'day', 'stock', 'exp'].find(k => tabs.includes(k));
+    const items = [tabs.includes('dash') && a('dash'), tabs.includes('shift') && a('shift'),
+      h('a', { href: '#sales', class: 'fab', 'aria-current': S.tab === 'sales' ? 'page' : null, 'aria-label': T('sales') }, h('span', null, icon('plus', 26)), h('b', null, T('fabSale'))),
+      extra && a(extra), more].filter(Boolean);
+    const nav = h('nav', { class: 'bottom', 'aria-label': T('menu') }, items); nav.style.setProperty('--n', items.length); return nav;
+  }
   async function render() {
     applyPrefs(); const main = h('main', { id: 'main' });
     const sideTop = document.querySelector('.side')?.scrollTop || 0;      // keep the menu where it was when a screen is opened
@@ -366,7 +403,7 @@ window.FPFMT = (function () {
     const link = (k) => h('a', { href: '#' + k, 'aria-current': S.tab === k ? 'page' : null, onclick: closeMenu }, icon(k), h('span', null, T(k)));
     const side = h('aside', { class: 'side', 'aria-label': T('menu') },
       h('div', { class: 'brand' }, h('div', { class: 'mark' }, icon('sales', 22)), h('div', null, 'FuelPro', h('small', null, T('tagline2')))),
-      NAV.map(([g, items]) => { const ks = items.map(([k]) => k).filter(k => tabs.includes(k)); return ks.length ? [h('div', { class: 'grp' }, T(g)), ks.map(link)] : null; }));
+      navBox(tabs, link));
     const scrim = h('div', { class: 'scrim', onclick: closeMenu });
     const openMenu = () => { side.classList.add('open'); scrim.classList.add('open'); };
     /* every table on the screen -> one .xlsx workbook, one sheet per table, named after its heading */
@@ -391,12 +428,11 @@ window.FPFMT = (function () {
         h('button', { class: 'btn ghost sm wide', onclick: prefsDialog }, T('prefs')),
         h('button', { class: 'btn ghost sm wide', onclick: accountDialog }, S.user.name),
         h('button', { class: 'iconbtn', 'aria-label': T('signOut'), title: T('signOut'), onclick: guard(async () => { await api('POST', '/api/auth/logout'); S.user = null; authScreen(); }) }, icon('out'))));
-    const bottom = h('nav', { class: 'bottom', 'aria-label': T('menu') }, ['dash', 'sales', 'shift'].filter(k => tabs.includes(k)).map(k => h('a', { href: '#' + k, 'aria-current': S.tab === k ? 'page' : null }, icon(k, 22), T(k))),
-      h('a', { href: '#', onclick: (e) => { e.preventDefault(); openMenu(); } }, icon('menu', 22), T('more')));
+    const bottom = bottomBar(tabs, openMenu);
     side.append(h('div', { class: 'grp' }, T('account')), h('a', { href: '#', onclick: (e) => { e.preventDefault(); closeMenu(); accountDialog(); } }, icon('users'), h('span', null, S.user.name)), h('a', { href: '#', onclick: (e) => { e.preventDefault(); closeMenu(); prefsDialog(); } }, icon('setup'), h('span', null, T('prefs'))));
     const skel = h('main', { class: 'skel', 'aria-busy': 'true' }, h('div', { class: 'sk h1' }), h('div', { class: 'row4' }, h('div', { class: 'sk' }), h('div', { class: 'sk' }), h('div', { class: 'sk' }), h('div', { class: 'sk' })), h('div', { class: 'sk big' }));
     root.replaceChildren(h('div', { class: 'layout' }, side, h('div', { class: 'content' }, top, skel)), scrim, bottom);
-    side.scrollTop = sideTop;
+    side.scrollTop = sideTop; placeInd(side);
     try { await VIEWS[S.tab](main); } catch (e) { toast(e.message); }
     if (!skel.isConnected) return;                        // another navigation replaced this screen meanwhile
     skel.replaceWith(main); animateIn(main);
@@ -506,7 +542,7 @@ window.FPFMT = (function () {
     async cust(main) {
       const nm = h('input', { id: 'cName' }), ph = h('input', { id: 'cPhone', inputmode: 'tel' }), cl = h('input', { id: 'cLimit', inputmode: 'decimal' }), ct = h('input', { id: 'cTerms', inputmode: 'numeric', value: '30' }), co = h('input', { id: 'cOpen', inputmode: 'decimal' }), pm = sel('pMethod', [['cash', T('mCash')], ['bank', T('mBank')]]), pc = sel('pCust', S.customers.map(c => [c.id, c.name])), pa = h('input', { id: 'pAmt', inputmode: 'decimal' });
       if (S.stmt && S.customers.find(c => c.id === S.stmt) && F_STMT && await F_STMT(main, 'customer')) return;
-      const stm = null;
+      const stm = '';   // the old inline statement is shown by F_STMT now ('' appends nothing; null used to print «null»)
       main.append(S.customers.length && window.FP.partyList ? window.FP.partyList('customer', S.customers, (id) => { S.stmt = id; render(); }) : sec(T('cust'), h('p', { class: 'muted' }, T('noData'))),
         stm && sec(T('stmt') + ': ' + stm.customer.name, table([T('date'), T('desc'), T('debit'), T('creditCol'), T('balance'), ''], stm.entries.map(e => [fdate(e.date), e.kind === 'opening' ? T('openingBal') : e.kind === 'sale' ? T('saleRow', { f: e.fuel_name, q: vol(e.quantity_ml) }) : e.kind === 'journal' ? T('src.' + e.source) + (e.ref_no ? ' ' + e.ref_no : '') + (e.note ? ' — ' + e.note : '') : T('payRow') + (e.note ? ' — ' + e.note : ''), e.debit ? money(e.debit) : '', e.credit ? money(e.credit) : '',
           e.voided ? h('span', { class: 'muted' }, T('voided')) : h('b', null, money(e.balance)), e.kind === 'payment' && !e.voided && cd('payment.void') ? voidBtn(() => `/payments/${e.id}/void`) : ''])), h('div', { class: 'row' }, h('b', null, T('totalDue'), ': ', money(stm.balance)), h('button', { class: 'btn ghost sm', onclick: (ev) => printNode(T('stmt') + ': ' + stm.customer.name, ev.target.closest('section')) }, T('print')), h('button', { class: 'btn ghost sm', onclick: () => { S.stmt = null; render(); } }, T('close')))),

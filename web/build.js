@@ -42,7 +42,7 @@ fs.writeFileSync(path.join(OUT, 'seed.js'), `/* ${SEED_DB ? 'starting database: 
 fs.rmSync(tmp, { recursive: true, force: true });
 
 /* 3) the existing front end, unchanged except for the service worker (a page inside claude.ai cannot register one) */
-const appFiles = ['qr.js', 'xlsx.js', 'i18n-erp.js', 'app.js', 'erp.js', 'stmt-pdf.js', 'books-ui.js', 'more-ui.js', 'analytics-ui.js', 'bank-ui.js', 'alerts-ui.js', 'wizard-ui.js', 'payroll-ui.js', 'app.css'];
+const appFiles = ['qr.js', 'xlsx.js', 'i18n-erp.js', 'app.js', 'erp.js', 'stmt-pdf.js', 'books-ui.js', 'more-ui.js', 'analytics-ui.js', 'bank-ui.js', 'alerts-ui.js', 'wizard-ui.js', 'payroll-ui.js', 'app.css', 'ui-2.css'];
 for (const f of appFiles) {
   let t = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
   if (f === 'app.js') { const before = t; t = t.replace(/if \('serviceWorker' in navigator[^\n]*\n/, '/* service worker: not used in the Artifact edition */\n'); if (t === before) throw new Error('service-worker line not found in app.js'); }

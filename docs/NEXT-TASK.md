@@ -1,5 +1,10 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-27 — 0.30.0 UI foundation (PR open, branch `claude/ui-sapphire`)
+- Owner reviews the PR + before/after page. If he dislikes it: close the PR / delete the branch (nothing else depends on it).
+- Next UI steps (each its own PR, mock-ups in the owner's page «ماكيتات أساس FuelPro»): 1) dashboard: pump-meter counter, tanks, alerts box; 2) sale form: pump buttons, big current reading, navy total; 3) other screens only through the foundation.
+- Printing (KI-07): plan agreed in chat, branch `claude/print-overhaul` has no commits; rebuild it from `main` after this PR is merged (both touch app.js/app.css).
+
 ## 2026-11-26 — 0.29.0 off-site backup (PR pending merge)
 - Built: `fuelpro-offsite` (deploy/vps/offsite.sh + systemd timer), status in `GET /api/backups`, alert `offsite`, backup screen line + «download a fresh copy» button (ADR-28, KI-10). 94 unit + 7 e2e + 89 artifact green. NOT run against real Google Drive from the cloud (no token): only a stub rclone; the first real run is the owner's.
 - **Owner after merge:** `sudo fuelpro-update`, then docs/VPS.md §4 (rclone authorize on the laptop → `sudo fuelpro-offsite setup` on the server). Check Drive shows `FuelPro-backups/…db.gz` and the screen shows the green line. Then try a restore of one copy into a scratch DB (`gunzip`, `node scripts/check-books.js`) once, so the copy is known to be good.

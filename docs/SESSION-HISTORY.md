@@ -141,3 +141,8 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Owner chose off-site backups on Google Drive + a download-to-device button. Added `deploy/vps/offsite.sh` (+ `.service`/`.timer`, installed by install.sh/update.sh), `BK.offsite()` reader, alert `offsite`, backup-screen status + button, i18n, sw v48; ADR-28, KI-10, VPS.md §4.
 - Tests: 94 unit (+6 in test/offsite.test.js with a stub rclone), 7 e2e, 89 artifact, lint 0 errors, tsc clean. Real Google Drive not reachable from the cloud — the owner's first `fuelpro-offsite setup` is the real test.
 - Resume: NEXT-TASK.
+
+## 2026-11-27 — 0.30.0 UI foundation (cloud, branch `claude/ui-sapphire`)
+- Owner rejected the calm mock-up; approved «ليل الياقوت» (sapphire + champagne) with a formal font. Built the foundation only: `public/ui-2.css`, sapphire palette default, fonts in `public/fonts` (Plex Sans Arabic + Noto Kufi Arabic), folding sidebar with sliding indicator, phone bar with gold «بيع» button, «null» under the customers table fixed. ADR-29, KI-23, `docs/EXTERNAL-RESOURCES.md`.
+- Tests: 94 unit + 1 skipped, 7 e2e, 89 artifact, lint 0 errors, tsc clean. Before/after screenshots (demo data) in the owner's private page.
+- Print branch `claude/print-overhaul` (plan only, nothing committed) waits until this is merged. Next UI PR: dashboard «pump meter» + tanks, then the sale form.
