@@ -130,3 +130,39 @@ for (const [name, withDb, skip] of engines) {
     assert.equal(inv.debit - inv.credit, Number(tv.v), 'inventory account = value of all tanks');
   }));
 }
+
+/* ---------- phase 3: customers, suppliers & collections ---------- */
+import { parties } from '@fuelpro/core';
+for (const [name, withDb, skip] of engines) {
+  test(`${name}: payments are never deleted; other orgs' customers are not found; a cashier collects but cannot void`, { skip }, async () => withDb(async (ctx) => {
+    const a = await station(ctx, 'pty-a@example.test'), b = await station(ctx, 'pty-b@example.test');
+    const c = (await setup.createCustomer(ctx, a.u, a.sid, { name: 'C', opening_balance: 1_000_000 })).id;
+    const cb = (await setup.createCustomer(ctx, b.u, b.sid, { name: 'CB', opening_balance: 1_000_000 })).id;
+    const sup = (await stock.createSupplier(ctx, a.u, a.sid, { name: 'S', opening_balance: 500_000 })).id;
+    const p = await parties.createPayment(ctx, a.u, a.sid, { customer_id: c, amount: 1000, method: 'bank' });
+    await parties.supplierPayment(ctx, a.u, a.sid, { supplier_id: sup, amount: 1000 });
+    for (const t of ['payments', 'supplier_payments'] as const) await rejects(ctx.db.deleteFrom(t).execute(), /never deleted/);
+    await assert.rejects(parties.createPayment(ctx, a.u, a.sid, { customer_id: cb, amount: 1000, method: 'bank' }), { status: 404 });
+    await assert.rejects(parties.customerStatement(ctx, a.u, a.sid, cb), { status: 404 });
+    await assert.rejects(parties.customerStatement(ctx, a.u, b.sid, cb), { status: 404 });
+    const cashier: User = { ...a.u, role: 'cashier' };
+    await ctx.db.insertInto('user_stations').values({ user_id: a.u.id, station_id: a.sid }).execute();
+    await parties.createPayment(ctx, cashier, a.sid, { customer_id: c, amount: 500, method: 'bank' });
+    await assert.rejects(parties.voidPayment(ctx, cashier, a.sid, p.id, 'خطأ في الإدخال'), { status: 403 });
+    await assert.rejects(parties.supplierPayment(ctx, cashier, a.sid, { supplier_id: sup, amount: 1 }), { status: 403 });
+    const st = await parties.customerStatement(ctx, a.u, a.sid, c);
+    assert.equal(st.balance, 1_000_000 - 1000 - 500);
+    assert.equal(st.balance, (await ctx.db.selectFrom('journal_lines as l').innerJoin('journals as j', 'j.id', 'l.journal_id')
+      .select(sql<number>`sum(l.debit - l.credit)`.as('v')).where('l.party_type', '=', 'customer').where('l.party_id', '=', c).where('j.status', '=', 'posted').executeTakeFirstOrThrow()).v, 'statement = ledger');
+  }));
+  test(`${name}: 20 payments at once can never take a customer below zero`, { skip }, async () => withDb(async (ctx) => {
+    const s = await station(ctx, 'pty-race@example.test');
+    const c = (await setup.createCustomer(ctx, s.u, s.sid, { name: 'C', opening_balance: 100_000 })).id;
+    const res = await Promise.allSettled(Array.from({ length: 20 }, () => parties.createPayment(ctx, s.u, s.sid, { customer_id: c, amount: 7_000, method: 'bank' })));
+    const ok = res.filter((r) => r.status === 'fulfilled').length;
+    const why = res.filter((r) => r.status === 'rejected').map((r) => (r as PromiseRejectedResult).reason.code);
+    assert.equal(ok, 14, 'exactly floor(100000 / 7000) payments go through'); assert.ok(why.every((w) => w === 'OVERPAYMENT'), why.join());
+    const st = await parties.customerStatement(ctx, s.u, s.sid, c);
+    assert.equal(st.balance, 100_000 - 14 * 7_000);
+  }));
+}

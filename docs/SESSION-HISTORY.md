@@ -183,3 +183,8 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Tests: v2 33 pass (SQLite + bridge + PostgreSQL); v1 98 pass + 1 skipped. Bench: reconciliation 42 → 183/289 req/s; 100 users p95 25 → 6.5/9.5 ms; first screen 1.48 s.
 - Resume: phase 3 (parties & collections) after the owner's OK.
 
+## 2026-11-28 — 0.37.0 v2 phase 3 (cloud, branch `claude/v2-phase3`)
+- Ported customers, suppliers & collections to the v2 core (`parties.ts`): payments, supplier payments, voids, statements (periodized), ageing; migration 003; «العملاء والموردون» tab (lazy); migrate-v1 extended (22 tables, 12 checks equal; tamper stops).
+- Parity on SQLite/bridge/PostgreSQL incl. statements (compared by lines + totals: same-second line order follows each system's clock) and ageing at 6 dates; invariants incl. 20 concurrent payments → exactly 14 pass. v2 45 tests, v1 98 + 1 skipped.
+- Bench: ageing 78 → 173/238 req/s; statement throughput +10–20% but p95 at saturation 160 → 206 ms (whole statement sent; paging planned); 100 users p95 29 → 4.6/6.9 ms.
+

@@ -1,0 +1,84 @@
+{
+  "from": "demo-v1.db",
+  "to": "postgres",
+  "tables": {
+    "orgs": 1,
+    "users": 11,
+    "stations": 2,
+    "user_stations": 12,
+    "fuels": 4,
+    "tanks": 6,
+    "pumps": 8,
+    "customers": 12,
+    "shifts": 1462,
+    "shift_meters": 5848,
+    "sales": 20546,
+    "suppliers": 4,
+    "deliveries": 98,
+    "adjustments": 312,
+    "transfers": 12,
+    "payments": 466,
+    "supplier_payments": 141,
+    "stock_moves": 21060,
+    "accounts": 29,
+    "journals": 24193,
+    "journal_lines": 89652,
+    "audit": 28347
+  },
+  "checks": {
+    "counts": {
+      "rows": 1,
+      "same": true
+    },
+    "ledger_totals": {
+      "rows": 1,
+      "same": true
+    },
+    "trial_balance": {
+      "rows": 36,
+      "same": true
+    },
+    "boxes": {
+      "rows": 2,
+      "same": true
+    },
+    "customers": {
+      "rows": 12,
+      "same": true
+    },
+    "tanks": {
+      "rows": 6,
+      "same": true
+    },
+    "suppliers": {
+      "rows": 4,
+      "same": true
+    },
+    "deliveries_by_day": {
+      "rows": 96,
+      "same": true
+    },
+    "stock_by_kind": {
+      "rows": 32,
+      "same": true
+    },
+    "payments_by_day": {
+      "rows": 427,
+      "same": true
+    },
+    "supplier_payments_by_day": {
+      "rows": 72,
+      "same": true
+    },
+    "sales_by_day": {
+      "rows": 730,
+      "same": true
+    }
+  },
+  "ledger": {
+    "debit": 12499844826,
+    "credit": 12499844826
+  },
+  "ok": true,
+  "seconds": 10.2
+}

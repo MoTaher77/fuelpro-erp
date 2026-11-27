@@ -23,6 +23,11 @@ export const DUMP_SQL: Record<string, string> = {
   adjustments: `SELECT id, station_id, tank_id, business_date, before_ml, after_ml, note, user_id FROM adjustments ORDER BY id`,
   transfers: `SELECT id, from_station_id, to_station_id, from_tank_id, to_tank_id, business_date, quantity_ml, value, note, CASE WHEN voided_at IS NULL THEN 0 ELSE 1 END voided, void_reason FROM transfers ORDER BY id`,
   fuels: `SELECT id, station_id, name, price_e4, cost_e4 FROM fuels ORDER BY id`,
+  payments: `SELECT id, station_id, customer_id, business_date, amount, note, user_id, method, shift_id, CASE WHEN voided_at IS NULL THEN 0 ELSE 1 END voided, void_reason FROM payments ORDER BY id`,
+  supplier_payments: `SELECT id, station_id, supplier_id, business_date, amount, note, user_id, method, shift_id, CASE WHEN voided_at IS NULL THEN 0 ELSE 1 END voided, void_reason FROM supplier_payments ORDER BY id`,
+  customers: `SELECT id, station_id, name, phone, active, credit_limit, terms_days, opening_balance, created_on FROM customers ORDER BY id`,
+  supplier_balances: `SELECT l.party_id, SUM(l.credit - l.debit) balance FROM journal_lines l JOIN journals j ON j.id=l.journal_id JOIN accounts a ON a.id=l.account_id
+          WHERE l.party_type='supplier' AND a.sys='ap' AND j.status='posted' GROUP BY l.party_id ORDER BY l.party_id`,
   journal_refs: `SELECT id, ref FROM journals WHERE ref IS NOT NULL ORDER BY id`,
   counts: `SELECT (SELECT COUNT(*) FROM sales) sales, (SELECT COUNT(*) FROM journals) journals, (SELECT COUNT(*) FROM journal_lines) lines, (SELECT COUNT(*) FROM stock_moves) moves`
 };

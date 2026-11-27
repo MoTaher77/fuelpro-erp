@@ -7,6 +7,7 @@ import * as sales from './sales.ts';
 import * as setup from './setup.ts';
 import * as shifts from './shifts.ts';
 import * as stock from './stock.ts';
+import * as parties from './parties.ts';
 
 type Args = { sid: number; id: number; body: Record<string, unknown>; query: Record<string, string> };
 type Op = (ctx: Ctx, user: User, a: Args) => Promise<unknown>;
@@ -41,6 +42,15 @@ export const OPS: Record<string, Op> = {
   'POST /stations/:sid/transfers/:id/void': (c, u, a) => stock.voidTransfer(c, u, a.sid, a.id, a.body),
   'GET /stations/:sid/stock-moves': (c, u, a) => stock.stockMoves(c, u, a.sid, { tank_id: n(a.query.tank_id), from: a.query.from, to: a.query.to, limit: n(a.query.limit), before_id: n(a.query.before_id) }),
   'GET /stations/:sid/stock-reconciliation': (c, u, a) => stock.stockReconciliation(c, u, a.sid, { from: a.query.from, to: a.query.to }),
+  'PATCH /stations/:sid/customers/:id': (c, u, a) => parties.updateCustomer(c, u, a.sid, a.id, a.body),
+  'GET /stations/:sid/customers/:id/statement': (c, u, a) => parties.customerStatement(c, u, a.sid, a.id, { from: a.query.from, to: a.query.to }),
+  'PATCH /stations/:sid/suppliers/:id': (c, u, a) => parties.updateSupplier(c, u, a.sid, a.id, a.body),
+  'GET /stations/:sid/suppliers/:id/statement': (c, u, a) => parties.supplierStatement(c, u, a.sid, a.id, { from: a.query.from, to: a.query.to }),
+  'POST /stations/:sid/payments': (c, u, a) => parties.createPayment(c, u, a.sid, a.body as never),
+  'POST /stations/:sid/payments/:id/void': (c, u, a) => parties.voidPayment(c, u, a.sid, a.id, a.body.reason),
+  'POST /stations/:sid/supplier-payments': (c, u, a) => parties.supplierPayment(c, u, a.sid, a.body as never),
+  'POST /stations/:sid/supplier-payments/:id/void': (c, u, a) => parties.voidSupplierPayment(c, u, a.sid, a.id, a.body.reason),
+  'GET /stations/:sid/ageing': (c, u, a) => parties.ageing(c, u, a.sid, { type: a.query.type, as_of: a.query.as_of }),
   'GET /stations/:sid/summary': (c, u, a) => reports.daySummary(c, u, a.sid, a.query.date),
   'GET /stations/:sid/trial-balance': (c, u, a) => reports.trialBalance(c, u, a.sid)
 };

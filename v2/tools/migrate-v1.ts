@@ -1,4 +1,4 @@
-/* Copy the ported modules (sales & shifts, stock & deliveries) and the whole general ledger from a v1 database (SQLite) into a v2 database
+/* Copy the ported modules (sales & shifts, stock & deliveries, customers & suppliers & collections) and the whole general ledger from a v1 database (SQLite) into a v2 database
    (SQLite file or PostgreSQL), keeping every id, then prove the books are the same. The copy and the proof run in ONE
    transaction on the target: any difference rolls everything back and the tool exits with code 2.
 
@@ -25,7 +25,7 @@ const src = new DatabaseSync(from, { readOnly: true });
 
 /** in foreign-key order; only the columns v2 has */
 const TABLES = ['orgs', 'users', 'stations', 'user_stations', 'fuels', 'tanks', 'pumps', 'customers', 'shifts', 'shift_meters', 'sales',
-  'suppliers', 'deliveries', 'adjustments', 'transfers', 'stock_moves', 'accounts', 'journals', 'journal_lines', 'audit'] as const;
+  'suppliers', 'deliveries', 'adjustments', 'transfers', 'payments', 'supplier_payments', 'stock_moves', 'accounts', 'journals', 'journal_lines', 'audit'] as const;
 /** v2 columns that v1 may lack in older files; filled with these defaults */
 const DEFAULTS: Record<string, Record<string, unknown>> = {};
 
@@ -48,6 +48,10 @@ const CHECKS: Record<string, string> = {
   deliveries_by_day: `SELECT station_id, business_date, COUNT(*) n, SUM(quantity_ml) qty, SUM(net) net, SUM(vat) vat FROM deliveries
            WHERE voided_at IS NULL GROUP BY station_id, business_date ORDER BY station_id, business_date`,
   stock_by_kind: `SELECT tank_id, kind, COUNT(*) n, SUM(qty_ml) qty, SUM(value) value FROM stock_moves GROUP BY tank_id, kind ORDER BY tank_id, kind`,
+  payments_by_day: `SELECT station_id, business_date, method, COUNT(*) n, SUM(amount) amount FROM payments WHERE voided_at IS NULL
+           GROUP BY station_id, business_date, method ORDER BY station_id, business_date, method`,
+  supplier_payments_by_day: `SELECT station_id, business_date, method, COUNT(*) n, SUM(amount) amount FROM supplier_payments WHERE voided_at IS NULL
+           GROUP BY station_id, business_date, method ORDER BY station_id, business_date, method`,
   sales_by_day: `SELECT station_id, business_date, COUNT(*) n, SUM(quantity_ml) qty, SUM(gross) gross, SUM(COALESCE(cogs,0)) cogs FROM sales
            WHERE voided_at IS NULL GROUP BY station_id, business_date ORDER BY station_id, business_date`
 };

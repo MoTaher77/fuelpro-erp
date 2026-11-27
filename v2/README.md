@@ -3,7 +3,7 @@
 One TypeScript core, three run modes. See `docs/ARCHITECTURE-V2.md` (design, ADR-30..39) and `docs/V2-PHASE1.md` (what phase 1 delivers, measurements).
 
 ```
-packages/core     the business rules (money, permissions, ledger, set-up, sales, shifts, stock & deliveries, reports, operation table)
+packages/core     the business rules (money, permissions, ledger, set-up, sales, shifts, stock & deliveries, customers & suppliers & collections, reports, operation table)
 packages/db       Kysely migrations + drivers: node:sqlite, PostgreSQL (pg), async bridge (Tauri / Capacitor)
 packages/ui       the shared screen (vanilla TypeScript, no framework)
 packages/local    the in-process backend of the desktop and phone editions

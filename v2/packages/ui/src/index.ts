@@ -23,7 +23,7 @@ const MSG: Record<string, string> = {
   QUANTITY_TOO_LARGE: 'كمية غير معتادة، راجع قراءة العداد', PRICE_NOT_SET: 'حدّد سعر الوقود أولاً', PERIOD_LOCKED: 'الفترة المحاسبية مقفلة',
   SHIFT_CLOSED: 'هذا المستند يتبع وردية مغلقة', ALREADY_VOIDED: 'المستند ملغى مسبقاً', FORBIDDEN: 'لا تملك صلاحية لهذا الإجراء', NOT_FOUND: 'غير موجود',
   DISCOUNT_TOO_LARGE: 'الخصم يجب أن يكون أقل من مبلغ البيع', EXCEEDS_CAPACITY: 'الكمية أكبر من المساحة الفارغة في الخزان',
-  STOCK_ALREADY_SOLD: 'بيع جزء من هذه الكمية؛ صحّح الخزان بالجرد', FUEL_MISMATCH: 'الخزانان ليسا لنفس الوقود', CURRENCY_MISMATCH: 'المحطتان بعملتين مختلفتين', FUTURE_DATE: 'التاريخ في المستقبل', NETWORK: 'تعذّر الاتصال بالخادم', VALIDATION: 'تحقق من الحقول'
+  STOCK_ALREADY_SOLD: 'بيع جزء من هذه الكمية؛ صحّح الخزان بالجرد', FUEL_MISMATCH: 'الخزانان ليسا لنفس الوقود', CURRENCY_MISMATCH: 'المحطتان بعملتين مختلفتين', FUTURE_DATE: 'التاريخ في المستقبل', OVERPAYMENT: 'المبلغ أكبر من الرصيد المستحق', CUSTOMER_INACTIVE: 'العميل موقوف', NETWORK: 'تعذّر الاتصال بالخادم', VALIDATION: 'تحقق من الحقول'
 };
 export const errText = (e: unknown) => { const x = e as BackendError; return MSG[x?.code] || x?.message || 'حدث خطأ غير متوقع'; };
 const MODE: Record<Backend['mode'], string> = { server: 'الخادم', desktop: 'سطح المكتب — بدون إنترنت', phone: 'الهاتف — بدون إنترنت' };
@@ -102,16 +102,19 @@ async function mainView(root: HTMLElement, be: Backend, sid: number) {
   const listBox = h('section', { class: 'card wide' });
   const salesMain = h('main', { class: 'wrap grid' }, tiles, shiftBox, saleBox, listBox);
   const stockMain = h('main', { class: 'wrap grid', hidden: true });
-  const tabs: Array<[string, string]> = [['sales', 'البيع والوردية'], ['stock', 'المخزون والتوريد']];
+  const partiesMain = h('main', { class: 'wrap grid', hidden: true });
+  const tabs: Array<[string, string]> = [['sales', 'البيع والوردية'], ['stock', 'المخزون والتوريد'], ['parties', 'العملاء والموردون']];
   const tabBar = h('nav', { class: 'tabs', role: 'tablist' }, ...tabs.map(([k, label]) => h('button', { type: 'button', role: 'tab', 'data-tab': k, onclick: () => show(k) }, label)));
   const show = async (k: string) => {
     for (const b of tabBar.querySelectorAll('button')) b.setAttribute('aria-selected', String(b.dataset.tab === k));
-    salesMain.hidden = k !== 'sales'; stockMain.hidden = k !== 'stock';
+    salesMain.hidden = k !== 'sales'; stockMain.hidden = k !== 'stock'; partiesMain.hidden = k !== 'parties';
     try { history.replaceState(null, '', k === 'sales' ? location.pathname : '#' + k); } catch { /* file:// or sandbox */ }
     // the stock screen is a separate file, fetched the first time its tab opens (smaller first screen)
-    if (k === 'stock') await (await import('./stock.ts')).stockView(stockMain, be, st, toast); else await refresh();
+    if (k === 'stock') await (await import('./stock.ts')).stockView(stockMain, be, st, toast);
+    else if (k === 'parties') await (await import('./parties.ts')).partiesView(partiesMain, be, st, toast);
+    else await refresh();
   };
-  root.replaceChildren(head, tabBar, salesMain, stockMain);
+  root.replaceChildren(head, tabBar, salesMain, stockMain, partiesMain);
 
   let pumps: Pump[] = [], customers: Customer[] = [], shift: ShiftNow = null;
   async function refresh() {

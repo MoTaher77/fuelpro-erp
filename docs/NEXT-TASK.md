@@ -1,5 +1,9 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-28 — 0.37.0 v2 phase 3 parties & collections (branch `claude/v2-phase3`, PR open)
+- Done: `parties.ts` (customer/supplier edit, payments, supplier payments, voids, statements, ageing), migration 003, «العملاء والموردون» tab; parity on 3 engines (45 v2 tests), migrate-v1 22 tables / 12 checks. Report `docs/V2-PHASE3.md`.
+- Next (owner to confirm): phase 4 = finance (boxes & banks, receipt/payment vouchers, expenses, manual journals, period lock). Statement paging for very long statements. Still open: KI-23 (owner's device test), KI-24 (users/sign-in before real data).
+
 ## 2026-11-27 — 0.36.0 v2 phase 2 stock & deliveries (branch `claude/v2-phase2`, PR open)
 - Done: suppliers, deliveries, stock counts, transfers, reconciliation in the v2 core + migration 002 + stock screen; parity on SQLite/bridge/PostgreSQL (33 v2 tests); migrate-v1 covers 20 tables / 10 checks. Report `docs/V2-PHASE2.md`, ADR-40.
 - Next (owner to confirm): phase 3 = customers & suppliers & collections (payments, supplier payments, vouchers, statements, ageing), same method. Still waiting: owner's try of the phase-1 APK / Windows installer (KI-23); users/sign-in module before real data (KI-24).

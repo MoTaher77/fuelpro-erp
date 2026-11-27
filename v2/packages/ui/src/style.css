@@ -44,3 +44,5 @@ th { color: var(--muted); font-weight: 600; font-size: 13px } tr.void td { color
 .tile.tank .bar i { display: block; height: 100%; background: var(--accent2) }
 .tile.tank.low .bar i { background: var(--bad) } .tile.tank.low b { color: var(--bad) } .bad { color: var(--bad); font-weight: 600 }
 [hidden] { display: none !important }
+.btn.plain { color: var(--accent) } .strike { text-decoration: line-through }
+@media print { .top, .tabs, .noprint, .toasts, main > section:not(.wide), .btn { display: none !important } body { background: #fff } .card { border: 0 } }

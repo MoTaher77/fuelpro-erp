@@ -151,6 +151,11 @@ for (const t of targets) {
   const v1 = t.name.startsWith('v1');
   row.deliveries = await load(s.base + s.prefix + '/deliveries?limit=50', s.headers);
   row.reconciliation = await load(s.base + s.prefix + (v1 ? '/stock/reconciliation' : '/stock-reconciliation') + '?from=2025-01-01&to=2026-12-31', s.headers);
+  // phase 3: customers & collections — the busiest customer's statement and the station's ageing
+  const top = new DatabaseSync(arg('--v1')!, { readOnly: true });
+  const cid = (top.prepare('SELECT customer_id id FROM sales WHERE station_id=? AND customer_id IS NOT NULL GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT 1').get(s.sid) as { id: number }).id; top.close();
+  row.statement = await load(s.base + s.prefix + `/customers/${cid}/statement`, s.headers);
+  row.ageing = await load(s.base + s.prefix + '/ageing?type=customer', s.headers);
   row.mix = await mix(s.base, s.prefix, shiftPath, s.headers, s.pumps, String(t.name.length));
   // 100 people working: each sends about 2 requests a second (open loop), not as fast as the machine allows
   row.users100 = await people(s.base, s.prefix, shiftPath, s.headers, s.pumps, 'u' + t.name.length, 2 * CONN);
