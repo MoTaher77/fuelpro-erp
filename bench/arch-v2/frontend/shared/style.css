@@ -1,0 +1,28 @@
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.4 system-ui,"Noto Sans Arabic","Segoe UI",Tahoma,sans-serif;background:#f6f7f9;color:#1b1f24}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#0f4c5c;color:#fff}
+header h1{font-size:16px;margin:0}
+form{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:10px 16px}
+form input,form select,form button{font:inherit;padding:6px 8px;border:1px solid #c5ccd3;border-radius:6px;min-width:0}
+form button{background:#0f4c5c;color:#fff;border:0}
+.toolbar{display:flex;gap:6px;padding:0 16px 8px}
+.toolbar button{font:inherit;padding:4px 10px}
+.wrap{margin:0 16px;overflow:auto;max-height:520px;background:#fff;border:1px solid #dde2e7}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:4px 8px;border-bottom:1px solid #eef0f3;text-align:start;white-space:nowrap}
+th{position:sticky;top:0;background:#e9eef2}
+td.n,th.n{text-align:end}
+td.n{direction:ltr;unicode-bidi:isolate}   /* numbers: keep minus/digits LTR inside RTL row */
+.neg{color:#b42318}
+/* virtual list */
+.vwrap{margin:0 16px;height:480px;overflow:auto;background:#fff;border:1px solid #dde2e7;position:relative;contain:strict}
+.vhead,.vrow{display:grid;grid-template-columns:56px 92px minmax(170px,1fr) 64px 84px 92px 104px;align-items:center;height:32px;font-variant-numeric:tabular-nums;width:max-content;min-width:100%}
+.vhead{position:sticky;top:0;background:#e9eef2;z-index:1;font-weight:600}
+.vrow{position:absolute;top:0;inset-inline-start:0;border-bottom:1px solid #eef0f3}
+.vhead>span,.vrow>span{padding:0 8px;white-space:nowrap;overflow:hidden}
+.vrow>.n,.vhead>.n{text-align:end}
+.vrow>.n{direction:ltr;unicode-bidi:isolate}
+@media print{form,.toolbar,header{display:none}.wrap{max-height:none;overflow:visible;border:0}th{position:static}}
+.fixed table{table-layout:fixed;width:760px}
+.fixed th:nth-child(1){width:56px}.fixed th:nth-child(2){width:96px}.fixed th:nth-child(3){width:190px}.fixed th:nth-child(4){width:70px}
+.fixed td{overflow:hidden;text-overflow:ellipsis}

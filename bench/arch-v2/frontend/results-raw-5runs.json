@@ -1,0 +1,1208 @@
+{
+ "vanilla": {
+  "plain": [
+   {
+    "fcp": 4640,
+    "rowsVisible": 4695.700000000012,
+    "longTaskSum": 4237,
+    "longTasks": 3,
+    "tbt": 1,
+    "tbtAll": 4087,
+    "rowsOk": 5000,
+    "heap": 2.0279808044433594,
+    "create": [
+     3200.2999999999884,
+     289.20000000001164
+    ],
+    "sort": [
+     3669.7000000000116,
+     364.20000000001164
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     795.2000000000116,
+     48.5
+    ]
+   },
+   {
+    "fcp": 4796,
+    "rowsVisible": 4819.300000000047,
+    "longTaskSum": 4413,
+    "longTasks": 3,
+    "tbt": 24,
+    "tbtAll": 4263,
+    "rowsOk": 5000,
+    "heap": 2.033496856689453,
+    "create": [
+     3591.0999999999767,
+     223.69999999995343
+    ],
+    "sort": [
+     3420.1999999999534,
+     294.0999999999767
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     892.9000000000233,
+     54.5
+    ]
+   },
+   {
+    "fcp": 3996,
+    "rowsVisible": 4025.6999999999534,
+    "longTaskSum": 3610,
+    "longTasks": 3,
+    "tbt": 3,
+    "tbtAll": 3460,
+    "rowsOk": 5000,
+    "heap": 2.0210914611816406,
+    "create": [
+     3534.9000000000233,
+     316.30000000004657
+    ],
+    "sort": [
+     3558,
+     329.70000000006985
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     844.6000000000931,
+     38.10000000009313
+    ]
+   },
+   {
+    "fcp": 4532,
+    "rowsVisible": 4536.099999999977,
+    "longTaskSum": 4073,
+    "longTasks": 2,
+    "tbt": 0,
+    "tbtAll": 3973,
+    "rowsOk": 5000,
+    "heap": 2.0265235900878906,
+    "create": [
+     3821.4000000000233,
+     392.30000000004657
+    ],
+    "sort": [
+     3181.8000000000466,
+     387
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     874.9000000000233,
+     46.800000000046566
+    ]
+   },
+   {
+    "fcp": 3948,
+    "rowsVisible": 3964.5,
+    "longTaskSum": 3490,
+    "longTasks": 2,
+    "tbt": 0,
+    "tbtAll": 3390,
+    "rowsOk": 5000,
+    "heap": 2.0245018005371094,
+    "create": [
+     2835.9000000001397,
+     198.10000000009313
+    ],
+    "sort": [
+     3038.6999999999534,
+     256.69999999995343
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     815.5,
+     40.199999999953434
+    ]
+   }
+  ],
+  "virtual": [
+   {
+    "fcp": 676,
+    "rowsVisible": 705.0999999999767,
+    "longTaskSum": 227,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 177,
+    "heap": 2.1700401306152344,
+    "frames": 176,
+    "avgFrame": 17.139772727272724,
+    "p95Frame": 16.800000000000182,
+    "dropped": 5,
+    "scrollTop": 9003,
+    "maxIdVisible": 300,
+    "vrows": 26
+   },
+   {
+    "fcp": 792,
+    "rowsVisible": 826.9000000000233,
+    "longTaskSum": 305,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 255,
+    "heap": 2.1700401306152344,
+    "frames": 181,
+    "avgFrame": 16.666298342541438,
+    "p95Frame": 16.700000000000728,
+    "dropped": 0,
+    "scrollTop": 9026,
+    "maxIdVisible": 301,
+    "vrows": 26
+   },
+   {
+    "fcp": 768,
+    "rowsVisible": 800.0999999999767,
+    "longTaskSum": 289,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 239,
+    "heap": 2.1700401306152344,
+    "frames": 180,
+    "avgFrame": 16.75888888888889,
+    "p95Frame": 16.700000000000728,
+    "dropped": 1,
+    "scrollTop": 9038,
+    "maxIdVisible": 301,
+    "vrows": 26
+   },
+   {
+    "fcp": 740,
+    "rowsVisible": 793.3999999999069,
+    "longTaskSum": 282,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 232,
+    "heap": 2.1700401306152344,
+    "frames": 177,
+    "avgFrame": 17.13728813559322,
+    "p95Frame": 16.799999999999727,
+    "dropped": 5,
+    "scrollTop": 9053,
+    "maxIdVisible": 300,
+    "vrows": 26
+   },
+   {
+    "fcp": 668,
+    "rowsVisible": 684.8000000000466,
+    "longTaskSum": 210,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 160,
+    "heap": 2.1700706481933594,
+    "frames": 177,
+    "avgFrame": 17.04237288135593,
+    "p95Frame": 16.800000000000182,
+    "dropped": 4,
+    "scrollTop": 9025,
+    "maxIdVisible": 301,
+    "vrows": 26
+   }
+  ]
+ },
+ "react": {
+  "plain": [
+   {
+    "fcp": 3984,
+    "rowsVisible": 3996.0999999999767,
+    "longTaskSum": 3230,
+    "longTasks": 4,
+    "tbt": 5,
+    "tbtAll": 3030,
+    "rowsOk": 5000,
+    "heap": 10.819690704345703,
+    "create": [
+     3761.5,
+     544.2000000000116
+    ],
+    "sort": [
+     3322.9000000000233,
+     543.1000000000349
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     713.6000000000349,
+     84.5
+    ]
+   },
+   {
+    "fcp": 5656,
+    "rowsVisible": 5689.79999999993,
+    "longTaskSum": 4937,
+    "longTasks": 4,
+    "tbt": 31,
+    "tbtAll": 4737,
+    "rowsOk": 5000,
+    "heap": 10.818782806396484,
+    "create": [
+     3372.8000000000466,
+     633.4000000000233
+    ],
+    "sort": [
+     3623.5,
+     494.9000000000233
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     797.5999999999767,
+     78.09999999997672
+    ]
+   },
+   {
+    "fcp": 4576,
+    "rowsVisible": 4624.5,
+    "longTaskSum": 3867,
+    "longTasks": 4,
+    "tbt": 21,
+    "tbtAll": 3667,
+    "rowsOk": 5000,
+    "heap": 10.819694519042969,
+    "create": [
+     3749.79999999993,
+     849.7999999999302
+    ],
+    "sort": [
+     3652.70000000007,
+     389.20000000006985
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     815,
+     61
+    ]
+   },
+   {
+    "fcp": 4216,
+    "rowsVisible": 4211.400000000023,
+    "longTaskSum": 3473,
+    "longTasks": 4,
+    "tbt": 0,
+    "tbtAll": 3273,
+    "rowsOk": 5000,
+    "heap": 10.818748474121094,
+    "create": [
+     4473.300000000047,
+     752.5
+    ],
+    "sort": [
+     3973.70000000007,
+     460.4000000000233
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     805.7000000000698,
+     77.40000000002328
+    ]
+   },
+   {
+    "fcp": 4192,
+    "rowsVisible": 4256.5,
+    "longTaskSum": 3467,
+    "longTasks": 4,
+    "tbt": 20,
+    "tbtAll": 3267,
+    "rowsOk": 5000,
+    "heap": 10.818782806396484,
+    "create": [
+     3758.600000000093,
+     628
+    ],
+    "sort": [
+     3448.4000000001397,
+     387.5
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     691.8000000000466,
+     69.80000000004657
+    ]
+   }
+  ],
+  "virtual": [
+   {
+    "fcp": 1236,
+    "rowsVisible": 1279.4000000000233,
+    "longTaskSum": 368,
+    "longTasks": 2,
+    "tbt": 0,
+    "tbtAll": 268,
+    "heap": 2.843830108642578,
+    "frames": 166,
+    "avgFrame": 18.1722891566265,
+    "p95Frame": 33.30000000000018,
+    "dropped": 15,
+    "scrollTop": 9029,
+    "maxIdVisible": 301,
+    "vrows": 26
+   },
+   {
+    "fcp": 1064,
+    "rowsVisible": 1095.4000000000233,
+    "longTaskSum": 250,
+    "longTasks": 2,
+    "tbt": 0,
+    "tbtAll": 150,
+    "heap": 2.8438339233398438,
+    "frames": 156,
+    "avgFrame": 19.337179487179483,
+    "p95Frame": 33.30000000000018,
+    "dropped": 25,
+    "scrollTop": 9048,
+    "maxIdVisible": 302,
+    "vrows": 26
+   },
+   {
+    "fcp": 1080,
+    "rowsVisible": 1147.1999999999534,
+    "longTaskSum": 299,
+    "longTasks": 3,
+    "tbt": 0,
+    "tbtAll": 149,
+    "heap": 2.8437232971191406,
+    "frames": 157,
+    "avgFrame": 19.2140127388535,
+    "p95Frame": 33.399999999999636,
+    "dropped": 24,
+    "scrollTop": 9020,
+    "maxIdVisible": 301,
+    "vrows": 26
+   },
+   {
+    "fcp": 1144,
+    "rowsVisible": 1181.5,
+    "longTaskSum": 345,
+    "longTasks": 3,
+    "tbt": 0,
+    "tbtAll": 195,
+    "heap": 2.8438873291015625,
+    "frames": 176,
+    "avgFrame": 17.23409090909091,
+    "p95Frame": 16.800000000000182,
+    "dropped": 6,
+    "scrollTop": 9098,
+    "maxIdVisible": 302,
+    "vrows": 26
+   },
+   {
+    "fcp": 1084,
+    "rowsVisible": 1123.3000000000466,
+    "longTaskSum": 271,
+    "longTasks": 2,
+    "tbt": 0,
+    "tbtAll": 171,
+    "heap": 2.8438339233398438,
+    "frames": 174,
+    "avgFrame": 17.336781609195402,
+    "p95Frame": 16.800000000000182,
+    "dropped": 7,
+    "scrollTop": 9048,
+    "maxIdVisible": 302,
+    "vrows": 26
+   }
+  ]
+ },
+ "preact": {
+  "plain": [
+   {
+    "fcp": 5084,
+    "rowsVisible": 5124.799999999988,
+    "longTaskSum": 4697,
+    "longTasks": 3,
+    "tbt": 21,
+    "tbtAll": 4547,
+    "rowsOk": 5000,
+    "heap": 11.09033203125,
+    "create": [
+     3496.3000000000466,
+     621.1000000000349
+    ],
+    "sort": [
+     3982.1999999999534,
+     466.69999999995343
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     706.6000000000349,
+     97.40000000002328
+    ]
+   },
+   {
+    "fcp": 4500,
+    "rowsVisible": 4500.699999999953,
+    "longTaskSum": 4109,
+    "longTasks": 3,
+    "tbt": 0,
+    "tbtAll": 3959,
+    "rowsOk": 5000,
+    "heap": 11.091880798339844,
+    "create": [
+     3337.8000000000466,
+     479.4000000000233
+    ],
+    "sort": [
+     4508.400000000023,
+     602.9000000000233
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     1020.6999999999534,
+     69.09999999997672
+    ]
+   },
+   {
+    "fcp": 4812,
+    "rowsVisible": 4840.599999999977,
+    "longTaskSum": 4442,
+    "longTasks": 3,
+    "tbt": 14,
+    "tbtAll": 4292,
+    "rowsOk": 5000,
+    "heap": 11.090919494628906,
+    "create": [
+     3593.4000000000233,
+     755.0999999999767
+    ],
+    "sort": [
+     5008.800000000047,
+     522.1000000000931
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     678.2999999999302,
+     58.79999999993015
+    ]
+   },
+   {
+    "fcp": 4720,
+    "rowsVisible": 4756.199999999953,
+    "longTaskSum": 4325,
+    "longTasks": 3,
+    "tbt": 3,
+    "tbtAll": 4175,
+    "rowsOk": 5000,
+    "heap": 11.090816497802734,
+    "create": [
+     3162.4000000000233,
+     529.2000000000698
+    ],
+    "sort": [
+     3157.8000000000466,
+     401.69999999995343
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     647.5999999999767,
+     56.40000000002328
+    ]
+   },
+   {
+    "fcp": 4480,
+    "rowsVisible": 4501.800000000047,
+    "longTaskSum": 4111,
+    "longTasks": 3,
+    "tbt": 1,
+    "tbtAll": 3961,
+    "rowsOk": 5000,
+    "heap": 11.089000701904297,
+    "create": [
+     3229.6999999999534,
+     519.9000000001397
+    ],
+    "sort": [
+     3752.4000000001397,
+     408.60000000009313
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     796.5,
+     69.4000000001397
+    ]
+   }
+  ],
+  "virtual": [
+   {
+    "fcp": 908,
+    "rowsVisible": 901.2000000000116,
+    "longTaskSum": 318,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 268,
+    "heap": 2.1899452209472656,
+    "frames": 174,
+    "avgFrame": 17.3367816091954,
+    "p95Frame": 16.800000000000182,
+    "dropped": 7,
+    "scrollTop": 9048,
+    "maxIdVisible": 302,
+    "vrows": 26
+   },
+   {
+    "fcp": 688,
+    "rowsVisible": 720.6000000000931,
+    "longTaskSum": 261,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 211,
+    "heap": 2.189929962158203,
+    "frames": 180,
+    "avgFrame": 16.758333333333333,
+    "p95Frame": 16.799999999999272,
+    "dropped": 1,
+    "scrollTop": 9044,
+    "maxIdVisible": 301,
+    "vrows": 25
+   },
+   {
+    "fcp": 688,
+    "rowsVisible": 723.6999999999534,
+    "longTaskSum": 236,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 186,
+    "heap": 2.189929962158203,
+    "frames": 180,
+    "avgFrame": 16.758333333333333,
+    "p95Frame": 16.800000000000182,
+    "dropped": 1,
+    "scrollTop": 9011,
+    "maxIdVisible": 300,
+    "vrows": 25
+   },
+   {
+    "fcp": 688,
+    "rowsVisible": 724.6999999999534,
+    "longTaskSum": 246,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 196,
+    "heap": 2.189952850341797,
+    "frames": 179,
+    "avgFrame": 16.851955307262568,
+    "p95Frame": 16.800000000000182,
+    "dropped": 2,
+    "scrollTop": 9010,
+    "maxIdVisible": 300,
+    "vrows": 25
+   },
+   {
+    "fcp": 788,
+    "rowsVisible": 835.8000000000466,
+    "longTaskSum": 316,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 266,
+    "heap": 2.189960479736328,
+    "frames": 162,
+    "avgFrame": 18.620370370370374,
+    "p95Frame": 33.399999999999636,
+    "dropped": 19,
+    "scrollTop": 9015,
+    "maxIdVisible": 301,
+    "vrows": 26
+   }
+  ]
+ },
+ "svelte": {
+  "plain": [
+   {
+    "fcp": 4812,
+    "rowsVisible": 4842.399999999965,
+    "longTaskSum": 4367,
+    "longTasks": 3,
+    "tbt": 37,
+    "tbtAll": 4217,
+    "rowsOk": 5000,
+    "heap": 12.83487319946289,
+    "create": [
+     3678.5999999999767,
+     418.4000000000233
+    ],
+    "sort": [
+     4398.5,
+     515.5
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     846.8000000000466,
+     71.70000000006985
+    ]
+   },
+   {
+    "fcp": 3876,
+    "rowsVisible": 3898.5,
+    "longTaskSum": 3400,
+    "longTasks": 3,
+    "tbt": 7,
+    "tbtAll": 3250,
+    "rowsOk": 5000,
+    "heap": 12.837799072265625,
+    "create": [
+     3233.1999999999534,
+     340
+    ],
+    "sort": [
+     4410.400000000023,
+     463
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     653,
+     52.60000000009313
+    ]
+   },
+   {
+    "fcp": 4352,
+    "rowsVisible": 4366.79999999993,
+    "longTaskSum": 3846,
+    "longTasks": 3,
+    "tbt": 3,
+    "tbtAll": 3696,
+    "rowsOk": 5000,
+    "heap": 12.831108093261719,
+    "create": [
+     3729.0999999999767,
+     403.19999999995343
+    ],
+    "sort": [
+     3095.79999999993,
+     381.0999999999767
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     693.3999999999069,
+     54.09999999997672
+    ]
+   },
+   {
+    "fcp": 3868,
+    "rowsVisible": 3893.79999999993,
+    "longTaskSum": 3367,
+    "longTasks": 3,
+    "tbt": 0,
+    "tbtAll": 3217,
+    "rowsOk": 5000,
+    "heap": 12.838027954101562,
+    "create": [
+     3096.4000000000233,
+     402.4000000000233
+    ],
+    "sort": [
+     3802.3000000000466,
+     351.30000000004657
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     699.4000000000233,
+     69.5
+    ]
+   },
+   {
+    "fcp": 4764,
+    "rowsVisible": 4798.90000000014,
+    "longTaskSum": 4287,
+    "longTasks": 3,
+    "tbt": 8,
+    "tbtAll": 4137,
+    "rowsOk": 5000,
+    "heap": 12.834400177001953,
+    "create": [
+     3225.600000000093,
+     510.5
+    ],
+    "sort": [
+     2953.600000000093,
+     352
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     786.3000000000466,
+     69.9000000001397
+    ]
+   }
+  ],
+  "virtual": [
+   {
+    "fcp": 836,
+    "rowsVisible": 894.4000000000233,
+    "longTaskSum": 281,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 231,
+    "heap": 2.566753387451172,
+    "frames": 181,
+    "avgFrame": 16.666298342541438,
+    "p95Frame": 16.799999999999727,
+    "dropped": 0,
+    "scrollTop": 9017,
+    "maxIdVisible": 301,
+    "vrows": 26
+   },
+   {
+    "fcp": 872,
+    "rowsVisible": 883.3000000000466,
+    "longTaskSum": 335,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 285,
+    "heap": 2.5666236877441406,
+    "frames": 172,
+    "avgFrame": 17.537790697674417,
+    "p95Frame": 16.800000000000182,
+    "dropped": 9,
+    "scrollTop": 9016,
+    "maxIdVisible": 301,
+    "vrows": 26
+   },
+   {
+    "fcp": 924,
+    "rowsVisible": 982.5,
+    "longTaskSum": 363,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 313,
+    "heap": 2.566631317138672,
+    "frames": 175,
+    "avgFrame": 17.237714285714286,
+    "p95Frame": 16.800000000000182,
+    "dropped": 6,
+    "scrollTop": 9006,
+    "maxIdVisible": 300,
+    "vrows": 26
+   },
+   {
+    "fcp": 896,
+    "rowsVisible": 949,
+    "longTaskSum": 355,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 305,
+    "heap": 2.566619873046875,
+    "frames": 179,
+    "avgFrame": 16.85195530726257,
+    "p95Frame": 16.700000000000728,
+    "dropped": 2,
+    "scrollTop": 9010,
+    "maxIdVisible": 300,
+    "vrows": 25
+   },
+   {
+    "fcp": 884,
+    "rowsVisible": 917.3999999999069,
+    "longTaskSum": 304,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 254,
+    "heap": 2.5672569274902344,
+    "frames": 176,
+    "avgFrame": 17.139204545454547,
+    "p95Frame": 16.800000000000182,
+    "dropped": 5,
+    "scrollTop": 9013,
+    "maxIdVisible": 301,
+    "vrows": 26
+   }
+  ]
+ },
+ "solid": {
+  "plain": [
+   {
+    "fcp": 4608,
+    "rowsVisible": 4650.099999999977,
+    "longTaskSum": 4169,
+    "longTasks": 3,
+    "tbt": 8,
+    "tbtAll": 4019,
+    "rowsOk": 5000,
+    "heap": 9.113765716552734,
+    "create": [
+     3268.4000000000233,
+     348.0999999999767
+    ],
+    "sort": [
+     3219.5,
+     214.69999999995343
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     818.6999999999534,
+     53.699999999953434
+    ]
+   },
+   {
+    "fcp": 4428,
+    "rowsVisible": 4461,
+    "longTaskSum": 4015,
+    "longTasks": 3,
+    "tbt": 15,
+    "tbtAll": 3865,
+    "rowsOk": 5000,
+    "heap": 9.113197326660156,
+    "create": [
+     3851,
+     432.5999999999767
+    ],
+    "sort": [
+     3770.70000000007,
+     357.5999999999767
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     938.5,
+     52.199999999953434
+    ]
+   },
+   {
+    "fcp": 3904,
+    "rowsVisible": 3947.4000000000233,
+    "longTaskSum": 3486,
+    "longTasks": 3,
+    "tbt": 8,
+    "tbtAll": 3336,
+    "rowsOk": 5000,
+    "heap": 9.113231658935547,
+    "create": [
+     3284,
+     357.9000000000233
+    ],
+    "sort": [
+     3327.20000000007,
+     213.20000000006985
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     845.3999999999069,
+     53.39999999990687
+    ]
+   },
+   {
+    "fcp": 3972,
+    "rowsVisible": 3998.5,
+    "longTaskSum": 3490,
+    "longTasks": 2,
+    "tbt": 0,
+    "tbtAll": 3390,
+    "rowsOk": 5000,
+    "heap": 9.118038177490234,
+    "create": [
+     2922.1999999999534,
+     313.5
+    ],
+    "sort": [
+     3155.3000000000466,
+     262.4000000000233
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     931.5999999999767,
+     56.800000000046566
+    ]
+   },
+   {
+    "fcp": 3880,
+    "rowsVisible": 3914,
+    "longTaskSum": 3457,
+    "longTasks": 3,
+    "tbt": 2,
+    "tbtAll": 3307,
+    "rowsOk": 5000,
+    "heap": 9.113128662109375,
+    "create": [
+     2843.0999999999767,
+     370.30000000004657
+    ],
+    "sort": [
+     3398.8000000000466,
+     220.40000000002328
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     695.0999999999767,
+     34.39999999990687
+    ]
+   }
+  ],
+  "virtual": [
+   {
+    "fcp": 780,
+    "rowsVisible": 827,
+    "longTaskSum": 285,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 235,
+    "heap": 2.3955230712890625,
+    "frames": 176,
+    "avgFrame": 17.139772727272728,
+    "p95Frame": 16.800000000000182,
+    "dropped": 5,
+    "scrollTop": 9044,
+    "maxIdVisible": 301,
+    "vrows": 25
+   },
+   {
+    "fcp": 796,
+    "rowsVisible": 836.9000000000233,
+    "longTaskSum": 295,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 245,
+    "heap": 2.395702362060547,
+    "frames": 180,
+    "avgFrame": 16.75888888888889,
+    "p95Frame": 16.700000000000728,
+    "dropped": 1,
+    "scrollTop": 9034,
+    "maxIdVisible": 301,
+    "vrows": 26
+   },
+   {
+    "fcp": 824,
+    "rowsVisible": 805.6999999999534,
+    "longTaskSum": 312,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 262,
+    "heap": 2.395519256591797,
+    "frames": 179,
+    "avgFrame": 16.853072625698324,
+    "p95Frame": 16.800000000000182,
+    "dropped": 2,
+    "scrollTop": 9032,
+    "maxIdVisible": 301,
+    "vrows": 26
+   },
+   {
+    "fcp": 888,
+    "rowsVisible": 915.6999999999534,
+    "longTaskSum": 368,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 318,
+    "heap": 2.3955345153808594,
+    "frames": 181,
+    "avgFrame": 16.665745856353592,
+    "p95Frame": 16.700000000000273,
+    "dropped": 0,
+    "scrollTop": 9013,
+    "maxIdVisible": 301,
+    "vrows": 26
+   },
+   {
+    "fcp": 716,
+    "rowsVisible": 749.6999999999534,
+    "longTaskSum": 236,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 186,
+    "heap": 2.3955345153808594,
+    "frames": 181,
+    "avgFrame": 16.66574585635359,
+    "p95Frame": 16.700000000000728,
+    "dropped": 0,
+    "scrollTop": 9028,
+    "maxIdVisible": 301,
+    "vrows": 26
+   }
+  ]
+ },
+ "vue": {
+  "plain": [
+   {
+    "fcp": 4532,
+    "rowsVisible": 4551.099999999977,
+    "longTaskSum": 4001,
+    "longTasks": 3,
+    "tbt": 2,
+    "tbtAll": 3851,
+    "rowsOk": 5000,
+    "heap": 8.469806671142578,
+    "create": [
+     3286.5,
+     494
+    ],
+    "sort": [
+     3880.5999999999767,
+     519.4000000000233
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     1024.5,
+     152.79999999993015
+    ]
+   },
+   {
+    "fcp": 4504,
+    "rowsVisible": 4536.29999999993,
+    "longTaskSum": 4001,
+    "longTasks": 3,
+    "tbt": 13,
+    "tbtAll": 3851,
+    "rowsOk": 5000,
+    "heap": 8.47128677368164,
+    "create": [
+     3042.0999999999767,
+     524.5999999999767
+    ],
+    "sort": [
+     4228.70000000007,
+     372
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     935.4000000000233,
+     114.5
+    ]
+   },
+   {
+    "fcp": 4548,
+    "rowsVisible": 4553.699999999953,
+    "longTaskSum": 4014,
+    "longTasks": 3,
+    "tbt": 4,
+    "tbtAll": 3864,
+    "rowsOk": 5000,
+    "heap": 8.46921157836914,
+    "create": [
+     2955.399999999907,
+     449
+    ],
+    "sort": [
+     3508.5999999999767,
+     450.0999999999767
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     841.2999999999302,
+     113.09999999997672
+    ]
+   },
+   {
+    "fcp": 4920,
+    "rowsVisible": 4942.600000000093,
+    "longTaskSum": 4424,
+    "longTasks": 3,
+    "tbt": 5,
+    "tbtAll": 4274,
+    "rowsOk": 5000,
+    "heap": 8.469528198242188,
+    "create": [
+     4672.5,
+     359.5
+    ],
+    "sort": [
+     3734.0999999999767,
+     529.1999999999534
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     934.3999999999069,
+     122.5
+    ]
+   },
+   {
+    "fcp": 4236,
+    "rowsVisible": 4274.599999999977,
+    "longTaskSum": 3729,
+    "longTasks": 3,
+    "tbt": 2,
+    "tbtAll": 3579,
+    "rowsOk": 5000,
+    "heap": 8.469322204589844,
+    "create": [
+     3295.5,
+     309.80000000004657
+    ],
+    "sort": [
+     3434.9000000000233,
+     335.80000000004657
+    ],
+    "sortTop": "4619,3183",
+    "append": [
+     708.0999999999767,
+     111.29999999993015
+    ]
+   }
+  ],
+  "virtual": [
+   {
+    "fcp": 1020,
+    "rowsVisible": 1031,
+    "longTaskSum": 407,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 357,
+    "heap": 2.522430419921875,
+    "frames": 177,
+    "avgFrame": 17.04237288135593,
+    "p95Frame": 16.799999999999727,
+    "dropped": 4,
+    "scrollTop": 9044,
+    "maxIdVisible": 301,
+    "vrows": 25
+   },
+   {
+    "fcp": 996,
+    "rowsVisible": 976.7000000000698,
+    "longTaskSum": 414,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 364,
+    "heap": 2.5224266052246094,
+    "frames": 169,
+    "avgFrame": 17.750887573964494,
+    "p95Frame": 33.29999999999973,
+    "dropped": 11,
+    "scrollTop": 9001,
+    "maxIdVisible": 300,
+    "vrows": 26
+   },
+   {
+    "fcp": 928,
+    "rowsVisible": 965.8000000000466,
+    "longTaskSum": 321,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 271,
+    "heap": 2.522441864013672,
+    "frames": 176,
+    "avgFrame": 17.139204545454547,
+    "p95Frame": 16.800000000000182,
+    "dropped": 5,
+    "scrollTop": 9007,
+    "maxIdVisible": 300,
+    "vrows": 26
+   },
+   {
+    "fcp": 912,
+    "rowsVisible": 943.3000000000466,
+    "longTaskSum": 316,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 266,
+    "heap": 2.522441864013672,
+    "frames": 171,
+    "avgFrame": 17.640350877192983,
+    "p95Frame": 33.29999999999973,
+    "dropped": 10,
+    "scrollTop": 9023,
+    "maxIdVisible": 301,
+    "vrows": 26
+   },
+   {
+    "fcp": 884,
+    "rowsVisible": 862.3999999999069,
+    "longTaskSum": 293,
+    "longTasks": 1,
+    "tbt": 0,
+    "tbtAll": 243,
+    "heap": 2.5224266052246094,
+    "frames": 178,
+    "avgFrame": 16.947191011235958,
+    "p95Frame": 16.799999999999727,
+    "dropped": 3,
+    "scrollTop": 9044,
+    "maxIdVisible": 301,
+    "vrows": 25
+   }
+  ]
+ }
+}

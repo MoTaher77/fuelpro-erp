@@ -1,0 +1,4 @@
+go pg post pool=4 opt=[] {"rps":2929,"total":43992,"duration":15.02,"p50":33.05,"p95":41.34,"p99":66.05,"max":158.72,"errors":0,"timeou
+go pg post pool=16 opt=[] {"rps":4838,"total":72665,"duration":15.02,"p50":19.87,"p95":26.86,"p99":35.01,"max":200.06,"errors":0,"timeou
+go pg post pool=4 opt=[?options=-c%20synchronous_commit%3Doff] {"rps":4756,"total":71435,"duration":15.02,"p50":20.59,"p95":26.35,"p99":30.86,"max":96.7,"errors":0,"timeouts
+go pg post pool=16 opt=[?options=-c%20synchronous_commit%3Doff] {"rps":6456,"total":97035,"duration":15.03,"p50":15.04,"p95":21.17,"p99":25.34,"max":82.69,"errors":0,"timeout
