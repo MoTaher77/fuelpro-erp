@@ -6,6 +6,7 @@ const V = require('./validate');
 const auth = require('./auth');
 const TOTP = require('./totp');
 const L = require('./ledger');
+const LOG = require('./logins');
 
 const MAX_SALE_ML = 5_000_000;            // 5,000 L in one transaction is treated as a data-entry error
 const MAX_DELIVERY_ML = 100_000_000;      // 100,000 L
@@ -103,31 +104,60 @@ function registerOrg(db, input, ip) {
   });
 }
 
-function login(db, input, ip) {
+function login(db, input, ip, ua) {
   const b = V.obj(input, 'body');
   const email = V.email(b.email);
-  auth.assertNotLocked(ip, email);
+  const device = LOG.deviceLabel(ua);
   const u = db.prepare('SELECT * FROM users WHERE email=?').get(email);
+  // every outcome on a known account goes to the owner's sign-in history (src/logins.js); unknown e-mails are not stored
+  const fail = (reason, err) => { if (u) LOG.record(db, u, 'failed', { ip, device, reason }); return err; };
+  try { auth.assertNotLocked(ip, email); } catch (e) { throw fail('locked', e); }
   const ok = auth.verifyPassword(String(b.password || ''), u ? u.pw_hash : auth.DUMMY);   // constant-ish time
-  if (!u || !ok || !u.active) { auth.recordFail(ip, email); throw new HttpError(401, 'BAD_CREDENTIALS', 'Email or password is incorrect'); }
+  if (!u || !ok || !u.active) { auth.recordFail(ip, email); throw fail(u && ok ? 'inactive' : 'password', new HttpError(401, 'BAD_CREDENTIALS', 'Email or password is incorrect')); }
   if (u.totp_enabled) {
-    auth.assertTfNotLocked(u.id);
+    try { auth.assertTfNotLocked(u.id); } catch (e) { throw fail('locked', e); }
     if (b.code == null || String(b.code).trim() === '') throw new HttpError(401, 'TOTP_REQUIRED', 'Enter the code from your authenticator app');
     const used = secondFactor(db, u, b.code);
-    if (!used) { auth.recordFail(ip, email); auth.recordTfFail(u.id); throw new HttpError(401, 'BAD_TOTP', 'The verification code is incorrect'); }
+    if (!used) { auth.recordFail(ip, email); auth.recordTfFail(u.id); throw fail('totp', new HttpError(401, 'BAD_TOTP', 'The verification code is incorrect')); }
     auth.clearTfFails(u.id);
     if (used === 'recovery') audit(db, { id: u.id, org_id: u.org_id }, null, 'user.2fa.recovery_used', 'user', u.id);
   }
   auth.clearFails(ip, email);
-  return { token: auth.createSession(db, u.id, ip), user: { id: u.id, name: u.name, email: u.email, role: u.role } };
+  const token = auth.createSession(db, u.id, ip, device);
+  LOG.record(db, u, 'login', { ip, device });
+  return { token, user: { id: u.id, name: u.name, email: u.email, role: u.role } };
 }
+function logout(db, token, ip, ua) {
+  const u = auth.sessionUser(db, token);
+  if (u) LOG.record(db, u, 'logout', { ip, device: LOG.deviceLabel(ua) });
+  auth.destroySession(db, token);
+  return { ok: true };
+}
+/** The owner/admin ends every session of another user (lost phone, staff who left). */
+function signOutUser(db, user, id) {
+  need(user, 'users.manage');
+  const t = db.prepare('SELECT * FROM users WHERE id=? AND org_id=?').get(id, user.org_id);
+  if (!t) throw notFound('User');
+  if (t.id === user.id) throw bad('VALIDATION', 'Use sign out to end your own session');
+  if (t.role === 'owner') throw forbidden('The owner account cannot be changed here');
+  if (t.role === 'admin' && user.role !== 'owner') throw forbidden('Only the owner can change administrators');
+  return tx(db, () => {
+    const n = db.prepare('SELECT COUNT(*) n FROM sessions WHERE user_id=?').get(id).n;
+    auth.destroyUserSessions(db, id);
+    LOG.record(db, t, 'signed_out', { reason: user.name });
+    audit(db, user, null, 'user.signout', 'user', id, { sessions: n });
+    return { ok: true, sessions: n };
+  });
+}
+function loginHistory(db, user, q) { need(user, 'users.manage'); return LOG.list(db, user, q || {}); }
 
 /* ---------- users (owner) ---------- */
 function listUsers(db, user) {
   need(user, 'users.manage');
   const rows = db.prepare('SELECT id,name,email,role,active,totp_enabled,created_at FROM users WHERE org_id=? ORDER BY id').all(user.org_id);
   const st = db.prepare('SELECT station_id FROM user_stations WHERE user_id=?');
-  return rows.map(r => ({ ...r, station_ids: st.all(r.id).map(x => x.station_id) }));
+  const pres = LOG.presence(db, user.org_id);
+  return rows.map(r => ({ ...r, station_ids: st.all(r.id).map(x => x.station_id), ...pres(r.id) }));
 }
 const ASSIGNABLE = ['admin', 'manager', 'accountant', 'supervisor', 'cashier', 'viewer'];
 function stationIds(db, user, v, role) {
@@ -708,4 +738,4 @@ function resetPassword(db, input, ip) {
 }
 
 module.exports = { openShift, customerBalance, partyBalances, beforeDate, scoped, need, audit, tzToday, addDays, resolveDate, pageArgs, voidRow, forgotPassword, resetPassword, twoFactorSetup, twoFactorEnable, twoFactorDisable, twoFactorNewCodes, recoveryLeft, statement, exportSales, changePassword, registerOrg, login, listUsers, createUser, updateUser, listStations, createStation, updateStation, station, listFuels, createFuel, updateFuelPrice, listTanks, createTank, listPumps, createPump, correctMeter,
-  listCustomers, createCustomer, createSale, voidSale, listSales, createDelivery, voidDelivery, listDeliveries, createAdjustment, createExpense, voidExpense, listExpenses, createPayment, voidPayment, dashboard, summary, auditLog };
+  listCustomers, createCustomer, createSale, voidSale, listSales, createDelivery, voidDelivery, listDeliveries, createAdjustment, createExpense, voidExpense, listExpenses, createPayment, voidPayment, dashboard, summary, auditLog, logout, signOutUser, loginHistory };

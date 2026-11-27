@@ -6,6 +6,7 @@ Updated 2026-11-24. No percentages: each line is VERIFIED (code + test), REPORTE
 |---|---|---|
 | **v2 phase 1** (`v2/`): TypeScript core for sales & shifts on SQLite + PostgreSQL + desktop/phone bridge; parity with v1 to the minor unit; migration tool with in-transaction proof; server, Tauri desktop, Capacitor phone editions | VERIFIED (tests + browser + Linux desktop build); phone/Windows built by CI, not yet on a device (KI-23) | `v2/tests/*.test.ts`, `docs/V2-PHASE1.md` |
 | Core: orgs, users, stations, fuels, tanks, pumps, meter sales, deliveries, expenses, VAT, void with reason | VERIFIED | `test/api.test.js` |
+| Sign-in history + «online now» + sign out everywhere (0.35.0) | VERIFIED | `test/logins.test.js` |
 | Roles (7) + station isolation + org isolation | VERIFIED | `erp.test.js` "roles and station access…", `api.test.js` |
 | Security: CSRF, login throttle, password reset, TOTP 2FA, sealed secrets | VERIFIED | `api.test.js`, `auth-units.test.js` |
 | Stock ledger, weighted average, counts, transfers, reconciliation, monthly count | VERIFIED | `erp.test.js`, `books.test.js` |

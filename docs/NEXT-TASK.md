@@ -1,5 +1,9 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-27 — 0.35.0 sign-in history (branch `claude/user-logins`, PR open)
+- Owner asked for user control + who signed in and when. Built on v1 (the live system): `login_events` (migration v19), `src/logins.js`, users screen columns (last sign-in, online now) + «sign out everywhere» + «سجل الدخول» section. 98 unit + 8 e2e + 93 artifact green.
+- **Owner after merge:** `sudo fuelpro-update` on the server (migration v19 adds a table only). History starts from that moment (earlier sign-ins were never stored).
+
 ## 2026-11-27 — 0.34.0 v2 phase 1 (branch `claude/v2-phase1`, PR open)
 - Done: `v2/` core (sales & shifts) on SQLite / PostgreSQL / desktop-phone bridge, parity with v1 to the minor unit, migration tool with proof, server + Tauri + Capacitor editions, CI (`.github/workflows/v2.yml`: core, ui, desktop Windows+Linux, Android APK). Report: `docs/V2-PHASE1.md`.
 - **Owner:** try the CI artifacts (APK on the phone, `.exe` on the laptop) and report; choose the phase-2 module (proposal: stock & deliveries, then customers & collections); say when signing is wanted.

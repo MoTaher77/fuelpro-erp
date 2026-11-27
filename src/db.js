@@ -439,6 +439,18 @@ CREATE INDEX payroll_lines_emp ON payroll_lines(employee_id);
 /* v18 (0.28.1): an employee carried over from an old per-employee ledger account remembers it (payroll.carryOver, KI-20) */
 `ALTER TABLE employees ADD COLUMN legacy_account_id INTEGER REFERENCES accounts(id);
 CREATE INDEX employees_legacy ON employees(legacy_account_id);
+`,
+/* v19 (0.35.0): sign-in history — who signed in, out or failed, when, from which device and address (src/logins.js).
+   Only attempts on a known account are kept (a stranger's guesses cannot fill the table for an organisation);
+   rows older than a year are pruned. sessions.device lets the owner see where each user is signed in. */
+`CREATE TABLE login_events(
+  id INTEGER PRIMARY KEY, org_id INTEGER NOT NULL REFERENCES orgs(id), user_id INTEGER NOT NULL REFERENCES users(id),
+  at TEXT NOT NULL DEFAULT (datetime('now')), kind TEXT NOT NULL CHECK(kind IN('login','logout','failed','signed_out')),
+  reason TEXT, ip TEXT, device TEXT
+);
+CREATE INDEX login_events_org ON login_events(org_id, id);
+CREATE INDEX login_events_user ON login_events(user_id, id);
+ALTER TABLE sessions ADD COLUMN device TEXT;
 `
 ];
 

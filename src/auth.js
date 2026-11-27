@@ -30,11 +30,16 @@ function checkPasswordPolicy(pw) {
 
 const sha = (t) => crypto.createHash('sha256').update(t).digest('hex');
 
-function createSession(db, userId, ip) {
+function createSession(db, userId, ip, device) {
   const token = crypto.randomBytes(32).toString('base64url');
   const now = Date.now();
-  db.prepare('INSERT INTO sessions(id,user_id,created_at,expires_at,ip) VALUES(?,?,?,?,?)').run(sha(token), userId, now, now + SESSION_IDLE_MS, ip || null);
+  db.prepare('INSERT INTO sessions(id,user_id,created_at,expires_at,ip,device) VALUES(?,?,?,?,?,?)').run(sha(token), userId, now, now + SESSION_IDLE_MS, ip || null, device || null);
   return token;
+}
+/** The account behind a session token, or null (used to log a sign-out before the session is removed). */
+function sessionUser(db, token) {
+  if (!token) return null;
+  return db.prepare('SELECT u.id, u.org_id FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id=?').get(sha(token)) || null;
 }
 function loadSession(db, token) {
   if (!token) throw unauthorized();
@@ -110,4 +115,4 @@ const ROLES = Object.keys(PERMS);
 const ORG_WIDE = new Set(['owner', 'admin']);   // see every station; everyone else sees only assigned stations
 function can(role, perm) { const p = PERMS[role]; return !!p && (p.has('*') || p.has(perm)); }
 
-module.exports = { PERMS, ROLES, ORG_WIDE, sha, assertTfNotLocked, recordTfFail, clearTfFails, assertResetAllowed, hashPassword, verifyPassword, DUMMY, checkPasswordPolicy, createSession, loadSession, destroySession, destroyUserSessions, assertNotLocked, recordFail, clearFails, can };
+module.exports = { PERMS, ROLES, ORG_WIDE, sha, assertTfNotLocked, recordTfFail, clearTfFails, assertResetAllowed, hashPassword, verifyPassword, DUMMY, checkPasswordPolicy, createSession, sessionUser, loadSession, destroySession, SESSION_IDLE_MS, destroyUserSessions, assertNotLocked, recordFail, clearFails, can };
