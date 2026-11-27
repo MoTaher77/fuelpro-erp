@@ -1,11 +1,12 @@
 /* Builds the shared UI for each edition: apps/<edition>/web/main.ts → apps/<edition>/dist (app.js, app.css, fonts, index.html).
    esbuild, one file per edition, no runtime CDN. Usage: node tools/build.ts [server|desktop|mobile ...] */
+import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { cpSync, mkdirSync, readdirSync, statSync, writeFileSync, readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const editions = process.argv.slice(2).length ? process.argv.slice(2) : ['server', 'desktop', 'mobile'];
 const report: Record<string, unknown> = {};
 for (const ed of editions) {

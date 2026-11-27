@@ -1,4 +1,5 @@
-import { Migrator, type Kysely, type Migration } from 'kysely';
+import type { Kysely } from 'kysely';
+import { Migrator, type Migration } from 'kysely/migration';
 import type { Dialect } from '@fuelpro/core';
 import { m001 } from './migrations/001_core.ts';
 

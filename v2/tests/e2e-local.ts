@@ -1,5 +1,6 @@
 /* The desktop/phone path end to end in Chromium: UI → core → Kysely → bridge → SQLite (WASM). No server involved.
    node tests/e2e-local.ts <outdir> */
+import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { chromium } from 'playwright';
 import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -9,7 +10,7 @@ import { join, extname } from 'node:path';
 import { tmpdir } from 'node:os';
 const out = process.argv[2] || '.';
 const dir = join(tmpdir(), 'fpv2-local-' + process.pid); mkdirSync(join(dir, 'fonts'), { recursive: true });
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 await build({ entryPoints: [join(root, 'tests/local-harness.ts')], bundle: true, format: 'esm', platform: 'browser', outfile: join(dir, 'app.js'), logLevel: 'warning' });
 cpSync(join(root, '../node_modules/sql.js/dist/sql-wasm.wasm'), join(dir, 'sql-wasm.wasm'));
 cpSync(join(root, '../node_modules/sql.js/dist/sql-wasm.js'), join(dir, 'sql-wasm.js'));

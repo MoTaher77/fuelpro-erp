@@ -2,6 +2,7 @@
    (v2 databases made from the v1 file by tools/migrate-v1.ts). Each server in its own process; autocannon here.
    node bench/compare.ts --v1 <demo-v1.db> --v2 <demo-v2.db> [--pg postgres://…/template_db] [--conn 100] [--dur 10] [--json out.json]
    Demo data only. */
+import { fileURLToPath } from 'node:url';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { copyFileSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -13,7 +14,7 @@ import hdr from 'hdr-histogram-js';
 const require = createRequire(import.meta.url);
 const arg = (k: string, d?: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const CONN = Number(arg('--conn', '100')), DUR = Number(arg('--dur', '10'));
-const here = new URL('.', import.meta.url).pathname, tmp = join(tmpdir(), 'fpv2-bench-' + process.pid);
+const here = fileURLToPath(new URL('.', import.meta.url)), tmp = join(tmpdir(), 'fpv2-bench-' + process.pid);
 require('node:fs').mkdirSync(tmp, { recursive: true });
 const { DatabaseSync } = require('node:sqlite') as typeof import('node:sqlite');
 

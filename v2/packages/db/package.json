@@ -8,9 +8,9 @@
     "./browser": "./src/browser.ts"
   },
   "dependencies": {
-    "kysely": "^0.28.8",
-    "pg": "^8.16.3",
-    "@fuelpro/core": "*"
+    "@fuelpro/core": "*",
+    "kysely": "0.29.9",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1"
