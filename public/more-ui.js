@@ -240,7 +240,7 @@
       ty.replaceChildren(h('option', { value: '' }, T('allTypes')), ...types.map(t => h('option', { value: t, selected: t === S.jbType ? '' : null }, t))); draw();
     });
     ty.onchange = () => draw(); q.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
-    const doPrint = async () => { await brand(); F.printDoc(`${T('jbook')} ${from.value}_${to.value}`, h('div', { class: 'a4 wide-doc xdoc' }, F.letterhead(T('jbook'), slash(from.value) + ' — ' + slash(to.value) + (ty.value ? ' · ' + ty.value : '')), tbl(true), signs('accountantSig', 'auditorSig', 'managerSig'), foot())); };
+    const doPrint = async () => { await brand(); if (F.P2) return F.P2.jbook({ from: from.value, to: to.value, type: ty.value, list: shown() }); F.printDoc(`${T('jbook')} ${from.value}_${to.value}`, h('div', { class: 'a4 wide-doc xdoc' }, F.letterhead(T('jbook'), slash(from.value) + ' — ' + slash(to.value) + (ty.value ? ' · ' + ty.value : '')), tbl(true), signs('accountantSig', 'auditorSig', 'managerSig'), foot())); };
     main.append(sec(T('jbook'), h('p', { class: 'hint' }, T('jbookHelp')), h('div', { class: 'row' }, field(T('from'), from), field(T('to'), to), field(T('docType'), ty), field(T('search'), q), h('button', { class: 'btn', onclick: run }, T('run')),
       h('button', { class: 'btn gold-btn', onclick: doPrint }, '⎙ ', T('printPdf')))), out);
     await run();
