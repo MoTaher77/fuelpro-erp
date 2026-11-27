@@ -118,6 +118,7 @@ sudo fuelpro-update
 | فحص الدفاتر | `sudo -u fuelpro node /opt/fuelpro/scripts/check-books.js /var/lib/fuelpro/fuelpro.db` |
 | فحص شامل من اللابتوب | `node scripts/smoke-online.js https://fuel.example.com <email> <password>` |
 | رابط استعادة كلمة المرور بدون SMTP | يظهر في `journalctl -u fuelpro` |
+| **الموقع لا يفتح من الخارج والبرنامج يعمل** (`curl -s http://127.0.0.1:3000/healthz` يعطي `{"ok":true}`) | Caddy متوقف: `sudo systemctl status caddy --no-pager`. إن قال `address already in use` فبرنامج آخر أخذ المنفذ 80 بعد إعادة التشغيل: `sudo ss -ltnp \| grep -E ':(80\|443) '` ثم أوقفه وحده، مثلاً `sudo systemctl disable --now nginx`، ثم `sudo systemctl restart caddy`. `sudo fuelpro-update` يفحص هذا الآن أيضاً (حدث 2026-11-27، KI-25). |
 
 ## الأمان
 - البرنامج غير مكشوف مباشرة: Caddy فقط على 80 و443، والبرنامج على `127.0.0.1`.
