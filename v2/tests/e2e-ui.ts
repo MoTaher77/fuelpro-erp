@@ -45,12 +45,14 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 860 }], ['phone', {
     await page.fill('#s-name', 'مورد تجريبي'); await page.fill('#s-open', '1500'); await page.click('text=إضافة'); await page.waitForSelector('td:has-text("مورد تجريبي")');
     await page.fill('#d-qty', '5000'); await page.fill('#d-cost', '512.5'); await page.selectOption('#d-pay', 'credit');
     await page.selectOption('#d-sup', { label: 'مورد تجريبي' }); await page.click('text=تسجيل التوريد'); await page.waitForSelector('text=آخر التوريدات');
-    await page.waitForFunction(() => document.querySelectorAll('section.wide tbody tr').length >= 1);
+    // the first delivery is saved and the screen redrawn (empty form) before the next entry
+    await page.waitForSelector('.toast:has-text("سُجّل التوريد")');
+    await page.waitForFunction(() => { const q = document.querySelector<HTMLInputElement>('#d-qty'); return !!q && q.value === '' && !document.querySelector('button.busy'); });
     await page.fill('#d-qty', '30000'); await page.fill('#d-cost', '500'); await page.selectOption('#d-pay', 'cash'); await page.click('text=تسجيل التوريد');
     await page.waitForSelector('.toast.err'); const capErr = await page.textContent('.toast.err');
     if (!/المساحة الفارغة/.test(capErr || '')) errors.push('capacity error text: ' + capErr);
-    await page.fill('#c-qty', '14900'); await page.click('text=تسجيل الجرد'); await page.waitForTimeout(300);
-    await page.waitForSelector('#c-qty');
+    await page.fill('#c-qty', '14900'); await page.click('text=تسجيل الجرد');
+    await page.waitForSelector('.toast:has-text("عجز")');
     await page.screenshot({ path: `${out}/6-stock.png`, fullPage: true });
   } else {
     await page.screenshot({ path: `${out}/4-phone.png`, fullPage: true });
