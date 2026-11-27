@@ -50,17 +50,23 @@ export async function createSale(ctx: Ctx, user: User, sid: number, b: SaleInput
   if ((discIn || discBp) && !can(user.role, 'sale.discount')) throw forbidden('You are not allowed to give discounts');
 
   const run = () => tx(ctx, async (q) => {
+    /* Reads that need no lock first; the pump and tank rows are locked (PostgreSQL) only for the short write phase,
+       so concurrent sales on other pumps/tanks never wait and the locked section has as few round trips as possible.
+       Errors are still raised in v1's order (parity tests compare them). */
     const st = await station(q, user, sid);
     const date = resolveDate(ctx, st, user, b.date);
     const dup = await q.selectFrom('sales').selectAll().where('station_id', '=', sid).where('client_id', '=', clientId).executeTakeFirst();
     if (dup) return { ...dup, duplicate: true };
-
     const pump = await scoped(ctx, q, 'pumps', pumpId, sid, 'Pump', true);
     if (!pump.active) throw conflict('PUMP_INACTIVE', 'This pump is not active');
     let tq = q.selectFrom('tanks').selectAll().where('id', '=', pump.tank_id);
     if (ctx.dialect === 'postgres') tq = tq.forUpdate();
-    const tank = await tq.executeTakeFirstOrThrow();
-    const fuel = await q.selectFrom('fuels').selectAll().where('id', '=', pump.fuel_id).executeTakeFirstOrThrow();
+    const [tank, fuel, org, shift] = await Promise.all([
+      tq.executeTakeFirstOrThrow(),
+      q.selectFrom('fuels').selectAll().where('id', '=', pump.fuel_id).executeTakeFirstOrThrow(),
+      q.selectFrom('orgs').select('locked_through').where('id', '=', user.org_id).executeTakeFirstOrThrow(),
+      openShift(q, st, false)
+    ]);
     if (!(fuel.price_e4 > 0)) throw unprocessable('PRICE_NOT_SET', 'Set the fuel price before recording sales');
 
     const open = pump.meter_ml;
@@ -72,8 +78,8 @@ export async function createSale(ctx: Ctx, user: User, sid: number, b: SaleInput
     } else { qty = qtyIn!; close = open + qty; }
     if (qty > MAX_SALE_ML) throw bad('QUANTITY_TOO_LARGE', 'Quantity is unusually large. Check the meter reading.');
     if (qty > tank.level_ml && !st.allow_negative) throw conflict('INSUFFICIENT_STOCK', 'Quantity exceeds the tank stock', { available_ml: tank.level_ml });
-    await assertOpen(q, user.org_id, date);
-    const shift = await openShift(q, st, true);
+    if (org.locked_through && date <= org.locked_through) throw conflict('PERIOD_LOCKED', `The accounting period is closed through ${org.locked_through}`, { locked_through: org.locked_through });
+    if (!shift && st.require_shift) throw conflict('SHIFT_REQUIRED', 'Open a shift before recording this operation');
 
     const amount = amountMinor(qty, fuel.price_e4);
     const discount = discBp !== undefined ? bpOf(amount, discBp) : (discIn || 0);
@@ -91,20 +97,26 @@ export async function createSale(ctx: Ctx, user: User, sid: number, b: SaleInput
       }
       custId = c.id;
     }
-    const id = (await q.insertInto('sales').values({
+    const row = {
       station_id: sid, client_id: clientId, pump_id: pump.id, fuel_id: fuel.id, tank_id: tank.id, business_date: date, created_at: ctx.clock.now(),
       quantity_ml: qty, price_e4: fuel.price_e4, cost_e4: tank.avg_cost_e4, net, vat, gross, vat_bp: st.vat_bp, vat_included: st.vat_included,
       pay_type: payType, customer_id: custId, open_ml: open, close_ml: close, user_id: user.id, shift_id: shift ? shift.id : null, cogs: 0, discount,
       voided_at: null, void_reason: null, void_by: null, note: null, ref: null, bill: null
-    }).returning('id').executeTakeFirstOrThrow()).id;
-    await q.updateTable('pumps').set({ meter_ml: close }).where('id', '=', pump.id).execute();
-    const cogs = -(await stockMove(ctx, q, tank.id, { qty: -Math.min(qty, tank.level_ml), kind: 'sale', ref_type: 'sale', ref_id: id, date, user_id: user.id }));
-    await q.updateTable('sales').set({ cogs }).where('id', '=', id).execute();
-    await post(ctx, q, { org_id: user.org_id, station_id: sid, date, source: 'sale', source_id: id, user_id: user.id, lines: [
-      { a: payType === 'cash' ? 'cash' : 'ar', dr: gross, party_type: custId ? 'customer' : null, party_id: custId },
-      { a: 'sales', cr: list.net }, { a: 'sales_disc', dr: list.net - net }, { a: 'vat_out', cr: vat }, { a: 'cogs', dr: cogs }, { a: 'inventory', cr: cogs }] });
-    await audit(ctx, q, user, sid, 'sale.create', 'sale', id, { qty_ml: qty, gross, pay_type: payType, ...(discount ? { discount } : {}) });
-    return { ...(await q.selectFrom('sales').selectAll().where('id', '=', id).executeTakeFirstOrThrow()) };
+    };
+    const id = (await q.insertInto('sales').values(row).returning('id').executeTakeFirstOrThrow()).id;
+    const [, moved] = await Promise.all([
+      q.updateTable('pumps').set({ meter_ml: close }).where('id', '=', pump.id).execute(),
+      stockMove(ctx, q, tank.id, { qty: -Math.min(qty, tank.level_ml), kind: 'sale', ref_type: 'sale', ref_id: id, date, user_id: user.id }, tank)
+    ]);
+    const cogs = -moved;
+    await Promise.all([
+      q.updateTable('sales').set({ cogs }).where('id', '=', id).execute(),
+      post(ctx, q, { org_id: user.org_id, station_id: sid, date, source: 'sale', source_id: id, user_id: user.id, periodChecked: true, lines: [
+        { a: payType === 'cash' ? 'cash' : 'ar', dr: gross, party_type: custId ? 'customer' : null, party_id: custId },
+        { a: 'sales', cr: list.net }, { a: 'sales_disc', dr: list.net - net }, { a: 'vat_out', cr: vat }, { a: 'cogs', dr: cogs }, { a: 'inventory', cr: cogs }] }),
+      audit(ctx, q, user, sid, 'sale.create', 'sale', id, { qty_ml: qty, gross, pay_type: payType, ...(discount ? { discount } : {}) })
+    ]);
+    return { ...row, id, cogs };
   });
   try { return await run(); }
   catch (e) {

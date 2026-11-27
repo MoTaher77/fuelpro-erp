@@ -1,0 +1,9 @@
+{
+  "appId": "com.fuelpro.mobile",
+  "appName": "FuelPro",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false, "captureInput": true, "webContentsDebuggingEnabled": false },
+  "plugins": {
+    "CapacitorSQLite": { "androidIsEncryption": false, "iosDatabaseLocation": "Library/CapacitorDatabase", "iosIsEncryption": false }
+  }
+}

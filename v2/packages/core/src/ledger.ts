@@ -4,6 +4,7 @@
 import type { Ctx, Q } from './ctx.ts';
 import { bad, conflict } from './errors.ts';
 import { atCost, avgCost } from './money.ts';
+import type { Tank } from './schema.ts';
 
 /** [system key, code, type, Arabic name, English name] — identical to v1 CHART */
 export const CHART: ReadonlyArray<readonly [string, string, string, string, string]> = [
@@ -47,8 +48,16 @@ export async function ensureChart(q: Q, orgId: number): Promise<void> {
     }
   }
 }
-export async function acct(q: Q, orgId: number, sys: string): Promise<number> {
-  let r = await q.selectFrom('accounts').select('id').where('org_id', '=', orgId).where('sys', '=', sys).executeTakeFirst();
+/* System account ids never change once created, so they are cached per database handle. Only ids that already
+   existed are cached (an id created inside a transaction that later rolls back is never remembered). */
+const acctCache = new WeakMap<object, Map<string, number>>();
+export async function acct(q: Q, orgId: number, sys: string, cacheOn?: object): Promise<number> {
+  const cache = cacheOn ? (acctCache.get(cacheOn) || acctCache.set(cacheOn, new Map()).get(cacheOn)!) : null;
+  const key = orgId + ':' + sys, hit = cache?.get(key);
+  if (hit) return hit;
+  const found = await q.selectFrom('accounts').select('id').where('org_id', '=', orgId).where('sys', '=', sys).executeTakeFirst();
+  if (found) { cache?.set(key, found.id); return found.id; }
+  let r: { id: number } | undefined = await q.selectFrom('accounts').select('id').where('org_id', '=', orgId).where('sys', '=', sys).executeTakeFirst();
   if (!r) { await ensureChart(q, orgId); r = await q.selectFrom('accounts').select('id').where('org_id', '=', orgId).where('sys', '=', sys).executeTakeFirst(); }
   if (!r) throw new Error('Unknown system account ' + sys);
   return r.id;
@@ -63,16 +72,18 @@ export interface Line { a: string | number; dr?: number; cr?: number; party_type
 export interface PostArgs {
   org_id: number; station_id: number; date: string; source: string; source_id?: number | null; memo?: string | null;
   user_id?: number | null; lines: Line[]; reversal_of?: number | null;
+  /** the caller already ran assertOpen for this org and date in this transaction */
+  periodChecked?: boolean;
 }
 /** Insert a balanced posted journal. Zero lines are dropped; returns null when nothing is left. */
 export async function post(ctx: Ctx, q: Q, p: PostArgs): Promise<number | null> {
-  await assertOpen(q, p.org_id, p.date);
+  if (!p.periodChecked) await assertOpen(q, p.org_id, p.date);
   const clean: Array<Line & { dr: number; cr: number; account_id: number }> = [];
   for (const l of p.lines) {
     const dr = l.dr || 0, cr = l.cr || 0;
     if (!Number.isSafeInteger(dr) || !Number.isSafeInteger(cr) || dr < 0 || cr < 0) throw new Error('Bad journal amount');
     const net = dr - cr; if (net === 0) continue;
-    clean.push({ ...l, dr: net > 0 ? net : 0, cr: net < 0 ? -net : 0, account_id: typeof l.a === 'number' ? l.a : await acct(q, p.org_id, l.a) });
+    clean.push({ ...l, dr: net > 0 ? net : 0, cr: net < 0 ? -net : 0, account_id: typeof l.a === 'number' ? l.a : await acct(q, p.org_id, l.a, ctx.db) });
   }
   if (!clean.length) return null;
   const d = clean.reduce((s, l) => s + l.dr, 0), c = clean.reduce((s, l) => s + l.cr, 0);
@@ -113,10 +124,14 @@ export async function reverseSource(ctx: Ctx, q: Q, orgId: number, source: strin
 export interface MoveArgs { qty: number; value?: number | null; kind: string; ref_type?: string | null; ref_id?: number | null; date: string; user_id?: number | null }
 /** Move stock in or out of a tank keeping level, value and weighted average cost consistent.
     Returns the value actually moved (an issue that empties the tank takes the whole remaining value). */
-export async function stockMove(ctx: Ctx, q: Q, tankId: number, m: MoveArgs): Promise<number> {
-  let tq = q.selectFrom('tanks').selectAll().where('id', '=', tankId);
-  if (ctx.dialect === 'postgres') tq = tq.forUpdate();
-  const t = await tq.executeTakeFirstOrThrow();
+export async function stockMove(ctx: Ctx, q: Q, tankId: number, m: MoveArgs, locked?: Tank): Promise<number> {
+  // `locked`: the caller already read (and on PostgreSQL locked) this tank row in this transaction and has not changed it
+  let t = locked;
+  if (!t) {
+    let tq = q.selectFrom('tanks').selectAll().where('id', '=', tankId);
+    if (ctx.dialect === 'postgres') tq = tq.forUpdate();
+    t = await tq.executeTakeFirstOrThrow();
+  }
   const level = t.level_ml + m.qty;
   if (level < 0 || level > t.capacity_ml) throw conflict(level < 0 ? 'INSUFFICIENT_STOCK' : 'EXCEEDS_CAPACITY', 'Stock movement out of tank range', { level_ml: t.level_ml, capacity_ml: t.capacity_ml });
   let v = m.value;

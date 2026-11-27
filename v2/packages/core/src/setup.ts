@@ -110,3 +110,27 @@ export async function listCustomers(ctx: Ctx, user: User, sid: number) {
   return ctx.db.selectFrom('customers').select(['id', 'name', 'phone', 'credit_limit', 'terms_days']).where('station_id', '=', sid).where('active', '=', 1).orderBy('name').execute();
 }
 export async function getStation(ctx: Ctx, user: User, sid: number) { return station(ctx.db, user, sid); }
+
+/** First start of an empty database (any edition): one organisation, one station, one fuel, one tank, N pumps. */
+export async function firstRun(ctx: Ctx, b: Record<string, unknown>) {
+  V.obj(b, 'body');
+  if (await ctx.db.selectFrom('orgs').select('id').limit(1).executeTakeFirst()) throw bad('ALREADY_SET_UP', 'This database already has an organisation');
+  const r = await createOrg(ctx, {
+    org_name: V.str(b.station_name, 'station_name', { max: 120 }), name: V.str(b.owner_name || 'Owner', 'owner_name', { max: 120 }),
+    email: V.str(b.email || 'owner@local', 'email', { max: 254 }), currency: V.str(b.currency || 'YER', 'currency'), timezone: V.str(b.timezone || 'Asia/Aden', 'timezone')
+  });
+  const u: User = { id: r.user_id, org_id: r.org_id, role: 'owner' }, sid = r.station_id;
+  if (b.require_shift !== undefined) await updateStation(ctx, u, sid, { require_shift: b.require_shift });
+  const f = await createFuel(ctx, u, sid, { name: b.fuel_name || 'بنزين', price_e4: b.price_e4, cost_e4: b.cost_e4 ?? 0 });
+  const t = await createTank(ctx, u, sid, { name: 'خزان 1', fuel_id: f.id, capacity_ml: b.capacity_ml, level_ml: b.level_ml ?? 0 });
+  const pumps = V.int(b.pumps ?? 2, 'pumps', { min: 1, max: 20 });
+  for (let i = 1; i <= pumps; i++) await createPump(ctx, u, sid, { name: 'مضخة ' + i, tank_id: t.id });
+  return { ...r };
+}
+/** The edition's single local user (desktop/phone) or the server's first owner. */
+export async function firstOwner(ctx: Ctx): Promise<(User & { station_id: number }) | null> {
+  const u = await ctx.db.selectFrom('users').select(['id', 'org_id', 'role']).where('role', '=', 'owner').orderBy('id').limit(1).executeTakeFirst();
+  if (!u) return null;
+  const s = await ctx.db.selectFrom('stations').select('id').where('org_id', '=', u.org_id).orderBy('id').limit(1).executeTakeFirstOrThrow();
+  return { ...u, station_id: s.id };
+}

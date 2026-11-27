@@ -3,7 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sql } from 'kysely';
-import { openSqlite, openPostgres } from '@fuelpro/db';
+import { openSqlite, openPostgres, openBridge } from '@fuelpro/db';
+import { nodeBridge } from './bridge-fake.ts';
 import { play } from './scenario.ts';
 import { v1Api, v2Api } from './adapters.ts';
 import { DUMP_SQL, norm, stripTimes } from './dump.ts';
@@ -37,6 +38,11 @@ for (const seed of [7, 2026]) {
     try { same(a, await v2Run(ctx, seed)); } finally { await ctx.close(); }
     const counts = (a.dump.counts as Array<{ sales: number }>)[0];
     assert.ok(counts.sales > 100, 'the scenario records real volume');
+  });
+  test(`parity seed ${seed}: v1 = v2 on SQLite through the desktop/phone bridge`, async () => {
+    const a = await v1Run(seed);
+    const ctx = await openBridge(nodeBridge());
+    try { same(a, await v2Run(ctx, seed)); } finally { await ctx.close(); }
   });
   test(`parity seed ${seed}: v1 = v2 on PostgreSQL`, { skip: !process.env.V2_PG_URL && 'set V2_PG_URL to run' }, async () => {
     const a = await v1Run(seed);

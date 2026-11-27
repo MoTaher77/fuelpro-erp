@@ -8,3 +8,4 @@ export * as setup from './setup.ts';
 export * as sales from './sales.ts';
 export * as shifts from './shifts.ts';
 export * as reports from './reports.ts';
+export * as api from './api.ts';

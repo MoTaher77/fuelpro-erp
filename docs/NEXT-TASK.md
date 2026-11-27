@@ -1,5 +1,10 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-27 — 0.34.0 v2 phase 1 (branch `claude/v2-phase1`, PR open)
+- Done: `v2/` core (sales & shifts) on SQLite / PostgreSQL / desktop-phone bridge, parity with v1 to the minor unit, migration tool with proof, server + Tauri + Capacitor editions, CI (`.github/workflows/v2.yml`: core, ui, desktop Windows+Linux, Android APK). Report: `docs/V2-PHASE1.md`.
+- **Owner:** try the CI artifacts (APK on the phone, `.exe` on the laptop) and report; choose the phase-2 module (proposal: stock & deliveries, then customers & collections); say when signing is wanted.
+- Next session: phase 2 = next module ported the same way (port → parity scenario → invariants → UI screen → migration checks extended). Keep v1 untouched. Users/sign-in module (ADR-37, KI-24) before any real data reaches v2.
+
 ## 2026-11-27 — 0.30.0 UI polish (PR open, branch `claude/ui-polish`)
 - Owner keeps the original look (ADR-29). Next polish candidates, same style: busy spinner on save buttons, clearer form errors under the field, dashboard small fixes. Ask before anything bigger.
 - Printing (KI-07): plan agreed in chat; branch `claude/print-overhaul` has no commits — rebuild it from `main` after this PR (both touch app.js/app.css).

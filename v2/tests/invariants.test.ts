@@ -3,7 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sql } from 'kysely';
-import { openSqlite, openPostgres } from '@fuelpro/db';
+import { openSqlite, openPostgres, openBridge } from '@fuelpro/db';
+import { nodeBridge } from './bridge-fake.ts';
 import { setup, sales, shifts, reports, type Ctx, type User } from '@fuelpro/core';
 import { withPgDatabase } from './pg-temp.ts';
 
@@ -17,6 +18,7 @@ async function station(ctx: Ctx, email: string) {
 }
 const engines: Array<[string, (fn: (ctx: Ctx) => Promise<void>) => Promise<void>, string | false]> = [
   ['SQLite', async (fn) => { const c = await openSqlite(':memory:'); try { await fn(c); } finally { await c.close(); } }, false],
+  ['SQLite bridge (desktop/phone)', async (fn) => { const c = await openBridge(nodeBridge()); try { await fn(c); } finally { await c.close(); } }, false],
   ['PostgreSQL', (fn) => withPgDatabase(process.env.V2_PG_URL!, async (url) => { const c = await openPostgres(url, { max: 12 }); try { await fn(c); } finally { await c.close(); } }),
     !process.env.V2_PG_URL && 'set V2_PG_URL to run']
 ];

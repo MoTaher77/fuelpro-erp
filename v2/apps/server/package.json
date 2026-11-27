@@ -1,1 +1,11 @@
-{ "name": "@fuelpro/server", "version": "0.1.0", "private": true, "type": "module" }
+{
+  "name": "@fuelpro/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@fuelpro/core": "*",
+    "@fuelpro/db": "*",
+    "@fuelpro/ui": "*"
+  }
+}

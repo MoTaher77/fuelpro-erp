@@ -52,6 +52,7 @@ export function m001(dialect: Dialect) {
         .addColumn('opened_at', 'text', (c) => c.notNull()).addColumn('closed_by', big).addColumn('closed_at', 'text')
         .addColumn('counted_cash', big).addColumn('expected_cash', big).addColumn('variance', big).addColumn('close_note', 'text')
         .addColumn('approved_by', big).addColumn('approved_at', 'text').execute();
+      await db.schema.createIndex('shifts_station').on('shifts').columns(['station_id', 'id']).execute();
       await db.schema.createIndex('shifts_one_open').on('shifts').column('station_id').unique().where(sql.ref('status'), '=', 'open').execute();
       await db.schema.createTable('shift_meters').addColumn('shift_id', big, (c) => c.notNull().references(ref('shifts')))
         .addColumn('pump_id', big, (c) => c.notNull().references(ref('pumps'))).addColumn('open_ml', big, (c) => c.notNull())
@@ -69,6 +70,8 @@ export function m001(dialect: Dialect) {
         .addColumn('shift_id', big, (c) => c.references(ref('shifts'))).addColumn('note', 'text').addColumn('ref', 'text').addColumn('bill', 'text')
         .addColumn('discount', big, (c) => c.notNull().defaultTo(0)).addUniqueConstraint('sales_client_id', ['station_id', 'client_id']).execute();
       await db.schema.createIndex('sales_station_date').on('sales').columns(['station_id', 'business_date']).execute();
+      await db.schema.createIndex('sales_station_id').on('sales').columns(['station_id', 'id']).execute();   // latest sales list (keyset paging)
+      await db.schema.createIndex('sales_tank_day').on('sales').columns(['tank_id', 'business_date']).execute();
       await db.schema.createIndex('sales_shift').on('sales').column('shift_id').execute();
       await db.schema.createIndex('sales_customer').on('sales').column('customer_id').execute();
       await id(db.schema.createTable('stock_moves')).addColumn('station_id', big, (c) => c.notNull().references(ref('stations')))
@@ -76,7 +79,8 @@ export function m001(dialect: Dialect) {
         .addColumn('created_at', 'text', (c) => c.notNull()).addColumn('kind', 'text', (c) => c.notNull()).addColumn('ref_type', 'text').addColumn('ref_id', big)
         .addColumn('qty_ml', big, (c) => c.notNull()).addColumn('value', big, (c) => c.notNull()).addColumn('balance_ml', big, (c) => c.notNull())
         .addColumn('balance_value', big, (c) => c.notNull()).addColumn('avg_cost_e4', big, (c) => c.notNull()).addColumn('user_id', big).execute();
-      await db.schema.createIndex('stock_moves_tank').on('stock_moves').columns(['tank_id', 'business_date']).execute();
+      await db.schema.createIndex('stock_moves_tank').on('stock_moves').columns(['tank_id', 'id']).execute();
+      await db.schema.createIndex('stock_moves_day').on('stock_moves').columns(['station_id', 'business_date']).execute();
       await id(db.schema.createTable('accounts')).addColumn('org_id', big, (c) => c.notNull().references(ref('orgs')))
         .addColumn('code', 'text', (c) => c.notNull()).addColumn('type', 'text', (c) => c.notNull()).addColumn('name_ar', 'text', (c) => c.notNull())
         .addColumn('name_en', 'text', (c) => c.notNull()).addColumn('sys', 'text').addColumn('active', 'integer', (c) => c.notNull().defaultTo(1))
@@ -89,7 +93,7 @@ export function m001(dialect: Dialect) {
         .addColumn('posted_at', 'text').addColumn('source', 'text', (c) => c.notNull()).addColumn('source_id', big).addColumn('memo', 'text')
         .addColumn('user_id', big).addColumn('reversal_of', big).addColumn('reversed_by', big).addColumn('ref', 'text').addColumn('doc_type', 'text').addColumn('doc_ref', 'text').execute();
       await db.schema.createIndex('journals_source').on('journals').columns(['org_id', 'source', 'source_id']).execute();
-      await db.schema.createIndex('journals_station_date').on('journals').columns(['station_id', 'business_date']).execute();
+      await db.schema.createIndex('journals_post_day').on('journals').columns(['org_id', 'station_id', 'status', 'business_date', 'source']).execute();
       await id(db.schema.createTable('journal_lines')).addColumn('journal_id', big, (c) => c.notNull().references(ref('journals')))
         .addColumn('account_id', big, (c) => c.notNull().references(ref('accounts')))
         .addColumn('debit', big, (c) => c.notNull().defaultTo(0).check(sql`debit >= 0`)).addColumn('credit', big, (c) => c.notNull().defaultTo(0).check(sql`credit >= 0`))
@@ -102,6 +106,7 @@ export function m001(dialect: Dialect) {
         .addColumn('action', 'text', (c) => c.notNull()).addColumn('entity', 'text').addColumn('entity_id', big).addColumn('detail', 'text')
         .addColumn('created_at', 'text', (c) => c.notNull()).execute();
       await db.schema.createIndex('audit_org').on('audit').columns(['org_id', 'id']).execute();
+      await db.schema.createIndex('audit_entity').on('audit').columns(['org_id', 'entity', 'entity_id']).execute();
 
       for (const s of pg ? PG_TRIGGERS : SQLITE_TRIGGERS) await sql.raw(s).execute(db);
     },
