@@ -4,7 +4,7 @@ import { sql } from 'kysely';
 import { audit, need, scoped, station } from './access.ts';
 import { addDays, tx, type Ctx, type Q, type User } from './ctx.ts';
 import { AppError, bad, conflict, forbidden, unprocessable } from './errors.ts';
-import { assertOpen, inventoryFix, post, reverseSource, stockMove } from './ledger.ts';
+import { assertOpen, countReversible, inventoryFix, post, reverseSource, stockMove } from './ledger.ts';
 import { amountMinor, bpOf, divRound, vatSplit } from './money.ts';
 import { can } from './perms.ts';
 import type { Station } from './schema.ts';
@@ -145,8 +145,8 @@ export async function voidSale(ctx: Ctx, user: User, sid: number, id: number, re
       if (sh.status !== 'open') throw conflict('SHIFT_CLOSED', 'This record belongs to a closed shift and cannot be changed');
     }
     await assertOpen(q, user.org_id, s.business_date);
-    const n = await reverseSource(ctx, q, user.org_id, 'sale', id, user.id, 'Void: ' + r);
-    if (n === 0 && s.cogs !== null) throw conflict('LEGACY_DOCUMENT', 'This record predates the general ledger; correct it with a manual journal');
+    if (await countReversible(q, user.org_id, 'sale', id) === 0 && s.cogs !== null) throw conflict('LEGACY_DOCUMENT', 'This record predates the general ledger; correct it with a manual journal');
+    await reverseSource(ctx, q, user.org_id, 'sale', id, user.id, 'Void: ' + r);
     let tq = q.selectFrom('tanks').selectAll().where('id', '=', s.tank_id);
     if (ctx.dialect === 'postgres') tq = tq.forUpdate();
     const t = await tq.executeTakeFirstOrThrow();

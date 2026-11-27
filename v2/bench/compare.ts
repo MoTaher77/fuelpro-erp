@@ -147,6 +147,10 @@ for (const t of targets) {
   row.list = await load(s.base + s.prefix + '/sales?limit=50', s.headers);
   row.shift = await load(s.base + s.prefix + shiftPath, s.headers);
   row.post = await load(s.base + s.prefix + '/sales', s.headers, (i) => JSON.stringify({ client_id: `bench-${t.name.length}-${process.pid}-${i}`, pump_id: s.pump, quantity_ml: 50, pay_type: 'cash' }));
+  // phase 2: stock & deliveries
+  const v1 = t.name.startsWith('v1');
+  row.deliveries = await load(s.base + s.prefix + '/deliveries?limit=50', s.headers);
+  row.reconciliation = await load(s.base + s.prefix + (v1 ? '/stock/reconciliation' : '/stock-reconciliation') + '?from=2025-01-01&to=2026-12-31', s.headers);
   row.mix = await mix(s.base, s.prefix, shiftPath, s.headers, s.pumps, String(t.name.length));
   // 100 people working: each sends about 2 requests a second (open loop), not as fast as the machine allows
   row.users100 = await people(s.base, s.prefix, shiftPath, s.headers, s.pumps, 'u' + t.name.length, 2 * CONN);

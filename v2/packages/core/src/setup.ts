@@ -134,3 +134,15 @@ export async function firstOwner(ctx: Ctx): Promise<(User & { station_id: number
   const s = await ctx.db.selectFrom('stations').select('id').where('org_id', '=', u.org_id).orderBy('id').limit(1).executeTakeFirstOrThrow();
   return { ...u, station_id: s.id };
 }
+
+export async function createStation(ctx: Ctx, user: User, b: Record<string, unknown>) {
+  need(user, 'users.manage'); V.obj(b, 'body');
+  const currency = V.str(b.currency, 'currency', { min: 3, max: 3 }).toUpperCase(), dec = currencyDecimals(currency);
+  if (dec === null) throw bad('VALIDATION', 'Unknown currency code');
+  const tz = V.str(b.timezone || 'UTC', 'timezone'); if (!validTz(tz)) throw bad('VALIDATION', 'Unknown time zone');
+  return tx(ctx, async (q) => {
+    const id = (await q.insertInto('stations').values({ org_id: user.org_id, name: V.str(b.name, 'name'), currency, cur_dec: dec, disp_dec: null, timezone: tz, created_at: ctx.clock.now() })
+      .returning('id').executeTakeFirstOrThrow()).id;
+    await audit(ctx, q, user, id, 'station.create', 'station', id); return { id };
+  });
+}

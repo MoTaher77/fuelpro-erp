@@ -37,3 +37,10 @@ th { color: var(--muted); font-weight: 600; font-size: 13px } tr.void td { color
 @keyframes up { from { transform: translateY(8px); opacity: 0 } }
 .boot { padding: 30vh 16px; text-align: center; color: var(--muted) } .boot.err { color: var(--bad) }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important } }
+.tabs { display: flex; gap: 6px; max-width: 1100px; margin: 12px auto 0; padding: 0 16px; overflow-x: auto }
+.tabs button { font: inherit; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 99px; padding: 7px 16px; cursor: pointer; white-space: nowrap }
+.tabs button[aria-selected=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+.tile.tank .bar { height: 8px; border-radius: 99px; background: var(--surface2); border: 1px solid var(--line); margin: 6px 0 4px; overflow: hidden }
+.tile.tank .bar i { display: block; height: 100%; background: var(--accent2) }
+.tile.tank.low .bar i { background: var(--bad) } .tile.tank.low b { color: var(--bad) } .bad { color: var(--bad); font-weight: 600 }
+[hidden] { display: none !important }

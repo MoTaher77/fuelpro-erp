@@ -177,3 +177,9 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Tests: `test/logins.test.js` (4) → 98 pass + 1 skipped; e2e 8; artifact 93; lint 0 errors. Screen checked in Chromium (Arabic, desktop + phone) on a throwaway demo DB.
 - Resume: owner runs `sudo fuelpro-update`; history starts then.
 
+## 2026-11-27 — 0.36.0 v2 phase 2 (cloud, branch `claude/v2-phase2`)
+- Ported stock & deliveries to the v2 core (`stock.ts`), migration 002, stock screen (lazy-loaded), migrate-v1 extended (20 tables, 10 checks: demo year 3 s SQLite / 12.2 s PostgreSQL, all equal; tamper stops).
+- Parity found PostgreSQL id gaps on a failed void → ADR-40 «check before the first write» (`countReversible`, `planMove`). Browser test found a CSP-blocked inline style → CSSOM.
+- Tests: v2 33 pass (SQLite + bridge + PostgreSQL); v1 98 pass + 1 skipped. Bench: reconciliation 42 → 183/289 req/s; 100 users p95 25 → 6.5/9.5 ms; first screen 1.48 s.
+- Resume: phase 3 (parties & collections) after the owner's OK.
+

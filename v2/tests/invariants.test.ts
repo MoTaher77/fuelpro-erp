@@ -85,3 +85,48 @@ for (const [name, withDb, skip] of engines) {
     assert.equal(inv.debit - inv.credit, tank.value, 'inventory account = stock value');
   }));
 }
+
+/* ---------- phase 2: stock & deliveries ---------- */
+import { stock } from '@fuelpro/core';
+for (const [name, withDb, skip] of engines) {
+  test(`${name}: deliveries, counts and transfers are never deleted; another org's tanks are not found`, { skip }, async () => withDb(async (ctx) => {
+    const a = await station(ctx, 'stk-a@example.test'), b = await station(ctx, 'stk-b@example.test');
+    await stock.createDelivery(ctx, a.u, a.sid, { tank_id: a.tank, quantity_ml: 1_000_000, cost_e4: 4_000_000_000 });
+    await stock.createAdjustment(ctx, a.u, a.sid, { tank_id: a.tank, after_ml: 20_500_000, note: 'جرد' });
+    const t2 = await setup.createTank(ctx, a.u, a.sid, { name: 'T2', fuel_id: (await ctx.db.selectFrom('tanks').select('fuel_id').where('id', '=', a.tank).executeTakeFirstOrThrow()).fuel_id, capacity_ml: 9_000_000 });
+    await stock.createTransfer(ctx, a.u, a.sid, { from_tank_id: a.tank, to_tank_id: t2.id, quantity_ml: 10_000 });
+    for (const t of ['deliveries', 'adjustments', 'transfers'] as const) await rejects(ctx.db.deleteFrom(t).execute(), /never deleted/);
+    await assert.rejects(stock.createDelivery(ctx, a.u, a.sid, { tank_id: b.tank, quantity_ml: 1000, cost_e4: 1 }), { status: 404 });
+    await assert.rejects(stock.createTransfer(ctx, a.u, a.sid, { to_station_id: b.sid, from_tank_id: a.tank, to_tank_id: b.tank, quantity_ml: 1000 }), { status: 404 });
+    const cashier: User = { ...a.u, role: 'cashier' };
+    await ctx.db.insertInto('user_stations').values({ user_id: a.u.id, station_id: a.sid }).execute();
+    await assert.rejects(stock.createDelivery(ctx, cashier, a.sid, { tank_id: a.tank, quantity_ml: 1000, cost_e4: 1 }), { status: 403 });
+    await assert.rejects(stock.createAdjustment(ctx, cashier, a.sid, { tank_id: a.tank, after_ml: 1, note: 'سرقة' }), { status: 403 });
+  }));
+  test(`${name}: deliveries, sales and opposite transfers at the same moment keep every tank exact`, { skip }, async () => withDb(async (ctx) => {
+    const s = await station(ctx, 'stk-race@example.test');
+    const fuelId = (await ctx.db.selectFrom('tanks').select('fuel_id').where('id', '=', s.tank).executeTakeFirstOrThrow()).fuel_id;
+    const t2 = (await setup.createTank(ctx, s.u, s.sid, { name: 'T2', fuel_id: fuelId, capacity_ml: 40_000_000, level_ml: 10_000_000, cost_e4: 3_000_000_000 })).id;
+    const jobs: Promise<unknown>[] = [];
+    for (let i = 0; i < 15; i++) {
+      jobs.push(stock.createDelivery(ctx, s.u, s.sid, { tank_id: s.tank, quantity_ml: 100_000, cost_e4: 4_500_000_000 }));
+      jobs.push(sales.createSale(ctx, s.u, s.sid, { client_id: 'mix-race-' + String(i).padStart(4, '0'), pump_id: s.pump, quantity_ml: 50_000 }));
+      jobs.push(stock.createTransfer(ctx, s.u, s.sid, { from_tank_id: s.tank, to_tank_id: t2, quantity_ml: 7_000 }));
+      jobs.push(stock.createTransfer(ctx, s.u, s.sid, { from_tank_id: t2, to_tank_id: s.tank, quantity_ml: 3_000 }));
+    }
+    const res = await Promise.allSettled(jobs);
+    assert.deepEqual(res.filter((r) => r.status === 'rejected').map((r) => String((r as PromiseRejectedResult).reason)), [], 'no deadlock, no error');
+    for (const id of [s.tank, t2]) {
+      const t = await ctx.db.selectFrom('tanks').selectAll().where('id', '=', id).executeTakeFirstOrThrow();
+      const m = await ctx.db.selectFrom('stock_moves').select([sql<number>`sum(qty_ml)`.as('q'), sql<number>`sum(value)`.as('v')]).where('tank_id', '=', id).executeTakeFirstOrThrow();
+      assert.equal(Number(m.q), t.level_ml, 'tank level = Σ moves'); assert.equal(Number(m.v), t.value, 'tank value = Σ moves');
+    }
+    const t1 = await ctx.db.selectFrom('tanks').select('level_ml').where('id', '=', s.tank).executeTakeFirstOrThrow();
+    assert.equal(t1.level_ml, 20_000_000 + 15 * (100_000 - 50_000 - 7_000 + 3_000));
+    const tb = await reports.trialBalance(ctx, s.u, s.sid);
+    assert.equal(tb.reduce((t, r) => t + r.debit, 0), tb.reduce((t, r) => t + r.credit, 0));
+    const inv = tb.find((r) => r.code === '1200')!;
+    const tv = await ctx.db.selectFrom('tanks').select(sql<number>`sum(value)`.as('v')).where('station_id', '=', s.sid).executeTakeFirstOrThrow();
+    assert.equal(inv.debit - inv.credit, Number(tv.v), 'inventory account = value of all tanks');
+  }));
+}

@@ -2,7 +2,7 @@
 import { createRequire } from 'node:module';
 import { randomBytes } from 'node:crypto';
 import type { Ctx, User } from '@fuelpro/core';
-import { setup, sales, shifts } from '@fuelpro/core';
+import { setup, sales, shifts, stock } from '@fuelpro/core';
 import type { Api } from './scenario.ts';
 
 const require = createRequire(import.meta.url);
@@ -33,7 +33,17 @@ export function v1Api() {
     async reopenShift(id, b) { return O.reopenShift(db, user, sid, id, b); }
   };
   const all = async (s: string) => db.prepare(s).all();
-  return { api, all, sid: () => sid, close: async () => db.close() };
+  const V1: Record<string, (...a: unknown[]) => unknown> = {
+    updateStation: (s, b) => S.updateStation(db, user, s, b), createStation: (b) => S.createStation(db, user, b),
+    createFuel: (s, b) => S.createFuel(db, user, s, b), createTank: (s, b) => S.createTank(db, user, s, b), createPump: (s, b) => S.createPump(db, user, s, b),
+    createSupplier: (s, b) => O.createSupplier(db, user, s, b), listSuppliers: (s) => O.listSuppliers(db, user, s),
+    openShift: (s, b) => O.openShiftCmd(db, user, s, b), closeShift: (s, id, b) => O.closeShift(db, user, s, id, b),
+    createSale: (s, b) => S.createSale(db, user, s, b), createDelivery: (s, b) => S.createDelivery(db, user, s, b), voidDelivery: (s, id, r) => S.voidDelivery(db, user, s, id, r),
+    createAdjustment: (s, b) => S.createAdjustment(db, user, s, b), transfer: (s, b) => O.createTransfer(db, user, s, b), voidTransfer: (s, id, b) => O.voidTransfer(db, user, s, id, b),
+    stockReconciliation: (s, q) => O.stockReconciliation(db, user, s, q)
+  };
+  const stockApi = { register: api.register, call: async (fn: string, ...a: unknown[]) => V1[fn](...a) };
+  return { api, stockApi, all, sid: () => sid, close: async () => db.close() };
 }
 
 export function v2Api(ctx: Ctx) {
@@ -53,5 +63,17 @@ export function v2Api(ctx: Ctx) {
     unapproveShift: (id, b) => shifts.unapproveShift(ctx, user, sid, id, b),
     reopenShift: (id, b) => shifts.reopenShift(ctx, user, sid, id, b)
   };
-  return { api, user: () => user, sid: () => sid };
+  const V2: Record<string, (...a: never[]) => Promise<unknown>> = {
+    updateStation: (s: number, b: Record<string, unknown>) => setup.updateStation(ctx, user, s, b), createStation: (b: Record<string, unknown>) => setup.createStation(ctx, user, b),
+    createFuel: (s: number, b: Record<string, unknown>) => setup.createFuel(ctx, user, s, b), createTank: (s: number, b: Record<string, unknown>) => setup.createTank(ctx, user, s, b),
+    createPump: (s: number, b: Record<string, unknown>) => setup.createPump(ctx, user, s, b),
+    createSupplier: (s: number, b: Record<string, unknown>) => stock.createSupplier(ctx, user, s, b), listSuppliers: (s: number) => stock.listSuppliers(ctx, user, s),
+    openShift: (s: number, b: Record<string, unknown>) => shifts.openShiftCmd(ctx, user, s, b), closeShift: (s: number, id: number, b: { counted_cash: number }) => shifts.closeShift(ctx, user, s, id, b),
+    createSale: (s: number, b: sales.SaleInput) => sales.createSale(ctx, user, s, b), createDelivery: (s: number, b: stock.DeliveryInput) => stock.createDelivery(ctx, user, s, b),
+    voidDelivery: (s: number, id: number, r: string) => stock.voidDelivery(ctx, user, s, id, r), createAdjustment: (s: number, b: never) => stock.createAdjustment(ctx, user, s, b),
+    transfer: (s: number, b: never) => stock.createTransfer(ctx, user, s, b), voidTransfer: (s: number, id: number, b: { reason?: string }) => stock.voidTransfer(ctx, user, s, id, b),
+    stockReconciliation: (s: number, q: Record<string, string>) => stock.stockReconciliation(ctx, user, s, q)
+  };
+  const stockApi = { register: api.register, call: async (fn: string, ...a: unknown[]) => V2[fn](...(a as never[])) };
+  return { api, stockApi, user: () => user, sid: () => sid };
 }

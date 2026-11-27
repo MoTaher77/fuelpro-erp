@@ -17,6 +17,13 @@ export const DUMP_SQL: Record<string, string> = {
           WHERE l.party_type='customer' AND a.sys='ar' AND j.status='posted' GROUP BY l.party_id ORDER BY l.party_id`,
   accounts: `SELECT code, type, sys, name_ar, name_en, box FROM accounts ORDER BY code`,
   audit: `SELECT action, entity, entity_id, detail FROM audit ORDER BY id`,
+  suppliers: `SELECT id, station_id, name, opening_balance, terms_days, created_on, active FROM suppliers ORDER BY id`,
+  deliveries: `SELECT id, station_id, tank_id, fuel_id, business_date, quantity_ml, cost_e4, net, vat, supplier, supplier_id, pay_type, due_date, shift_id, user_id, ref, note,
+          CASE WHEN voided_at IS NULL THEN 0 ELSE 1 END voided, void_reason, void_by FROM deliveries ORDER BY id`,
+  adjustments: `SELECT id, station_id, tank_id, business_date, before_ml, after_ml, note, user_id FROM adjustments ORDER BY id`,
+  transfers: `SELECT id, from_station_id, to_station_id, from_tank_id, to_tank_id, business_date, quantity_ml, value, note, CASE WHEN voided_at IS NULL THEN 0 ELSE 1 END voided, void_reason FROM transfers ORDER BY id`,
+  fuels: `SELECT id, station_id, name, price_e4, cost_e4 FROM fuels ORDER BY id`,
+  journal_refs: `SELECT id, ref FROM journals WHERE ref IS NOT NULL ORDER BY id`,
   counts: `SELECT (SELECT COUNT(*) FROM sales) sales, (SELECT COUNT(*) FROM journals) journals, (SELECT COUNT(*) FROM journal_lines) lines, (SELECT COUNT(*) FROM stock_moves) moves`
 };
 /** numbers as numbers (PostgreSQL may hand back text for SUM), every key in a fixed order */

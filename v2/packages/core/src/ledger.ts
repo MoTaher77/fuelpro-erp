@@ -71,7 +71,7 @@ export async function assertOpen(q: Q, orgId: number, date: string): Promise<voi
 export interface Line { a: string | number; dr?: number; cr?: number; party_type?: string | null; party_id?: number | null; memo?: string | null }
 export interface PostArgs {
   org_id: number; station_id: number; date: string; source: string; source_id?: number | null; memo?: string | null;
-  user_id?: number | null; lines: Line[]; reversal_of?: number | null;
+  user_id?: number | null; lines: Line[]; reversal_of?: number | null; ref?: string | null;
   /** the caller already ran assertOpen for this org and date in this transaction */
   periodChecked?: boolean;
 }
@@ -114,6 +114,12 @@ export async function reverse(ctx: Ctx, q: Q, jid: number, userId: number, memo?
   await q.updateTable('journals').set({ reversed_by: rid }).where('id', '=', j.id).execute();
   return rid;
 }
+/** How many journals reverseSource would reverse — lets a command run every check before its first write. */
+export async function countReversible(q: Q, orgId: number, source: string, sourceId: number): Promise<number> {
+  const r = await q.selectFrom('journals').select((e) => e.fn.countAll<number>().as('n')).where('org_id', '=', orgId).where('source', '=', source).where('source_id', '=', sourceId)
+    .where('status', '=', 'posted').where('reversed_by', 'is', null).where('reversal_of', 'is', null).executeTakeFirstOrThrow();
+  return Number(r.n);
+}
 export async function reverseSource(ctx: Ctx, q: Q, orgId: number, source: string, sourceId: number, userId: number, memo?: string): Promise<number> {
   const js = await q.selectFrom('journals').select('id').where('org_id', '=', orgId).where('source', '=', source).where('source_id', '=', sourceId)
     .where('status', '=', 'posted').where('reversed_by', 'is', null).where('reversal_of', 'is', null).orderBy('id').execute();
@@ -132,20 +138,23 @@ export async function stockMove(ctx: Ctx, q: Q, tankId: number, m: MoveArgs, loc
     if (ctx.dialect === 'postgres') tq = tq.forUpdate();
     t = await tq.executeTakeFirstOrThrow();
   }
-  const level = t.level_ml + m.qty;
-  if (level < 0 || level > t.capacity_ml) throw conflict(level < 0 ? 'INSUFFICIENT_STOCK' : 'EXCEEDS_CAPACITY', 'Stock movement out of tank range', { level_ml: t.level_ml, capacity_ml: t.capacity_ml });
-  let v = m.value;
-  if (v === undefined || v === null) v = m.qty < 0 ? (level === 0 ? -t.value : -atCost(-m.qty, t.avg_cost_e4)) : atCost(m.qty, t.avg_cost_e4);
-  let nv = t.value + v;
-  if (level === 0 || nv < 0) nv = 0;
-  const moved = nv - t.value;
-  const avg = level > 0 ? avgCost(nv, level) : t.avg_cost_e4;
+  const { level, nv, moved, avg } = planMove(t, m.qty, m.value);
   await q.updateTable('tanks').set({ level_ml: level, value: nv, avg_cost_e4: avg }).where('id', '=', tankId).execute();
   await q.insertInto('stock_moves').values({
     station_id: t.station_id, tank_id: tankId, business_date: m.date, created_at: ctx.clock.now(), kind: m.kind, ref_type: m.ref_type ?? null, ref_id: m.ref_id ?? null,
     qty_ml: m.qty, value: moved, balance_ml: level, balance_value: nv, avg_cost_e4: avg, user_id: m.user_id ?? null
   }).execute();
   return moved;
+}
+/** The pure arithmetic of a stock move (no write): new level, value, moved value and average cost. */
+export function planMove(t: Pick<Tank, 'level_ml' | 'capacity_ml' | 'value' | 'avg_cost_e4'>, qty: number, value?: number | null) {
+  const level = t.level_ml + qty;
+  if (level < 0 || level > t.capacity_ml) throw conflict(level < 0 ? 'INSUFFICIENT_STOCK' : 'EXCEEDS_CAPACITY', 'Stock movement out of tank range', { level_ml: t.level_ml, capacity_ml: t.capacity_ml });
+  let v = value;
+  if (v === undefined || v === null) v = qty < 0 ? (level === 0 ? -t.value : -atCost(-qty, t.avg_cost_e4)) : atCost(qty, t.avg_cost_e4);
+  let nv = t.value + v;
+  if (level === 0 || nv < 0) nv = 0;
+  return { level, nv, moved: nv - t.value, avg: level > 0 ? avgCost(nv, level) : t.avg_cost_e4 };
 }
 /** Route any difference between intended and actual inventory value to cost of sales. */
 export function inventoryFix(intended: number, actual: number): Line[] {

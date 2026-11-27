@@ -2,10 +2,11 @@ import type { Kysely } from 'kysely';
 import { Migrator, type Migration } from 'kysely/migration';
 import type { Dialect } from '@fuelpro/core';
 import { m001 } from './migrations/001_core.ts';
+import { m002 } from './migrations/002_stock.ts';
 
 /** Migrations are bundled as code (no file-system scan), so the same list runs on the server, in Tauri and in Capacitor. */
 export function migrations(dialect: Dialect): Record<string, Migration> {
-  return { '001_core': m001(dialect) };
+  return { '001_core': m001(dialect), '002_stock': m002(dialect) };
 }
 export async function migrate(db: Kysely<any>, dialect: Dialect): Promise<string[]> {
   const m = new Migrator({ db, provider: { getMigrations: async () => migrations(dialect) } });

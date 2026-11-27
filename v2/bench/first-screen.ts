@@ -19,11 +19,11 @@ for (let i = 0; i < runs; i++) {
   await cdp.send('Network.enable');
   await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 150, downloadThroughput: 1.6 * 1024 * 1024 / 8, uploadThroughput: 750 * 1024 / 8 });
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
-  let b = 0; page.on('response', async (r) => { try { b += (await r.body()).length; } catch { /* redirect */ } });
+  let b = 0; cdp.on('Network.loadingFinished', (e: { encodedDataLength: number }) => { b += e.encodedDataLength; });   // bytes on the wire (compressed)
   let t = Date.now(); await page.goto(url); await page.waitForSelector('.tiles .tile'); cold.push(Date.now() - t); bytes = b;
   t = Date.now(); await page.reload(); await page.waitForSelector('.tiles .tile'); warm.push(Date.now() - t);
   await c.close();
 }
 const med = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
-console.log(JSON.stringify({ cold_ms: med(cold), reload_ms: med(warm), transferred_kb: Math.round(bytes / 1024), runs }));
+console.log(JSON.stringify({ cold_ms: med(cold), reload_ms: med(warm), wire_kb: Math.round(bytes / 1024), runs }));
 await browser.close(); srv.close(); await ctx.close();

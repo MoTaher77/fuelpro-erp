@@ -57,10 +57,29 @@ export interface AuditT {
   detail: string | null; created_at: string;
 }
 
+export interface SuppliersT {
+  id: Id; station_id: number; name: string; phone: string | null; opening_balance: Def<number>; terms_days: Def<number>; created_on: string | null;
+  active: Def<number>; ref: string | null;
+}
+export interface DeliveriesT {
+  id: Id; station_id: number; tank_id: number; fuel_id: number; business_date: string; created_at: string; quantity_ml: number; cost_e4: number;
+  net: number; vat: Def<number>; supplier: string | null; user_id: number; voided_at: string | null; void_reason: string | null; void_by: number | null;
+  shift_id: number | null; supplier_id: number | null; pay_type: Def<'cash' | 'bank' | 'credit'>; due_date: string | null; payable: number | null;
+  ref: string | null; note: string | null;
+}
+export interface AdjustmentsT {
+  id: Id; station_id: number; tank_id: number; business_date: string; created_at: string; before_ml: number; after_ml: number; note: string | null; user_id: number;
+}
+export interface TransfersT {
+  id: Id; org_id: number; from_station_id: number; to_station_id: number; from_tank_id: number; to_tank_id: number; business_date: string; created_at: string;
+  quantity_ml: number; value: number; note: string | null; user_id: number; voided_at: string | null; void_reason: string | null; void_by: number | null;
+}
+
 export interface DB {
   orgs: OrgsT; users: UsersT; user_stations: UserStationsT; stations: StationsT; fuels: FuelsT; tanks: TanksT; pumps: PumpsT;
   customers: CustomersT; shifts: ShiftsT; shift_meters: ShiftMetersT; sales: SalesT; stock_moves: StockMovesT;
   accounts: AccountsT; journals: JournalsT; journal_lines: JournalLinesT; audit: AuditT;
+  suppliers: SuppliersT; deliveries: DeliveriesT; adjustments: AdjustmentsT; transfers: TransfersT;
 }
 export type Station = Selectable<StationsT>;
 export type Sale = Selectable<SalesT>;
