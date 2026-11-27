@@ -1,5 +1,5 @@
 'use strict';
-/* global document, location, window */   // used inside page.evaluate (runs in the browser)
+/* global document, location, window, NodeFilter */   // used inside page.evaluate (runs in the browser)
 /* Browser test of the real UI (Playwright + Chromium) on a freshly seeded DEMO database — never real data.
    Run:  npm run test:e2e        (needs the dev dependency playwright; in CI: npx playwright install chromium)
    Covers: every menu screen opens without a script error, long lists are shown in parts with «show more / show all»,
@@ -52,7 +52,15 @@ test('every menu screen opens without a script error (desktop and phone width)',
     const { ctx, page, errors } = await signedIn(viewport);
     const tabs = await page.$$eval('aside.side a[href^="#"]', (as) => as.map((a) => a.getAttribute('href').slice(1)).filter((k) => /^[a-z]+$/.test(k)));
     assert.ok(tabs.length >= 20, 'menu has the screens: ' + tabs.join(','));
-    for (const k of tabs) { const before = errors.length; if (k !== 'dash') await openTab(page, k); await page.waitForTimeout(50); for (let i = before; i < errors.length; i++) errors[i] = `#${k} ${errors[i]}`; }
+    for (const k of tabs) { const before = errors.length; if (k !== 'dash') await openTab(page, k); await page.waitForTimeout(50); for (let i = before; i < errors.length; i++) errors[i] = `#${k} ${errors[i]}`;
+      /* 0.31: no stray «null»/«undefined» text, no page-wide sideways scroll, every box has a label tied to it (or an aria-label) */
+      const bad = await page.evaluate(() => { const out = []; const w = document.createTreeWalker(document.getElementById('main'), NodeFilter.SHOW_TEXT); let n;
+        while ((n = w.nextNode())) if (/^(null|undefined|NaN)$/.test(n.textContent.trim())) out.push('text «' + n.textContent.trim() + '»');
+        if (document.documentElement.scrollWidth > document.documentElement.clientWidth + 1) out.push('page scrolls sideways');
+        for (const i of document.querySelectorAll('#main input:not([type=checkbox]):not([type=radio]):not([type=hidden]), #main select, #main textarea'))
+          if (!(i.id && document.querySelector(`label[for="${i.id}"]`)) && !i.closest('label') && !i.getAttribute('aria-label') && !i.placeholder) out.push('unlabelled ' + i.outerHTML.slice(0, 60));
+        return out; });
+      for (const b of bad) errors.push(`#${k} ${b}`); }
     await page.waitForTimeout(300);
     assert.deepEqual(errors, [], `no errors at ${viewport.width}px`);
     await ctx.close();
