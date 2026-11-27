@@ -6,6 +6,7 @@ import * as reports from './reports.ts';
 import * as sales from './sales.ts';
 import * as setup from './setup.ts';
 import * as shifts from './shifts.ts';
+import * as stock from './stock.ts';
 
 type Args = { sid: number; id: number; body: Record<string, unknown>; query: Record<string, string> };
 type Op = (ctx: Ctx, user: User, a: Args) => Promise<unknown>;
@@ -29,6 +30,17 @@ export const OPS: Record<string, Op> = {
   'POST /stations/:sid/shifts': (c, u, a) => shifts.openShiftCmd(c, u, a.sid, a.body),
   'POST /stations/:sid/shifts/:id/close': (c, u, a) => shifts.closeShift(c, u, a.sid, a.id, a.body as { counted_cash: number }),
   'POST /stations/:sid/shifts/:id/approve': (c, u, a) => shifts.approveShift(c, u, a.sid, a.id),
+  'GET /stations/:sid/suppliers': (c, u, a) => stock.listSuppliers(c, u, a.sid),
+  'POST /stations/:sid/suppliers': (c, u, a) => stock.createSupplier(c, u, a.sid, a.body),
+  'GET /stations/:sid/deliveries': (c, u, a) => stock.listDeliveries(c, u, a.sid, { limit: n(a.query.limit), before_id: n(a.query.before_id) }),
+  'POST /stations/:sid/deliveries': (c, u, a) => stock.createDelivery(c, u, a.sid, a.body as unknown as stock.DeliveryInput),
+  'POST /stations/:sid/deliveries/:id/void': (c, u, a) => stock.voidDelivery(c, u, a.sid, a.id, a.body.reason),
+  'POST /stations/:sid/adjustments': (c, u, a) => stock.createAdjustment(c, u, a.sid, a.body as never),
+  'GET /stations/:sid/transfers': (c, u, a) => stock.listTransfers(c, u, a.sid, { limit: n(a.query.limit), before_id: n(a.query.before_id) }),
+  'POST /stations/:sid/transfers': (c, u, a) => stock.createTransfer(c, u, a.sid, a.body as never),
+  'POST /stations/:sid/transfers/:id/void': (c, u, a) => stock.voidTransfer(c, u, a.sid, a.id, a.body),
+  'GET /stations/:sid/stock-moves': (c, u, a) => stock.stockMoves(c, u, a.sid, { tank_id: n(a.query.tank_id), from: a.query.from, to: a.query.to, limit: n(a.query.limit), before_id: n(a.query.before_id) }),
+  'GET /stations/:sid/stock-reconciliation': (c, u, a) => stock.stockReconciliation(c, u, a.sid, { from: a.query.from, to: a.query.to }),
   'GET /stations/:sid/summary': (c, u, a) => reports.daySummary(c, u, a.sid, a.query.date),
   'GET /stations/:sid/trial-balance': (c, u, a) => reports.trialBalance(c, u, a.sid)
 };

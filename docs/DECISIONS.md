@@ -127,3 +127,9 @@ v2 is built beside v1; each module (sales & shifts → stock → parties → fin
 - **Reversal line order** follows v1's covering index (account, debit, credit) so a void writes identical journal lines on every engine.
 - **Migration tool** copies and proves inside ONE target transaction; any difference rolls back (exit 2). Measured on a demo year: SQLite 3 s, PostgreSQL 13 s.
 
+### ADR-40 v2 phase 2: check before the first write; split the UI by screen; compress (2026-11-27, accepted)
+- **Every command runs all its checks before its first write**, raising errors in v1's order. Reason: PostgreSQL identities are never reused after a rollback (SQLite reuses rowids), so a command that writes and then fails leaves a gap in document and journal numbers. The parity test on PostgreSQL found it (a delivery void that reversed its journal and then hit «already sold»). Helpers: `ledger.countReversible` (how many journals a void would reverse) and `ledger.planMove` (the arithmetic of a stock move without writing). Gaps from two *concurrent* failing commands remain possible on PostgreSQL and are acceptable (numbers are references, not a sequence the law requires here).
+- **Screens load on demand** (esbuild code splitting + `modulepreload` for what the first screen needs): the stock screen is fetched when its tab opens. First screen 1.48 s on a mid phone.
+- **The v2 server compresses** JS, CSS, HTML (once, kept in memory) and JSON answers above 1 KB (gzip, per request).
+- **Covering indexes for the tank reconciliation**: `stock_moves(tank_id, business_date, kind, qty_ml, value)` and `sales(tank_id, business_date, voided_at, quantity_ml)` — 20.7 → 3.8 ms per request on a demo year; the same totals (parity tests).
+

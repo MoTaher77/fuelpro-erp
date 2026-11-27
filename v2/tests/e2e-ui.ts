@@ -16,7 +16,7 @@ const errors: string[] = [];
 for (const [name, vp] of [['desktop', { width: 1280, height: 860 }], ['phone', { width: 390, height: 844 }]] as const) {
   const page = await browser.newPage({ viewport: vp, deviceScaleFactor: 1 });
   page.on('pageerror', (e) => errors.push(name + ': ' + e.message));
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(name + ': ' + m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/status of 4\d\d/.test(m.text())) errors.push(name + ': ' + m.text()); });   // 4xx = the rule the test triggers on purpose
   const t0 = Date.now();
   await page.goto(`http://127.0.0.1:${port}/#t=${token}`);
   if (name === 'desktop') {
@@ -40,6 +40,20 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 860 }], ['phone', {
     await page.click('text=إغلاق الوردية'); await page.waitForSelector('#sh-float');
     await page.waitForTimeout(150);
     await page.screenshot({ path: `${out}/3-closed.png`, fullPage: true });
+    // stock & deliveries
+    await page.click('[data-tab=stock]'); await page.waitForSelector('#d-qty');
+    await page.fill('#s-name', 'مورد تجريبي'); await page.fill('#s-open', '1500'); await page.click('text=إضافة'); await page.waitForSelector('td:has-text("مورد تجريبي")');
+    await page.fill('#d-qty', '5000'); await page.fill('#d-cost', '512.5'); await page.selectOption('#d-pay', 'credit');
+    await page.selectOption('#d-sup', { label: 'مورد تجريبي' }); await page.click('text=تسجيل التوريد'); await page.waitForSelector('text=آخر التوريدات');
+    // the first delivery is saved and the screen redrawn (empty form) before the next entry
+    await page.waitForSelector('.toast:has-text("سُجّل التوريد")');
+    await page.waitForFunction(() => { const q = document.querySelector<HTMLInputElement>('#d-qty'); return !!q && q.value === '' && !document.querySelector('button.busy'); });
+    await page.fill('#d-qty', '30000'); await page.fill('#d-cost', '500'); await page.selectOption('#d-pay', 'cash'); await page.click('text=تسجيل التوريد');
+    await page.waitForSelector('.toast.err'); const capErr = await page.textContent('.toast.err');
+    if (!/المساحة الفارغة/.test(capErr || '')) errors.push('capacity error text: ' + capErr);
+    await page.fill('#c-qty', '14900'); await page.click('text=تسجيل الجرد');
+    await page.waitForSelector('.toast:has-text("عجز")');
+    await page.screenshot({ path: `${out}/6-stock.png`, fullPage: true });
   } else {
     await page.screenshot({ path: `${out}/4-phone.png`, fullPage: true });
     const sideways = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
@@ -47,6 +61,10 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 860 }], ['phone', {
   }
   await page.close();
 }
+const dl = await ctx.db.selectFrom('deliveries').selectAll().execute();
+console.log('deliveries', dl.map((d) => [d.quantity_ml, d.cost_e4, d.net, d.pay_type, d.ref]));
+const adj = await ctx.db.selectFrom('adjustments').selectAll().execute();
+console.log('counts', adj.map((a) => [a.before_ml, a.after_ml]));
 const tb = await ctx.db.selectFrom('sales').selectAll().execute();
 console.log('sales rows', tb.length, 'gross', tb.map((s) => s.gross), 'voided', tb.filter((s) => s.voided_at).length);
 const sh = await ctx.db.selectFrom('shifts').selectAll().execute();

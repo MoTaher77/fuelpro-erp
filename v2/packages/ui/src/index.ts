@@ -10,7 +10,7 @@ export interface Backend {
   call<T = unknown>(method: string, path: string, body?: unknown, query?: Record<string, string>): Promise<T>;
   firstRun(b: Record<string, unknown>): Promise<void>;
 }
-type Station = { id: number; name: string; currency: string; cur_dec: number; disp_dec: number | null; require_shift: number };
+export type Station = { id: number; name: string; currency: string; cur_dec: number; disp_dec: number | null; require_shift: number };
 type Pump = { id: number; name: string; meter_ml: number; fuel_name: string; price_e4: number; tank_id: number };
 type Customer = { id: number; name: string };
 type Sale = { id: number; pump_name: string; fuel_name: string; quantity_ml: number; gross: number; pay_type: string; customer_name: string | null; voided_at: string | null; created_at: string; business_date: string };
@@ -22,13 +22,14 @@ const MSG: Record<string, string> = {
   METER_MISMATCH: 'تغيّر عداد المضخة منذ فتح النموذج؛ راجع القراءة', INSUFFICIENT_STOCK: 'الكمية أكبر من رصيد الخزان', CREDIT_LIMIT: 'البيع يتجاوز سقف ائتمان العميل',
   QUANTITY_TOO_LARGE: 'كمية غير معتادة، راجع قراءة العداد', PRICE_NOT_SET: 'حدّد سعر الوقود أولاً', PERIOD_LOCKED: 'الفترة المحاسبية مقفلة',
   SHIFT_CLOSED: 'هذا المستند يتبع وردية مغلقة', ALREADY_VOIDED: 'المستند ملغى مسبقاً', FORBIDDEN: 'لا تملك صلاحية لهذا الإجراء', NOT_FOUND: 'غير موجود',
-  DISCOUNT_TOO_LARGE: 'الخصم يجب أن يكون أقل من مبلغ البيع', NETWORK: 'تعذّر الاتصال بالخادم', VALIDATION: 'تحقق من الحقول'
+  DISCOUNT_TOO_LARGE: 'الخصم يجب أن يكون أقل من مبلغ البيع', EXCEEDS_CAPACITY: 'الكمية أكبر من المساحة الفارغة في الخزان',
+  STOCK_ALREADY_SOLD: 'بيع جزء من هذه الكمية؛ صحّح الخزان بالجرد', FUEL_MISMATCH: 'الخزانان ليسا لنفس الوقود', CURRENCY_MISMATCH: 'المحطتان بعملتين مختلفتين', FUTURE_DATE: 'التاريخ في المستقبل', NETWORK: 'تعذّر الاتصال بالخادم', VALIDATION: 'تحقق من الحقول'
 };
-const errText = (e: unknown) => { const x = e as BackendError; return MSG[x?.code] || x?.message || 'حدث خطأ غير متوقع'; };
+export const errText = (e: unknown) => { const x = e as BackendError; return MSG[x?.code] || x?.message || 'حدث خطأ غير متوقع'; };
 const MODE: Record<Backend['mode'], string> = { server: 'الخادم', desktop: 'سطح المكتب — بدون إنترنت', phone: 'الهاتف — بدون إنترنت' };
 
 type Attrs = Record<string, unknown>;
-function h<K extends keyof HTMLElementTagNameMap>(tag: K, a: Attrs = {}, ...kids: Array<Node | string | null | false | undefined>): HTMLElementTagNameMap[K] {
+export function h<K extends keyof HTMLElementTagNameMap>(tag: K, a: Attrs = {}, ...kids: Array<Node | string | null | false | undefined>): HTMLElementTagNameMap[K] {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(a)) {
     if (v === undefined || v === null || v === false) continue;
@@ -50,7 +51,7 @@ export async function mount(root: HTMLElement, be: Backend): Promise<void> {
   return mainView(root, be, sid);
 }
 
-function toastHost(): (m: string, kind?: 'ok' | 'err') => void {
+export function toastHost(): (m: string, kind?: 'ok' | 'err') => void {
   let host = document.querySelector<HTMLElement>('.toasts');
   if (!host) { host = h('div', { class: 'toasts', role: 'status', 'aria-live': 'polite' }); document.body.append(host); }
   return (m, kind = 'ok') => { const t = h('div', { class: 'toast ' + kind }, m); host!.append(t); setTimeout(() => t.remove(), kind === 'err' ? 6000 : 3000); };
@@ -85,7 +86,7 @@ function firstRunView(root: HTMLElement, be: Backend) {
   field('سعة الخزان (لتر)', f.cap), field('الرصيد الافتتاحي (لتر)', f.level), field('عدد المضخات', f.pumps), btn);
   root.replaceChildren(h('main', { class: 'wrap' }, form));
 }
-function field(label: string, input: HTMLElement, hint?: string) {
+export function field(label: string, input: HTMLElement, hint?: string) {
   return h('label', { class: 'field', for: input.id }, h('span', {}, label), input, hint ? h('small', { class: 'muted' }, hint) : null);
 }
 
@@ -99,7 +100,18 @@ async function mainView(root: HTMLElement, be: Backend, sid: number) {
   const shiftBox = h('section', { class: 'card' });
   const saleBox = h('section', { class: 'card' });
   const listBox = h('section', { class: 'card wide' });
-  root.replaceChildren(head, h('main', { class: 'wrap grid' }, tiles, shiftBox, saleBox, listBox));
+  const salesMain = h('main', { class: 'wrap grid' }, tiles, shiftBox, saleBox, listBox);
+  const stockMain = h('main', { class: 'wrap grid', hidden: true });
+  const tabs: Array<[string, string]> = [['sales', 'البيع والوردية'], ['stock', 'المخزون والتوريد']];
+  const tabBar = h('nav', { class: 'tabs', role: 'tablist' }, ...tabs.map(([k, label]) => h('button', { type: 'button', role: 'tab', 'data-tab': k, onclick: () => show(k) }, label)));
+  const show = async (k: string) => {
+    for (const b of tabBar.querySelectorAll('button')) b.setAttribute('aria-selected', String(b.dataset.tab === k));
+    salesMain.hidden = k !== 'sales'; stockMain.hidden = k !== 'stock';
+    try { history.replaceState(null, '', k === 'sales' ? location.pathname : '#' + k); } catch { /* file:// or sandbox */ }
+    // the stock screen is a separate file, fetched the first time its tab opens (smaller first screen)
+    if (k === 'stock') await (await import('./stock.ts')).stockView(stockMain, be, st, toast); else await refresh();
+  };
+  root.replaceChildren(head, tabBar, salesMain, stockMain);
 
   let pumps: Pump[] = [], customers: Customer[] = [], shift: ShiftNow = null;
   async function refresh() {

@@ -9,3 +9,4 @@ export * as sales from './sales.ts';
 export * as shifts from './shifts.ts';
 export * as reports from './reports.ts';
 export * as api from './api.ts';
+export * as stock from './stock.ts';

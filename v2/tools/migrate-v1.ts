@@ -1,4 +1,4 @@
-/* Copy the sales & shifts module and the whole general ledger from a v1 database (SQLite) into a v2 database
+/* Copy the ported modules (sales & shifts, stock & deliveries) and the whole general ledger from a v1 database (SQLite) into a v2 database
    (SQLite file or PostgreSQL), keeping every id, then prove the books are the same. The copy and the proof run in ONE
    transaction on the target: any difference rolls everything back and the tool exits with code 2.
 
@@ -25,14 +25,15 @@ const src = new DatabaseSync(from, { readOnly: true });
 
 /** in foreign-key order; only the columns v2 has */
 const TABLES = ['orgs', 'users', 'stations', 'user_stations', 'fuels', 'tanks', 'pumps', 'customers', 'shifts', 'shift_meters', 'sales',
-  'stock_moves', 'accounts', 'journals', 'journal_lines', 'audit'] as const;
+  'suppliers', 'deliveries', 'adjustments', 'transfers', 'stock_moves', 'accounts', 'journals', 'journal_lines', 'audit'] as const;
 /** v2 columns that v1 may lack in older files; filled with these defaults */
 const DEFAULTS: Record<string, Record<string, unknown>> = {};
 
 /* ---------- the proof: the same figures computed on both sides ---------- */
 const CHECKS: Record<string, string> = {
   counts: `SELECT (SELECT COUNT(*) FROM sales) sales, (SELECT COUNT(*) FROM journals) journals, (SELECT COUNT(*) FROM journal_lines) lines,
-           (SELECT COUNT(*) FROM stock_moves) moves, (SELECT COUNT(*) FROM shifts) shifts, (SELECT COUNT(*) FROM customers) customers`,
+           (SELECT COUNT(*) FROM stock_moves) moves, (SELECT COUNT(*) FROM shifts) shifts, (SELECT COUNT(*) FROM customers) customers,
+           (SELECT COUNT(*) FROM suppliers) suppliers, (SELECT COUNT(*) FROM deliveries) deliveries, (SELECT COUNT(*) FROM adjustments) counts, (SELECT COUNT(*) FROM transfers) transfers`,
   ledger_totals: `SELECT COALESCE(SUM(l.debit),0) debit, COALESCE(SUM(l.credit),0) credit FROM journal_lines l JOIN journals j ON j.id=l.journal_id WHERE j.status='posted'`,
   trial_balance: `SELECT j.station_id, l.account_id, SUM(l.debit) debit, SUM(l.credit) credit FROM journal_lines l JOIN journals j ON j.id=l.journal_id
            WHERE j.status='posted' GROUP BY j.station_id, l.account_id ORDER BY j.station_id, l.account_id`,
@@ -42,6 +43,11 @@ const CHECKS: Record<string, string> = {
            WHERE l.party_type='customer' AND a.sys='ar' AND j.status='posted' GROUP BY l.party_id ORDER BY l.party_id`,
   tanks: `SELECT t.id, t.level_ml, t.value, (SELECT COALESCE(SUM(m.qty_ml),0) FROM stock_moves m WHERE m.tank_id=t.id) moved_ml,
            (SELECT COALESCE(SUM(m.value),0) FROM stock_moves m WHERE m.tank_id=t.id) moved_value FROM tanks t ORDER BY t.id`,
+  suppliers: `SELECT l.party_id, SUM(l.credit - l.debit) balance FROM journal_lines l JOIN journals j ON j.id=l.journal_id JOIN accounts a ON a.id=l.account_id
+           WHERE l.party_type='supplier' AND a.sys='ap' AND j.status='posted' GROUP BY l.party_id ORDER BY l.party_id`,
+  deliveries_by_day: `SELECT station_id, business_date, COUNT(*) n, SUM(quantity_ml) qty, SUM(net) net, SUM(vat) vat FROM deliveries
+           WHERE voided_at IS NULL GROUP BY station_id, business_date ORDER BY station_id, business_date`,
+  stock_by_kind: `SELECT tank_id, kind, COUNT(*) n, SUM(qty_ml) qty, SUM(value) value FROM stock_moves GROUP BY tank_id, kind ORDER BY tank_id, kind`,
   sales_by_day: `SELECT station_id, business_date, COUNT(*) n, SUM(quantity_ml) qty, SUM(gross) gross, SUM(COALESCE(cogs,0)) cogs FROM sales
            WHERE voided_at IS NULL GROUP BY station_id, business_date ORDER BY station_id, business_date`
 };

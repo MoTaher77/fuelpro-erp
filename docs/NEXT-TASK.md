@@ -1,5 +1,9 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-27 — 0.36.0 v2 phase 2 stock & deliveries (branch `claude/v2-phase2`, PR open)
+- Done: suppliers, deliveries, stock counts, transfers, reconciliation in the v2 core + migration 002 + stock screen; parity on SQLite/bridge/PostgreSQL (33 v2 tests); migrate-v1 covers 20 tables / 10 checks. Report `docs/V2-PHASE2.md`, ADR-40.
+- Next (owner to confirm): phase 3 = customers & suppliers & collections (payments, supplier payments, vouchers, statements, ageing), same method. Still waiting: owner's try of the phase-1 APK / Windows installer (KI-23); users/sign-in module before real data (KI-24).
+
 ## 2026-11-27 — 0.35.0 sign-in history (branch `claude/user-logins`, PR open)
 - Owner asked for user control + who signed in and when. Built on v1 (the live system): `login_events` (migration v19), `src/logins.js`, users screen columns (last sign-in, online now) + «sign out everywhere» + «سجل الدخول» section. 98 unit + 8 e2e + 93 artifact green.
 - **Owner after merge:** `sudo fuelpro-update` on the server (migration v19 adds a table only). History starts from that moment (earlier sign-ins were never stored).
