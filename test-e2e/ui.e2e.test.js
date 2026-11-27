@@ -130,6 +130,35 @@ test('a double tap on «save» posts the document once', async () => {
   await ctx.close();
 });
 
+test('form errors show under the field and beside the button; a save shows a spinner, then a tick', async () => {
+  const { ctx, page, errors } = await signedIn();
+  await openTab(page, 'exp'); await page.waitForSelector('#eAmt');
+  const note = 'e2e-fe-' + Date.now();
+  /* typing something that is not a number: the box says so at once, under itself */
+  await page.fill('#eAmt', '12x'); await page.dispatchEvent('#eAmt', 'change');
+  assert.equal(await page.getAttribute('#eAmt', 'aria-invalid'), 'true');
+  assert.match(await page.textContent('#eAmt + .fe'), /number|رقم/i);
+  /* saving anyway: nothing is posted, a message appears beside the button and the wrong box stays marked */
+  await page.fill('#eNote', note);
+  await page.evaluate(() => document.getElementById('eAmt').closest('form').requestSubmit());
+  await page.waitForSelector('main#main form .form-err');
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM expenses WHERE note=?').get(note).n, 0, 'nothing saved');
+  assert.equal(await page.getAttribute('#eAmt', 'aria-invalid'), 'true');
+  /* fixing it clears the marks; the save button spins while it works and shows a tick when it is done */
+  await page.fill('#eAmt', '250');
+  assert.equal(await page.$('#eAmt + .fe'), null, 'field message gone once the number is valid');
+  assert.equal(await page.$('main#main form .form-err'), null, 'form message gone on the next change');
+  await page.route('**/api/stations/*/expenses', async (route) => { if (route.request().method() === 'POST') await new Promise(r => setTimeout(r, 700)); return route.continue(); });
+  const btn = page.locator('main#main form:has(#eAmt) button[type=submit], main#main form:has(#eAmt) button:not([type])').first();
+  await page.evaluate(() => document.getElementById('eAmt').closest('form').requestSubmit());
+  await page.waitForFunction(() => [...document.querySelectorAll('main#main button')].some(b => b.getAttribute('aria-busy') === 'true'), null, { timeout: 5000 });
+  await page.waitForFunction((n) => document.body.textContent.includes(n), note, { timeout: 15000 });
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM expenses WHERE note=?').get(note).n, 1, 'saved once');
+  assert.ok(btn, 'the form has a save button');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
 test('staff & payroll screen: add an employee, give an advance, post the month, pay the salary, read the statement', async () => {
   const { ctx, page, errors } = await signedIn();
   await openTab(page, 'emp'); await page.waitForSelector('#emName');
@@ -191,8 +220,8 @@ test('a dropped connection («Failed to fetch») is retried for reads; a failed 
   await openTab(page, 'exp'); await page.waitForSelector('#eAmt');
   await page.fill('#eAmt', '1000');
   await page.evaluate(() => document.getElementById('eAmt').closest('form').requestSubmit());
-  await page.waitForSelector('#toast:not([hidden])', { timeout: 10000 });
-  const msg = await page.textContent('#toast');
+  await page.waitForSelector('main#main form .form-err', { timeout: 10000 });   // 0.30: shown beside the button, not only as a toast
+  const msg = await page.textContent('main#main form .form-err');
   assert.ok(!/failed to fetch/i.test(msg), 'no raw browser error: ' + msg);
   assert.match(msg, /الاتصال|connection/i);
   await page.waitForTimeout(3000);

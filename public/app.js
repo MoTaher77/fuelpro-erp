@@ -22,6 +22,7 @@ window.FPFMT = (function () {
     salesToday: ['مبيعات اليوم', 'Sales today', 'Ventes du jour'], volToday: ['الكمية المباعة اليوم', 'Volume sold today', "Volume vendu aujourd'hui"], volSold: ['الكمية المباعة', 'Volume sold', 'Volume vendu'], expToday: ['مصروفات اليوم', 'Expenses today', 'Dépenses du jour'],
     recv: ['ديون العملاء (آجل)', 'Customer credit owed', 'Crédit clients dû'], tanks: ['الخزانات', 'Tanks', 'Cuves'], last7: ['آخر 7 أيام (بالآلاف)', 'Last 7 days (thousands)', '7 derniers jours (milliers)'],
     low: ['مخزون منخفض', 'Low stock', 'Stock bas'], daysLeft: ['يكفي نحو {n} يوم', 'About {n} days left', 'Environ {n} jours restants'], of: ['من', 'of', 'sur'],
+    'fe.fix': ['لم يُحفظ: صحّح الخانة المعلّمة بالأحمر ثم احفظ مرة أخرى.', 'Not saved: correct the field marked in red, then save again.', 'Non enregistré : corrigez le champ en rouge, puis enregistrez.'], 'fe.num': ['أدخل رقماً صحيحاً، مثل 1500 أو 12.5', 'Enter a valid number, e.g. 1500 or 12.5', 'Saisissez un nombre valide, ex. 1500 ou 12,5'], 'fe.req': ['هذه الخانة مطلوبة', 'This field is required', 'Ce champ est obligatoire'],
     'bn.shift': ['الوردية', 'Shift', 'Poste'], 'bn.dash': ['الرئيسية', 'Home', 'Accueil'], 'bn.sales': ['المبيعات', 'Sales', 'Ventes'], newSale: ['تسجيل عملية بيع', 'Record a sale', 'Enregistrer une vente'], pump: ['المضخة', 'Pump', 'Pompe'], prevMeter: ['القراءة السابقة ({u})', 'Previous reading ({u})', 'Index précédent ({u})'],
     closeMeter: ['القراءة الحالية ({u})', 'Current reading ({u})', 'Index actuel ({u})'], qtyOr: ['أو الكمية ({u})', 'Or quantity ({u})', 'Ou quantité ({u})'],
     payType: ['طريقة الدفع', 'Payment', 'Paiement'], cash: ['نقدي', 'Cash', 'Comptant'], credit: ['آجل', 'Credit', 'Crédit'], customer: ['العميل', 'Customer', 'Client'],
@@ -158,7 +159,7 @@ window.FPFMT = (function () {
   }
   const field = (label, input) => h('div', null, h('label', { for: input.id }, label), input);
   const sel = (id, opts, cur) => h('select', { id }, opts.map(([v, l]) => h('option', { value: v, selected: String(v) === String(cur) }, l)));
-  const toast = (m) => { const t = document.getElementById('toast'); t.replaceChildren(h('span', null, m)); t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 4500); };
+  const toast = (m, kind) => { const t = document.getElementById('toast'); t.replaceChildren(h('span', { class: kind || '' }, m)); t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 4500); };
   const table = (heads, rows) => h('div', { class: 'tw' }, h('table', null, h('thead', null, h('tr', null, heads.map(x => h('th', null, x)))), h('tbody', null, rows.map(r => h('tr', null, r.map(c => h('td', null, c)))))));
   const stat = (k, v) => h('div', { class: 'stat' }, h('div', { class: 'k' }, k), h('div', { class: 'v' }, v));
   const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -203,13 +204,44 @@ window.FPFMT = (function () {
     if (hold && busy) { if (ev.preventDefault) ev.preventDefault(); return; }
     const btns = hold ? (ev.type === 'submit' && ev.target && ev.target.querySelectorAll ? [...ev.target.querySelectorAll('button[type=submit], button:not([type])')] : ev.currentTarget && ev.currentTarget.tagName === 'BUTTON' ? [ev.currentTarget] : []).filter(b => !b.disabled) : [];
     if (hold) { busy = true; btns.forEach(b => { b.disabled = true; b.setAttribute('aria-busy', 'true'); }); }
-    try { await fn(...a); } catch (e) { toast(e.message); if (e.code === 'UNAUTHENTICATED') { S.user = null; authScreen(); } }
-    finally { if (hold) { busy = false; btns.forEach(b => { b.disabled = false; b.removeAttribute('aria-busy'); }); } }
+    let ok = false; const place = hold ? placeOf(ev) : null;   // read now: the event's currentTarget is gone after the first await
+    try { if (place) clearFormError(place); await fn(...a); ok = true; }
+    catch (e) { if (e.code === 'UNAUTHENTICATED') { toast(e.message, 'err'); S.user = null; authScreen(); } else if (!(place && showFormError(place, btns[0], e))) toast(e.message, 'err'); }
+    finally { if (hold) { busy = false; btns.forEach(b => { b.disabled = false; b.removeAttribute('aria-busy'); if (ok && b.isConnected) { b.classList.remove('saved'); void b.offsetWidth; b.classList.add('saved'); setTimeout(() => b.classList.remove('saved'), 1300); } }); } }
   }; };
+  /* 0.30: errors are shown where they happened — under the field that is wrong, and in a box beside the button — instead of only a toast */
+  const looksNumeric = (i) => /^(decimal|numeric)$/.test(i.getAttribute('inputmode') || '') || i.type === 'number';
+  function fieldError(input, msg) {
+    input.setAttribute('aria-invalid', 'true');
+    const box = input.parentElement; if (!box) return;
+    let fe = box.querySelector(':scope > .fe'); if (!fe) { fe = h('div', { class: 'fe', role: 'alert', id: (input.id || 'f' + Math.random().toString(36).slice(2, 8)) + '-err' }); input.after(fe); }
+    fe.textContent = msg; input.setAttribute('aria-describedby', fe.id);
+  }
+  function clearField(input) { input.removeAttribute('aria-invalid'); const fe = input.parentElement && input.parentElement.querySelector(':scope > .fe'); if (fe) fe.remove(); }
+  const placeOf = (ev) => { const t = ev && (ev.type === 'submit' ? ev.target : ev.currentTarget); return t && t.closest ? (t.tagName === 'FORM' ? t : t.closest('form, .modal .card, .card')) : null; };
+  function clearFormError(box) { box.querySelectorAll(':scope .form-err').forEach(x => x.remove()); box.querySelectorAll('[aria-invalid=true]').forEach(clearField); }
+  function showFormError(box, btn, e) {
+    if (!box.isConnected) return false;
+    const inputs = [...box.querySelectorAll('input, select, textarea')].filter(i => i.offsetParent !== null && !i.disabled && i.type !== 'hidden');
+    let first = null;
+    if (num.lastBad != null) for (const i of inputs) if (i.value === num.lastBad) { fieldError(i, e.message); first = first || i; }
+    for (const i of inputs) if (i.required && !String(i.value).trim()) { fieldError(i, T('fe.req')); first = first || i; }
+    for (const i of inputs) if (looksNumeric(i) && String(i.value).trim() && parseDec(i.value, 6) == null && i.getAttribute('aria-invalid') !== 'true') { fieldError(i, T('fe.num')); first = first || i; }
+    num.lastBad = null;
+    const msg = h('div', { class: 'form-err', role: 'alert' }, first ? T('fe.fix') : e.message);   // the exact reason is already under the field
+    const row = btn && btn.closest && btn.closest('.row'); if (row && box.contains(row)) row.before(msg); else box.append(msg);
+    if (first) first.focus({ preventScroll: false });
+    return true;
+  }
+  /* a number box says at once when what was typed is not a number */
+  document.addEventListener('change', (e) => { const i = e.target; if (!(i instanceof HTMLInputElement) || !looksNumeric(i)) return;
+    if (String(i.value).trim() && parseDec(i.value, 6) == null) fieldError(i, T('fe.num')); else if (i.getAttribute('aria-invalid') === 'true') clearField(i); });
+  document.addEventListener('input', (e) => { const i = e.target; if (i && i.getAttribute && i.getAttribute('aria-invalid') === 'true' && (!looksNumeric(i) || !String(i.value).trim() || parseDec(i.value, 6) != null)) clearField(i);
+    const fe = i && i.closest && i.closest('form, .card'); if (fe) fe.querySelectorAll(':scope .form-err').forEach(x => x.remove()); });
   const can = (...roles) => S.user && roles.includes(S.user.role);
   const cd = (...ps) => !!S.perms && (S.perms.includes('*') || ps.some(p => S.perms.includes(p)));   // server-provided permissions (the server enforces them again)
   const mgr = () => cd('config.edit');
-  const num = (v, fn, err = 'err.BAD_NUMBER') => { const r = fn(v); if (r == null) throw new Error(T(err)); return r; };
+  const num = (v, fn, err = 'err.BAD_NUMBER') => { const r = fn(v); if (r == null) { num.lastBad = String(v); throw new Error(T(err)); } return r; };   // lastBad: the form error box marks that field
 
   async function loadBase() {
     const me = await api('GET', '/api/me'); S.user = me.user; S.stations = me.stations; S.perms = me.perms || [];

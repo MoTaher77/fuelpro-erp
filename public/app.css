@@ -776,6 +776,35 @@ a.btn.wa-go.sm{min-height:36px;padding:4px 12px;font-size:13px;border-radius:10p
     .bottom a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   }
 }
+@media screen{
+  /* saving: the pressed button turns into a spinner, then shows a tick for a moment when it worked */
+  button[aria-busy=true]{cursor:progress}
+  button.btn[aria-busy=true]{opacity:.85}
+  button.btn[aria-busy=true]::before{content:"";display:inline-block;width:14px;height:14px;margin-inline-end:8px;vertical-align:-2px;border-radius:50%;border:2px solid currentColor;border-inline-end-color:transparent;animation:spin .75s linear infinite}
+  button.btn.saved{animation:savedPop .5s var(--ease)}
+  button.btn.saved::before{content:"";display:inline-block;width:14px;height:8px;margin-inline-end:8px;vertical-align:3px;border-inline-start:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:rotate(-45deg);animation:tick .35s var(--ease) both}
+  @keyframes savedPop{40%{transform:scale(1.04)}}
+  @keyframes tick{from{opacity:0;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+
+  /* errors where they happened: under the field, and a box beside the button */
+  input[aria-invalid=true],select[aria-invalid=true],textarea[aria-invalid=true]{border-color:var(--bad)!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 14%,transparent)!important;animation:shake .4s var(--ease)}
+  .fe{display:flex;align-items:flex-start;gap:6px;margin-top:6px;font-size:12.5px;font-weight:600;color:var(--bad);animation:feIn .25s var(--ease) both}
+  .fe::before{content:"!";flex:none;display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--bad);color:#fff;font-size:11px;font-weight:800;line-height:1;margin-top:1px}
+  .form-err{display:flex;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;border-radius:12px;font-size:14px;font-weight:600;color:var(--bad);
+    background:color-mix(in srgb,var(--bad) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--bad) 30%,transparent);animation:shake .45s var(--ease),feIn .25s var(--ease) both}
+  .form-err::before{content:"!";flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--bad);color:#fff;font-size:12px;font-weight:800;line-height:1;margin-top:1px}
+  @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-5px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+  @keyframes feIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+
+  /* messages: a thin bar shows how long the message stays; problems are marked red */
+  .toast span{position:relative;overflow:hidden}
+  .toast span::after{content:"";position:absolute;inset-inline:0;bottom:0;height:3px;background:var(--gold);opacity:.7;transform-origin:left;animation:toastBar 4.5s linear forwards}
+  [dir=rtl] .toast span::after{transform-origin:right}
+  .toast span.err{border-inline-start-color:var(--bad)}
+  .toast span.err::after{background:var(--bad)}
+  @keyframes toastBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+}
+@media (prefers-reduced-motion:reduce){button.btn.saved,input[aria-invalid=true],.form-err,.fe,.toast span::after{animation:none!important}}
 @media screen and (min-width:901px){
   /* long tables scroll inside their frame on a computer, so the column titles stay in view */
   main .tw{max-height:min(72vh,880px);overflow:auto;overscroll-behavior:contain}

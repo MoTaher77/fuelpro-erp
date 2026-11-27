@@ -4,7 +4,7 @@
 | Command | What | Result |
 |---|---|---|
 | `npm test` | `node --test test/*.test.js` — real HTTP server on a random port, in-memory SQLite per test | **94 pass, 1 skipped (PostgreSQL, needs `FUELPRO_TEST_PG`), 0 fail, ~7 s** |
-| `npm run test:e2e` | `test-e2e/*.test.js` — Playwright + Chromium on a freshly seeded **demo** DB (120 days) | **7 pass, ~35 s** |
+| `npm run test:e2e` | `test-e2e/*.test.js` — Playwright + Chromium on a freshly seeded **demo** DB (120 days) | **8 pass, ~40 s** |
 | `npm run test:artifact` | the whole suite on sql.js (the Artifact page engine), file backups excluded | **89 pass, 1 skipped** |
 | `npm run lint` | eslint (errors fail CI) | 0 errors |
 | `npm run typecheck` | `tsc` on files that start with `// @ts-check` (money, validate, errors, bench/stress scripts) | 0 errors |
@@ -29,7 +29,7 @@ CI (`.github/workflows/test.yml`): `test` (lint, typecheck, audit, unit + Postgr
 | `test/i18n.test.js` | every audit action has an ar/en/fr label |
 | `test/vps.test.js` | 0.27: `REGISTRATION=first` (first organisation only, then 403 `REGISTRATION_CLOSED`), `closed`, `open`; `/api/health` tells the sign-in page |
 | others | money, auth units, alerts, discounts + bank reconciliation, M7 history, xlsx, proxy, backup mirror, PostgreSQL bridge, Artifact runtime |
-| `test-e2e/ui.e2e.test.js` | every menu screen at 1366 px and 390 px without script errors; long statement / journal book / journal list in parts with «show all»; Excel export expands first; compressed app files + 304 on reload; a triple-submitted expense is saved once; staff & payroll flow; a dropped connection: reads retried, a failed save shows a message and is not re-sent |
+| `test-e2e/ui.e2e.test.js` | every menu screen at 1366 px and 390 px without script errors; long statement / journal book / journal list in parts with «show all»; Excel export expands first; compressed app files + 304 on reload; a triple-submitted expense is saved once; staff & payroll flow; a dropped connection: reads retried, a failed save shows a message beside the button and is not re-sent; form errors under the field + spinner while saving (0.30) |
 
 ## Financial correctness — what a new accounting change must test
 Balanced journal per operation · exact reversal on void · stock value = account 1200 · customers = 1100 · suppliers = 2010 ·
