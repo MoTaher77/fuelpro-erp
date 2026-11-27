@@ -14,8 +14,13 @@ time to print. They run Chromium in a container — not your Chrome, not your pr
 ## Thermal printer (80 mm, then 58 mm if you have one)
 - [ ] Sales → a sale → «فاتورة»: the paper is cut right after the receipt (the page is exactly as long as the receipt).
 - [ ] Margins: nothing touches the edge; the right and left edges of the text are about 2–3 mm from the paper edge.
-- [ ] 58 mm: set it once from the browser console `localStorage.setItem('fpReceiptW','58')` (a setting in «التفضيلات» comes with the next phase) and print again.
+- [ ] 58 mm: «التفضيلات» → «ورق الإيصال» → 58 مم, save, print again. The logo on receipts is off unless «الشعار في الإيصال» is ticked.
 - [ ] A voided sale: the receipt shows the «ملغى / VOID» stamp and the struck-through amounts.
 - [ ] The QR scans on your phone (it holds the receipt number, time and total).
 
 Tell Claude what failed (a photo is enough); it goes into `docs/KNOWN-ISSUES.md` (KI-07).
+
+## Phase 2 (0.33): every other document
+- [ ] Daily report, boxes report, collections, a receipt voucher, a journal entry, financial statements, a shift, sales register, purchases, payroll: each shows the same head, «صفحة X من Y», and nothing cut at the edges.
+- [ ] Sales register and collections print **landscape** by themselves (11+ columns).
+- [ ] If your printer only has A5 paper: Chrome shrinks the A4 page to fit; the wide registers are small but complete. Tell Claude if A5 should become a real paper choice.

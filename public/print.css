@@ -14,7 +14,7 @@
   font-family:var(--text);color:var(--ink);font-size:10pt;line-height:1.45;font-variant-numeric:tabular-nums lining-nums;
   -webkit-print-color-adjust:exact;print-color-adjust:exact;text-rendering:optimizeLegibility}
 #print.p2 .n{direction:ltr;unicode-bidi:isolate;white-space:nowrap}
-#print.p2 *{box-shadow:none;animation:none}
+#print.p2 *{box-shadow:none;animation:none;font-family:var(--text)}
 
 /* receipts are measured on screen (off-page) before printing, at their printable width */
 body.p2-measure #print.p2{display:block;position:absolute;inset-inline-start:-9999px;top:0;background:#fff}
@@ -42,16 +42,16 @@ body.p2-measure #print.p2-r80{width:75mm}body.p2-measure #print.p2-r58{width:53m
 #print.p2 .lh2-meta dt{color:var(--mute);text-align:start}#print.p2 .lh2-meta dd{margin:0;font-weight:600;text-align:end}
 
 /* the party and the summary: two quiet panels; the closing balance is the one strong figure */
-#print.p2 .party2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:5mm;break-inside:avoid}
+#print.p2 .party2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.9fr);gap:5mm;break-inside:avoid}
 #print.p2 .pbox{border:.6pt solid var(--rule);border-radius:2mm;padding:3mm 4mm;background:var(--ivory)}
 #print.p2 .lbl{display:block;font-size:8pt;color:var(--mute);margin-bottom:.8mm}
 #print.p2 .pname{font-weight:600;font-size:12.5pt;line-height:1.3}
 #print.p2 .psub{font-size:8.5pt;color:var(--mute);margin-top:1mm}
-#print.p2 .sum2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0;border:.6pt solid var(--rule);border-radius:2mm;overflow:hidden}
+#print.p2 .sum2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.3fr);margin:0;border:.6pt solid var(--rule);border-radius:2mm;overflow:hidden}
 #print.p2 .sum2 > div{padding:3mm 3mm 2.6mm;border-inline-start:.6pt solid var(--hair);display:flex;flex-direction:column;justify-content:space-between;gap:1mm}
 #print.p2 .sum2 > div:first-child{border-inline-start:0}
 #print.p2 .sum2 dt{font-size:8pt;color:var(--mute)}#print.p2 .sum2 dd{margin:0;font-size:11pt;font-weight:600;text-align:end}
-#print.p2 .sum2 .grand{background:var(--em);color:#fff}#print.p2 .sum2 .grand dt{color:#d6e7df}#print.p2 .sum2 .grand dd{font-size:12.5pt}
+#print.p2 .sum2 .grand{background:var(--em);color:#fff}#print.p2 .sum2 .grand dt{color:#d6e7df}#print.p2 .sum2 .grand dd{font-size:12pt}#print.p2 .sum2 dd .bal{flex-wrap:wrap;justify-content:flex-end}
 #print.p2 .sum2 .grand small{color:#f1dfb0}
 
 /* tables: hairline rows, a header that repeats on every page, totals ruled like a ledger (single over, double under) */
@@ -120,3 +120,75 @@ body.p2-measure #print.p2-r80{width:75mm}body.p2-measure #print.p2-r58{width:53m
 #print.p2 .rc .qr2{display:flex;justify-content:center;margin-top:2.5mm}#print.p2 .rc .qr2 svg{width:19mm;height:19mm}
 #print.p2-r58 .rc .qr2 svg{width:16mm;height:16mm}
 #print.p2 .rc-f{text-align:center;font-size:7.6pt;margin-top:2mm;padding-top:1.5mm;border-top:.5pt dashed #000}
+
+/* ===== every other document, built by the older builders and dressed here (print-kit.js legacy) ===== */
+#print.p2 .lh2-sub{font-size:9pt;color:var(--mute);margin-top:.6mm}
+#print.p2.lg .a4,#print.p2.lg .xdoc,#print.p2.lg .vdoc{display:flex;flex-direction:column;gap:4.5mm;max-width:100%}
+#print.p2.lg .tw-print{border:0;border-radius:0;overflow:visible}
+#print.p2.lg .pcard{border:0 !important;padding:0 !important;background:none !important;margin:0}
+#print.p2 table.t2{table-layout:auto}
+#print.p2 .t2 tfoot{display:table-row-group;break-inside:avoid}
+#print.p2 .t2 tfoot td{font-weight:600;border-top:.9pt solid var(--ink);border-bottom:2.4pt double var(--gold);background:var(--ivory);padding-block:2.2mm}
+#print.p2 .t2 td.num,#print.p2 .t2 th.num,#print.p2 .t2 td.f-num,#print.p2 .t2 th.f-num{text-align:end;white-space:nowrap;font-variant-numeric:tabular-nums}
+#print.p2 .t2 td.f-tight,#print.p2 .t2 td.nowrap{white-space:nowrap}
+#print.p2 .t2 th.f-num,#print.p2 .t2 th.f-tight{white-space:normal;min-width:0}
+#print.p2 .t2.dense{font-size:8.8pt}#print.p2 .t2.dense th{font-size:8pt;padding:1.8mm 1.4mm}#print.p2 .t2.dense td{padding:1.4mm 1.4mm}
+#print.p2 .t2 tr.grp-row td,#print.p2 .t2 tr.open-row td{background:var(--ivory) !important;font-weight:600}
+#print.p2 .t2 td.cr{color:var(--ink)}
+#print.p2 .t2 td small,#print.p2 .t2 td .muted{color:var(--mute);font-size:8pt}
+#print.p2 .t2 .ltr-num,#print.p2 .ltr-num{direction:ltr;unicode-bidi:isolate}
+/* section titles inside a report */
+#print.p2.lg h2,#print.p2.lg h3,#print.p2.lg .xh{font-family:var(--text);font-weight:600;font-size:11pt;color:var(--em);margin:2mm 0 1mm;padding-bottom:1mm;border-bottom:.5pt solid var(--gold);break-after:avoid;display:block}
+#print.p2.lg h2::before,#print.p2.lg .xh::before{display:none}
+/* figure tiles (day report, boxes, collections, screens): one quiet strip; the main figure is the emerald one */
+#print.p2.lg .xtiles,#print.p2.lg .sumbox,#print.p2.lg .grid,#print.p2.lg .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(30mm,1fr));gap:0;border:.6pt solid var(--rule);border-radius:2mm;overflow:hidden;break-inside:avoid}
+#print.p2.lg .xtile,#print.p2.lg .sumbox .sb,#print.p2.lg .grid > .stat,#print.p2.lg .kpis > .kpi{border:0 !important;border-inline-start:.6pt solid var(--hair) !important;border-radius:0 !important;background:#fff !important;padding:2.6mm 3mm !important;display:flex;flex-direction:column;gap:.8mm;box-shadow:none}
+#print.p2.lg .xtile span,#print.p2.lg .sb span,#print.p2.lg .stat .k,#print.p2.lg .kpi .k{font-size:8pt;color:var(--mute)}
+#print.p2.lg .xtile b,#print.p2.lg .sb b,#print.p2.lg .stat .v,#print.p2.lg .kpi .v{font-size:11pt;font-weight:600;color:var(--ink);text-align:end}
+#print.p2.lg .xtile.gold,#print.p2.lg .sb.main{background:var(--em) !important}
+#print.p2.lg .xtile.gold span,#print.p2.lg .sb.main span{color:#d6e7df}#print.p2.lg .xtile.gold b,#print.p2.lg .sb.main b{color:#fff}
+#print.p2.lg .xtile.red b{color:var(--ink)}
+#print.p2.lg .stat::after,#print.p2.lg .kpi::after,#print.p2.lg .kpi .ic{display:none}
+#print.p2.lg .partybox{display:grid;grid-template-columns:repeat(auto-fit,minmax(35mm,1fr));gap:2mm 6mm;border:.6pt solid var(--rule);border-radius:2mm;padding:3mm 4mm;background:var(--ivory) !important}
+#print.p2.lg .partybox span{font-size:8pt;color:var(--mute)}#print.p2.lg .partybox b{font-size:11pt;color:var(--ink)}
+/* vouchers and journal documents */
+#print.p2.lg .vhead{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:4mm;align-items:stretch;break-inside:avoid}
+#print.p2.lg .vhead > div{border:.6pt solid var(--rule);border-radius:2mm;padding:2.6mm 3.5mm;display:flex;flex-direction:column;gap:.8mm}
+#print.p2.lg .vhead span{font-size:8pt;color:var(--mute)}#print.p2.lg .vhead b{font-size:11pt}
+#print.p2.lg .vamt{background:var(--em) !important;border-color:var(--em) !important}#print.p2.lg .vamt span{color:#d6e7df !important}#print.p2.lg .vamt b{color:#fff !important;font-size:13pt !important}
+#print.p2.lg .vline{display:flex;gap:4mm;align-items:baseline;padding:2mm 3.5mm;border-bottom:.5pt solid var(--hair)}
+#print.p2.lg .vline span{font-size:8.5pt;color:var(--mute);white-space:nowrap;min-width:28mm}#print.p2.lg .vline b{font-weight:600}
+#print.p2.lg .vline.words{border:.6pt solid var(--rule);border-inline-start:2.2pt solid var(--gold);border-radius:1.5mm;background:var(--ivory) !important}
+#print.p2.lg .void-stamp{align-self:center;border:1.6pt solid var(--ink);padding:1.5mm 6mm;font-weight:700;font-size:13pt;letter-spacing:.06em;transform:rotate(-3deg)}
+/* odds and ends */
+#print.p2.lg .hint,#print.p2.lg .muted,#print.p2.lg .note{font-size:8.5pt;color:var(--mute)}
+#print.p2.lg .nb{border:.6pt solid currentColor;border-radius:1mm;padding:0 1mm;font-size:7.5pt;font-style:normal;background:none !important;color:var(--ink) !important}
+#print.p2.lg .pill{border:.6pt solid currentColor;background:none !important;color:var(--ink) !important;font-size:8pt;padding:0 1.5mm}
+#print.p2.lg .pill::before{display:none}
+#print.p2.lg .row{display:flex;flex-wrap:wrap;gap:3mm;margin:0}
+#print.p2.lg svg{max-width:100%}
+#print.p2.lg .an-card{break-inside:avoid;border:.6pt solid var(--rule) !important;border-radius:2mm;padding:3mm !important;background:#fff !important}
+
+/* narrow paper (A5 portrait, ~134 mm of text width): smaller type and padding, the running number column goes, long words break */
+@media print and (max-width:150mm){
+  #print.p2 .t2{font-size:8.4pt}
+  #print.p2 .t2 th{font-size:7.6pt;padding:1.6mm 1.1mm;white-space:normal}
+  #print.p2 .t2 td{padding:1.3mm 1.1mm}
+  #print.p2 .t2 td.idx,#print.p2 .t2 th.idx{display:none}
+  #print.p2 .t2 .bal small{min-width:0}
+  #print.p2 .lh2{grid-template-columns:1fr;gap:3mm}#print.p2 .lh2-doc{text-align:start}#print.p2 .lh2-meta{justify-content:start}
+  #print.p2 .party2{grid-template-columns:1fr}
+  #print.p2 .sig2{gap:5mm}
+  #print.p2 .t2 td.f-tight,#print.p2 .t2 td.nowrap,#print.p2 .t2 td.nw{white-space:normal}
+  #print.p2 table.t2 th,#print.p2 table.t2 td{min-width:0 !important}#print.p2 table.t2 th{overflow-wrap:anywhere}
+  #print.p2 .t2.dense{font-size:7.2pt}#print.p2 .t2.dense th{font-size:6.8pt;padding:1.2mm .7mm}#print.p2 .t2.dense td{padding:1mm .7mm}
+}
+/* a wide register on a narrow landscape page (A5 landscape) */
+@media print and (max-width:200mm){
+  #print.p2-a4l table.t2 th,#print.p2-a4l table.t2 td{min-width:0 !important}#print.p2-a4l table.t2 th{white-space:normal;overflow-wrap:anywhere}
+  #print.p2-a4l .t2.dense{font-size:7.4pt}#print.p2-a4l .t2.dense th{font-size:7pt;padding:1.2mm .8mm}#print.p2-a4l .t2.dense td{padding:1mm .8mm}
+}
+@media screen and (max-width:150mm){ body.p2-measure #print.p2 .t2{font-size:8.4pt} }
+/* the older builders' colour words (red / green figures) print in ink: the column title already says what the figure is */
+#print.p2.lg .bad,#print.p2.lg .ok,#print.p2.lg .gold,#print.p2.lg td.b4{color:var(--ink) !important}
+#print.p2.lg .vline:not(.words){border:0 !important;border-bottom:.5pt solid var(--hair) !important;border-radius:0 !important;background:none !important;box-shadow:none !important}

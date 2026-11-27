@@ -156,3 +156,7 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - New print engine (`public/print-kit.js`, `public/print.css`, fonts in `public/fonts`): receipt 80/58 mm sized to its content, A4 account statement, journal book; «page X of Y» via @page margin boxes (CSSOM sheet, CSP-safe); waits for fonts.
 - `scripts/print-check.js` (Chromium → PDF → pdftoppm/pdffonts/pdftotext): receipts 227×326 pt / 164×306 pt, statement 4 p, journal book 105 p, page numbers yes, 0 overflow, only Plex/Naskh embedded, 30–320 ms. Baseline: receipt printed on A4, no page numbers, Arabic fell back to DejaVu in the container.
 - Samples in `docs/print-samples/`; owner to approve before the other documents (day report, boxes, collections, vouchers, payroll) are moved. Tests: 94 unit, 8 e2e, 89 artifact, lint 0 errors.
+
+## 2026-11-27 — 0.33.0 printing phase 2 (cloud, branch `claude/print-phase2`)
+- Owner approved the phase-1 samples. `F.printDoc` and `printNode` now go through `F.P2.legacy`: the older builders keep their content, the kit swaps in the formal head, `t2` tables, signatures and the page frame; auto landscape for wide tables; A5 rules; arrows → dash (not in the print faces). Receipt paper + logo in Preferences.
+- print-check: 15 documents; all 0 overflow on A4/Letter/A4L/A5L/LetterL, page numbers on every page document, only Plex/Naskh embedded; A5 portrait overflows only for 3 wide registers (documented). en/fr «Page 1 of 4» / «Page 1 sur 4», Arabic-Indic digits OK. Tests: 94 unit, 8 e2e, 89 artifact, lint 0 errors.

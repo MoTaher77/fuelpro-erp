@@ -56,9 +56,13 @@
     try { await Promise.all(FACES.map(f => document.fonts.load(f, sample || 'صفحة 0123456789 Page'))); await document.fonts.ready; } catch { /* print with what is there */ }
   }
 
-  async function print(fileTitle, node, { paper = 'a4', footer } = {}) {
+  async function print(fileTitle, node, { paper = 'a4', footer } = {}) {   // eslint-disable-line complexity
     let box = document.getElementById('print'); if (!box) { box = h('div', { id: 'print' }); document.body.append(box); }
     box.className = 'p2 p2-' + paper; box.dir = rtl() ? 'rtl' : 'ltr'; box.lang = lang(); box.replaceChildren(node);
+    if (paper === 'auto') {   // the older document builders: fit the columns first, then pick portrait or landscape from what they hold
+      if (F.fitTables) F.fitTables(box);
+      paper = node.classList.contains('landscape') || box.querySelector('table[data-wide="1"]') ? 'a4l' : 'a4'; box.className = 'p2 lg p2-' + paper;
+    }
     await fontsReady(node.textContent.slice(0, 400));
     const b = S.brand || {}, who = S.user ? S.user.name : '';
     const foot = Object.assign({ start: [b.name || (S.st && S.st.name) || 'FuelPro', fileTitle].filter(Boolean).join(' · '), center: tr('p2.printedBy', { u: who, t: dtime(new Date()) }) }, footer || {});
@@ -74,13 +78,13 @@
   }
 
   /* ---- shared parts ---- */
-  function letterhead(title, meta) {   // meta: [[label, value], …] shown in the document box at the end of the head
+  function letterhead(title, meta, sub) {   // meta: [[label, value], …] shown in the document box at the end of the head
     const b = S.brand || {};
     return h('header', { class: 'lh2' },
       h('div', { class: 'lh2-org' }, b.logo ? h('img', { class: 'lh2-logo', src: b.logo, alt: '' }) : null,
         h('div', null, h('div', { class: 'lh2-name' }, b.name || (S.st && S.st.name) || 'FuelPro'), b.activity ? h('div', { class: 'lh2-act' }, b.activity) : null,
           h('div', { class: 'lh2-ct' }, [b.address, b.phones].filter(Boolean).map((x, i) => h('span', { class: i ? 'n' : '' }, x))))),
-      h('div', { class: 'lh2-doc' }, h('div', { class: 'lh2-title' }, title),
+      h('div', { class: 'lh2-doc' }, h('div', { class: 'lh2-title' }, title), sub ? h('div', { class: 'lh2-sub' }, sub) : null,
         h('dl', { class: 'lh2-meta' }, (meta || []).filter(m => m && m[1] != null && m[1] !== '').map(([k, v]) => [h('dt', null, k), h('dd', null, v)]))));
   }
   const ensureBrand = async () => { if (!S.brand && F.loadBrand) { try { await F.loadBrand(); } catch { /* print without letterhead details */ } } };
@@ -95,7 +99,7 @@
     const line = (k, v, cls) => h('div', { class: 'rc-l ' + (cls || '') }, h('span', null, k), h('b', null, v));
     const unit = (S.st && S.st.currency) || '';
     const node = h('article', { class: 'rc' + (s.voided_at ? ' is-void' : '') },
-      h('header', { class: 'rc-h' }, b.logo && localStorage.getItem('fpReceiptLogo') === '1' ? h('img', { src: b.logo, alt: '' }) : null,
+      h('header', { class: 'rc-h' }, b.logo && (() => { try { return localStorage.getItem('fpReceiptLogo') === '1'; } catch { return false; } })() ? h('img', { src: b.logo, alt: '' }) : null,
         h('div', { class: 'rc-name' }, b.name || (S.st && S.st.name) || 'FuelPro'), b.activity ? h('div', { class: 'rc-sub' }, b.activity) : null,
         b.address ? h('div', { class: 'rc-sub' }, b.address) : null, b.phones ? h('div', { class: 'rc-sub n' }, b.phones) : null),
       h('div', { class: 'rc-title' }, T('receipt')),
@@ -118,7 +122,7 @@
     const fc = cfg.fcCode, nat = (v) => { const n = nature(v); return n ? (n === T('natDr') ? T('p2.dr') : T('p2.cr')) : ''; };
     const bal = (v) => h('span', { class: 'bal' }, num(amt(Math.abs(v))), h('small', null, nat(v)));
     const cur = fc || (S.st && S.st.currency) || '';
-    const cols = [['#', 'c'], [T('date'), 'c'], [T('mvType'), ''], [T('entryNo'), 'c'], [T('docRef'), 'c'], [T('desc'), 'd'], ...(fc ? [[T('debit') + ' ' + fc, 'n'], [T('creditCol') + ' ' + fc, 'n']] : []), [T('debit'), 'n'], [T('creditCol'), 'n'], [T('balance'), 'n']];
+    const cols = [['#', 'c idx'], [T('date'), 'c'], [T('mvType'), ''], [T('entryNo'), 'c'], [T('docRef'), 'c'], [T('desc'), 'd'], ...(fc ? [[T('debit') + ' ' + fc, 'n'], [T('creditCol') + ' ' + fc, 'n']] : []), [T('debit'), 'n'], [T('creditCol'), 'n'], [T('balance'), 'n']];
     const td = (v, c) => h('td', { class: c || '' }, v);
     /* a column that is empty in every row is left out (many accounts have no entry numbers or references) */
     const hasRef = rows.some(e => e.ref), hasDoc = rows.some(e => e.docRef), hasKind = rows.some(e => e.kind);
@@ -139,8 +143,8 @@
           h('div', { class: 'grand' }, h('dt', null, T('closingBal')), h('dd', null, bal(r.balance))))),
       h('table', { class: 't2' },
         h('thead', null, h('tr', null, drop(cols.slice(0, 5)).concat(cols.slice(5)).map(([c, k]) => h('th', { class: k }, c)))),
-        h('tbody', null, h('tr', { class: 'open' }, ...drop([td('', 'c'), td(num(dshort(r.from)), 'c nw'), td(''), td(''), td('')]), td(T('openingCol'), 'd'), ...(fc ? [td(''), td('')] : []), td(''), td(''), td(bal(r.opening), 'n')), body),
-        h('tbody', { class: 'tot' }, h('tr', null, h('td', { colspan: lead }, T('total'), ' · ', num(String(rows.length)), ' ', T('rowsN')), ...(fc ? [td(num(amt(r.fcDr || 0)), 'n'), td(num(amt(r.fcCr || 0)), 'n')] : []), td(num(amt(r.total_debit)), 'n'), td(num(amt(r.total_credit)), 'n'), td(bal(r.balance), 'n')))),
+        h('tbody', null, h('tr', { class: 'open' }, ...drop([td('', 'c idx'), td(num(dshort(r.from)), 'c nw'), td(''), td(''), td('')]), td(T('openingCol'), 'd'), ...(fc ? [td(''), td('')] : []), td(''), td(''), td(bal(r.opening), 'n')), body),
+        h('tbody', { class: 'tot' }, h('tr', null, h('td', { class: 'idx' }), h('td', { colspan: lead - 1 }, T('total'), ' · ', num(String(rows.length)), ' ', T('rowsN')), ...(fc ? [td(num(amt(r.fcDr || 0)), 'n'), td(num(amt(r.fcCr || 0)), 'n')] : []), td(num(amt(r.total_debit)), 'n'), td(num(amt(r.total_credit)), 'n'), td(bal(r.balance), 'n')))),
       h('section', { class: 'end2' },
         lang() === 'ar' && F.tafqeet ? h('div', { class: 'words2' }, h('span', null, T('p2.inWords')), h('b', null, F.tafqeet(Math.abs(r.balance)), ' — ', nat(r.balance))) : null,
         h('p', { class: 'note2' }, (S.brand && S.brand.footer) || T('stmtObjection')),
@@ -170,5 +174,25 @@
     return print(`${T('jbook')} ${from}_${to}`, node, { paper: 'a4', footer: { start: footStart(T('jbook')) } });
   }
 
-  F.P2 = { print, letterhead, receipt, statement, jbook, amt, dshort };
+  /* ---- 4) every other document (day report, boxes, collections, vouchers, payroll, registers, screens printed as they are):
+     the builders stay as they are; their pieces are dressed in the same look here (head, tables, tiles, signatures; the footer is
+     the page frame now) ---- */
+  async function legacy(fileTitle, node) {
+    await ensureBrand();
+    node.classList.add('doc2');
+    node.querySelectorAll('.pf, .noprint, button, input, select').forEach(e => e.remove());
+    node.querySelectorAll('.lh').forEach(lh => {
+      const t = lh.querySelector('.lh-title span'), st = lh.querySelector('.lh-title small');
+      lh.replaceWith(letterhead(t ? t.textContent : fileTitle, [[T('p2.issued'), num(dshort(new Date().toISOString()))]], st ? st.textContent : ''));
+    });
+    if (!node.querySelector('.lh2')) node.prepend(letterhead(fileTitle, [[T('p2.issued'), num(dshort(new Date().toISOString()))]]));
+    node.querySelectorAll('table').forEach(t => { if (!t.closest('.qr2')) t.classList.add('t2'); });
+    /* arrows are not in the print faces (and point the wrong way in Arabic): a dash reads the same in both directions */
+    { const w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT); let t; while ((t = w.nextNode())) if (/[→←⟶⟵]/.test(t.nodeValue)) t.nodeValue = t.nodeValue.replace(/\s*[→←⟶⟵]\s*/g, ' – '); }
+    node.querySelectorAll('.signs').forEach(sg => sg.replaceWith(h('section', { class: 'end2' }, sigs([...sg.children].map(d => d.textContent)))));
+    const title = (node.querySelector('.lh2-title') || {}).textContent || fileTitle;
+    return print(fileTitle, node, { paper: 'auto', footer: { start: footStart(title) } });
+  }
+
+  F.P2 = { print, legacy, letterhead, receipt, statement, jbook, amt, dshort };
 })();

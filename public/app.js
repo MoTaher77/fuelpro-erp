@@ -281,13 +281,16 @@ window.FPFMT = (function () {
   function prefsDialog() {
     const lang = sel('pLang', [['ar', 'العربية'], ['en', 'English'], ['fr', 'Français']], P.lang), unit = sel('pUnit', Object.entries(UNITS).map(([k, v]) => [k, T(v.n)]), P.unit),
       cal = sel('pCal', [['gregory', T('greg')], ['islamic-umalqura', T('hijri')]], P.cal), nums = sel('pNums', [['latn', T('latn')], ['arab', T('arab')]], P.nums), theme = sel('pTheme', [['system', T('thSystem')], ['light', T('thLight')], ['dark', T('thDark')]], P.theme);
+    /* receipt printer (this device): roll width and the logo on/off — kept in this browser, the printer belongs to the device */
+    const ls = (k, d) => { try { return localStorage.getItem(k) || d; } catch { return d; } };
+    const rcpt = sel('pRcpt', [['80', T('rcpt80')], ['58', T('rcpt58')]], ls('fpReceiptW', '80')), rlogo = h('input', { type: 'checkbox', id: 'pRcptLogo', checked: ls('fpReceiptLogo', '0') === '1' });
     /* palette: preview live while choosing; Save keeps it, closing restores the previous one */
     let pal = P.palette; const was = P.palette;
     const sws = PALETTES.map(k => h('button', { type: 'button', class: 'swatch', 'aria-pressed': String(k === pal), onclick: () => { pal = k; document.documentElement.dataset.palette = k; sws.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === k))); } }, h('i', { class: k }), T('pal.' + k)));
     sws.forEach((b, i) => { b.dataset.p = PALETTES[i]; });
-    const m = modal(T('prefs'), h('form', { onsubmit: (e) => { e.preventDefault(); P.lang = lang.value; P.unit = unit.value; P.cal = cal.value; P.nums = nums.value; P.theme = theme.value; P.palette = pal; applyPrefs(); m.remove(); S.user ? render() : authScreen(); } },
+    const m = modal(T('prefs'), h('form', { onsubmit: (e) => { e.preventDefault(); try { localStorage.setItem('fpReceiptW', rcpt.value); localStorage.setItem('fpReceiptLogo', rlogo.checked ? '1' : '0'); } catch { /* private mode */ } P.lang = lang.value; P.unit = unit.value; P.cal = cal.value; P.nums = nums.value; P.theme = theme.value; P.palette = pal; applyPrefs(); m.remove(); S.user ? render() : authScreen(); } },
       h('div', null, h('label', null, T('palette')), h('div', { class: 'swatches' }, sws)),
-      h('div', { class: 'grid', style: 'margin-top:14px' }, field(T('lang'), lang), field(T('unit'), unit), field(T('cal'), cal), field(T('nums'), nums), field(T('theme'), theme)), h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('save')))));
+      h('div', { class: 'grid', style: 'margin-top:14px' }, field(T('lang'), lang), field(T('unit'), unit), field(T('cal'), cal), field(T('nums'), nums), field(T('theme'), theme), field(T('rcptPaper'), rcpt), h('label', { class: 'chk', for: 'pRcptLogo' }, rlogo, ' ', T('rcptLogo'))), h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('save')))));
     const mo = new MutationObserver(() => { if (m.isConnected) return; mo.disconnect(); if (P.palette === was) document.documentElement.dataset.palette = P.palette; }); mo.observe(document.body, { childList: true });
   }
   const copyBtn = (text) => h('button', { class: 'btn ghost sm', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(text); toast(T('copied')); } catch { toast(text); } } }, T('copy'));
@@ -703,6 +706,7 @@ window.FPFMT = (function () {
       clone.querySelectorAll('table').forEach(t => { t.classList.add('stmt'); if (!t.closest('.tw-print')) { const w = h('div', { class: 'tw-print' }); t.replaceWith(w); w.append(t); } });
       clone.querySelectorAll('.card,.stat').forEach(c => c.classList.add('pcard'));
       const foot = h('div', { class: 'pf' }, h('span', null, (S.brand && S.brand.footer) || ''), h('span', null, T('printedOn'), ': ', fdt(new Date().toISOString().slice(0, 19).replace('T', ' ')), S.user ? ' · ' + S.user.name : ''));
+      if (window.FP.P2) return window.FP.P2.legacy(title, h('div', { class: 'a4 xdoc' }, window.FP.letterhead ? window.FP.letterhead(title) : null, clone));   // 0.32 print kit
       box.replaceChildren(h('div', { class: 'a4 xdoc' }, window.FP.letterhead ? window.FP.letterhead(title) : h('h2', null, title), clone, foot));
       document.body.classList.add('printing', 'doc');
     }
