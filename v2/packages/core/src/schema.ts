@@ -82,12 +82,30 @@ interface PaymentDoc {
 export interface PaymentsT extends PaymentDoc { customer_id: number }
 export interface SupplierPaymentsT extends PaymentDoc { supplier_id: number }
 
+interface Voidable { voided_at: string | null; void_reason: string | null; void_by: number | null }
+export interface ExpensesT extends Voidable {
+  id: Id; station_id: number; business_date: string; created_at: string; category: string; gross: number; vat: Def<number>; note: string | null;
+  user_id: number; shift_id: number | null; method: Def<'cash' | 'bank'>;
+}
+export interface CashMovesT extends Voidable {
+  id: Id; station_id: number; shift_id: number; business_date: string; created_at: string; kind: 'withdrawal' | 'deposit'; counterpart: 'bank' | 'owner';
+  amount: number; note: string | null; user_id: number;
+}
+export interface VouchersT extends Voidable {
+  id: Id; station_id: number; kind: 'receipt' | 'payment'; ref_no: string | null; business_date: string; created_at: string; box_account_id: number;
+  amount: number; memo: string | null; shift_id: number | null; user_id: number; fc_code: string | null; fc_rate_e6: number | null; fc_amount: number | null;
+}
+export interface VoucherLinesT {
+  id: Id; voucher_id: number; account_id: number; party_type: string | null; party_id: number | null; amount: number; memo: string | null; fc_amount: number | null;
+}
+
 export interface DB {
   orgs: OrgsT; users: UsersT; user_stations: UserStationsT; stations: StationsT; fuels: FuelsT; tanks: TanksT; pumps: PumpsT;
   customers: CustomersT; shifts: ShiftsT; shift_meters: ShiftMetersT; sales: SalesT; stock_moves: StockMovesT;
   accounts: AccountsT; journals: JournalsT; journal_lines: JournalLinesT; audit: AuditT;
   suppliers: SuppliersT; deliveries: DeliveriesT; adjustments: AdjustmentsT; transfers: TransfersT;
   payments: PaymentsT; supplier_payments: SupplierPaymentsT;
+  expenses: ExpensesT; cash_moves: CashMovesT; vouchers: VouchersT; voucher_lines: VoucherLinesT;
 }
 export type Station = Selectable<StationsT>;
 export type Sale = Selectable<SalesT>;

@@ -156,6 +156,11 @@ for (const t of targets) {
   const cid = (top.prepare('SELECT customer_id id FROM sales WHERE station_id=? AND customer_id IS NOT NULL GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT 1').get(s.sid) as { id: number }).id; top.close();
   row.statement = await load(s.base + s.prefix + `/customers/${cid}/statement`, s.headers);
   row.ageing = await load(s.base + s.prefix + '/ageing?type=customer', s.headers);
+  // phase 4: finance — the whole demo period's trial balance and the cash ledger for a month
+  const root = s.prefix.replace(/\/stations\/\d+$/, '');
+  const cashId = (() => { const d = new DatabaseSync(arg('--v1')!, { readOnly: true }); const r = d.prepare("SELECT id FROM accounts WHERE sys='cash' ORDER BY id LIMIT 1").get() as { id: number }; d.close(); return r.id; })();
+  row.trial_balance = await load(s.base + root + `/accounting/trial-balance?from=2025-01-01&to=2026-12-31&station_id=${s.sid}`, s.headers);
+  row.ledger = await load(s.base + root + `/accounting/ledger?account_id=${cashId}&from=2026-10-01&to=2026-10-31&station_id=${s.sid}`, s.headers);
   row.mix = await mix(s.base, s.prefix, shiftPath, s.headers, s.pumps, String(t.name.length));
   // 100 people working: each sends about 2 requests a second (open loop), not as fast as the machine allows
   row.users100 = await people(s.base, s.prefix, shiftPath, s.headers, s.pumps, 'u' + t.name.length, 2 * CONN);

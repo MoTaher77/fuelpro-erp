@@ -166,3 +166,46 @@ for (const [name, withDb, skip] of engines) {
     assert.equal(st.balance, 100_000 - 14 * 7_000);
   }));
 }
+
+/* ---------- phase 4: finance ---------- */
+import { finance } from '@fuelpro/core';
+for (const [name, withDb, skip] of engines) {
+  test(`${name}: finance documents are never deleted; drafts count nowhere until posted; foreign accounts are not found`, { skip }, async () => withDb(async (ctx) => {
+    const a = await station(ctx, 'fin-a@example.test'), b = await station(ctx, 'fin-b@example.test');
+    const acc = async (u: User, k: string) => (await ctx.db.selectFrom('accounts').select('id').where('org_id', '=', u.org_id).where('sys', '=', k).executeTakeFirstOrThrow()).id;
+    await finance.createExpense(ctx, a.u, a.sid, { category: 'power', gross: 1000, method: 'bank' });
+    await finance.createVoucher(ctx, a.u, a.sid, { kind: 'payment', box_account_id: await acc(a.u, 'bank'), lines: [{ account_id: await acc(a.u, 'exp_rent'), amount: 500 }] });
+    await finance.createVoucher(ctx, a.u, a.sid, { kind: 'payment', box_account_id: await acc(a.u, 'cash'), lines: [{ account_id: await acc(a.u, 'exp_rent'), amount: 1 }] }).catch(() => null);
+    for (const t of ['expenses', 'vouchers', 'voucher_lines'] as const) await rejects(ctx.db.deleteFrom(t).execute(), /never deleted/);
+    // a draft is invisible to every balance, and can be deleted; once posted it cannot
+    const tb0 = await finance.trialBalanceOrg(ctx, a.u, { to: '9999-12-31', station_id: a.sid });
+    const d = await finance.createJournal(ctx, a.u, a.sid, { memo: 'مسودة', lines: [{ account_id: await acc(a.u, 'exp_other'), debit: 7 }, { account_id: await acc(a.u, 'bank'), credit: 7 }] });
+    assert.deepEqual((await finance.trialBalanceOrg(ctx, a.u, { to: '9999-12-31', station_id: a.sid })).totals, tb0.totals, 'a draft changes no balance');
+    await finance.postJournal(ctx, a.u, d.id!);
+    await assert.rejects(finance.deleteDraft(ctx, a.u, d.id!), { code: 'NOT_DRAFT' });
+    await rejects(ctx.db.deleteFrom('journals').where('id', '=', d.id!).execute(), /cannot be deleted/);
+    // isolation: another organisation's accounts, boxes and journals are «not found»
+    await assert.rejects(finance.createVoucher(ctx, a.u, a.sid, { kind: 'payment', box_account_id: await acc(b.u, 'bank'), lines: [{ account_id: await acc(a.u, 'exp_rent'), amount: 1 }] }), { code: 'NOT_A_BOX' });
+    await assert.rejects(finance.createJournal(ctx, a.u, a.sid, { memo: 'حساب غريب', lines: [{ account_id: await acc(b.u, 'exp_other'), debit: 1 }, { account_id: await acc(a.u, 'bank'), credit: 1 }] }), { status: 404 });
+    await assert.rejects(finance.getJournal(ctx, b.u, d.id!), { status: 404 });
+    await assert.rejects(finance.accountLedger(ctx, b.u, { account_id: await acc(a.u, 'bank'), to: '9999-12-31' }), { status: 404 });
+    // permissions in the core
+    const cashier: User = { ...a.u, role: 'cashier' };
+    await ctx.db.insertInto('user_stations').values({ user_id: a.u.id, station_id: a.sid }).execute();
+    await assert.rejects(finance.createVoucher(ctx, cashier, a.sid, { kind: 'receipt', box_account_id: await acc(a.u, 'bank'), lines: [{ account_id: await acc(a.u, 'capital'), amount: 1 }] }), { status: 403 });
+    await assert.rejects(finance.createJournal(ctx, cashier, a.sid, { memo: 'كاشير', lines: [] }), { status: 403 });
+    await assert.rejects(finance.lockPeriod(ctx, { ...a.u, role: 'accountant' }, { through: null }), { status: 403 });
+    const tb = await finance.trialBalanceOrg(ctx, a.u, { to: '9999-12-31', station_id: a.sid });
+    assert.equal(tb.balanced, true);
+  }));
+  test(`${name}: 10 withdrawals at once never take more than the drawer holds`, { skip }, async () => withDb(async (ctx) => {
+    const s = await station(ctx, 'fin-race@example.test');
+    await shifts.openShiftCmd(ctx, s.u, s.sid, { float_amount: 100_000 });
+    const res = await Promise.allSettled(Array.from({ length: 10 }, () => finance.cashMove(ctx, s.u, s.sid, { kind: 'withdrawal', counterpart: 'bank', amount: 30_000 })));
+    const ok = res.filter((r) => r.status === 'fulfilled').length;
+    assert.equal(ok, 3, 'floor(100000 / 30000) withdrawals');
+    assert.ok(res.filter((r) => r.status === 'rejected').every((r) => (r as PromiseRejectedResult).reason.code === 'CASH_INSUFFICIENT'));
+    const cur = await shifts.currentShift(ctx, s.u, s.sid);
+    assert.equal(cur!.totals.expected_cash, 10_000);
+  }));
+}

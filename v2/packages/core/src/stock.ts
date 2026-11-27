@@ -47,7 +47,8 @@ export async function listSuppliers(ctx: Ctx, user: User, sid: number) {
     .where('l.party_id', 'in', ctx.db.selectFrom('suppliers').select('id').where('station_id', '=', sid)).groupBy('l.party_id').execute();
   const m = new Map(bal.map((r) => [Number(r.party_id), Number(r.v)]));
   const rows = await ctx.db.selectFrom('suppliers').selectAll().where('station_id', '=', sid).where('active', '=', 1).orderBy('name').execute();
-  return rows.map((s) => ({ ...s, balance: m.get(s.id) || 0 }));
+  for (const s of rows as Array<(typeof rows)[number] & { balance: number }>) s.balance = m.get(s.id) || 0;
+  return rows as Array<(typeof rows)[number] & { balance: number }>;
 }
 export async function createSupplier(ctx: Ctx, user: User, sid: number, b: Record<string, unknown>) {
   need(user, 'supplier.manage'); V.obj(b, 'body');

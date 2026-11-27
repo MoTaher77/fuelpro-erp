@@ -39,6 +39,10 @@ export const CHART: ReadonlyArray<readonly [string, string, string, string, stri
   ['salaries_payable', '2200', 'liability', 'رواتب مستحقة للموظفين', 'Salaries payable']
 ];
 
+const EXPENSE_KEYS = new Set(['salaries', 'power', 'maint', 'transport', 'rent', 'fees', 'other']);
+/** expense category → system account key (v1 ledger.expenseKey) */
+export const expenseKey = (cat: string) => 'exp_' + (EXPENSE_KEYS.has(cat) ? cat : 'other');
+
 export async function ensureChart(q: Q, orgId: number): Promise<void> {
   for (const [sys, code, type, ar, en] of CHART) {
     for (let k = 0; k < 10; k++) {
@@ -72,6 +76,8 @@ export interface Line { a: string | number; dr?: number; cr?: number; party_type
 export interface PostArgs {
   org_id: number; station_id: number; date: string; source: string; source_id?: number | null; memo?: string | null;
   user_id?: number | null; lines: Line[]; reversal_of?: number | null; ref?: string | null;
+  /** 'draft' leaves a manual journal unposted (v1 post status); everything else posts at once */
+  status?: 'draft' | 'posted';
   /** the caller already ran assertOpen for this org and date in this transaction */
   periodChecked?: boolean;
 }
@@ -96,7 +102,7 @@ export async function post(ctx: Ctx, q: Q, p: PostArgs): Promise<number | null> 
   await q.insertInto('journal_lines').values(clean.map((l) => ({
     journal_id: j.id, account_id: l.account_id, debit: l.dr, credit: l.cr, party_type: l.party_type || null, party_id: l.party_id || null, memo: l.memo || null
   }))).execute();
-  await q.updateTable('journals').set({ status: 'posted', posted_at: now }).where('id', '=', j.id).execute();   // trigger re-checks the balance
+  if (p.status !== 'draft') await q.updateTable('journals').set({ status: 'posted', posted_at: now }).where('id', '=', j.id).execute();   // trigger re-checks the balance
   return j.id;
 }
 /** Reverse one posted journal with a mirror entry on the same business date. */

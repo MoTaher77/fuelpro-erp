@@ -46,3 +46,4 @@ th { color: var(--muted); font-weight: 600; font-size: 13px } tr.void td { color
 [hidden] { display: none !important }
 .btn.plain { color: var(--accent) } .strike { text-decoration: line-through }
 @media print { .top, .tabs, .noprint, .toasts, main > section:not(.wide), .btn { display: none !important } body { background: #fff } .card { border: 0 } }
+.check { display: flex; gap: 8px; align-items: center; margin-bottom: 10px } .check input { width: auto; min-height: 0 } h3 { font-size: 15px; margin: 14px 0 6px }
