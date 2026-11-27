@@ -1,0 +1,36 @@
+name: v2
+# FuelPro v2 (docs/ARCHITECTURE-V2.md): the TypeScript core on SQLite and PostgreSQL, and the parity check
+# against v1 (src/) — the same scenario must give identical books, to the minor unit, on every engine.
+on:
+  push:
+    branches: [main]
+    paths: ['v2/**', 'src/**', '.github/workflows/v2.yml']
+  pull_request:
+    paths: ['v2/**', 'src/**', '.github/workflows/v2.yml']
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: fuelpro, POSTGRES_PASSWORD: fuelpro-test, POSTGRES_DB: fp }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U fuelpro" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      V2_PG_URL: postgres://fuelpro:fuelpro-test@127.0.0.1:5432/fp
+    defaults:
+      run:
+        working-directory: v2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: v2/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Tests (SQLite + PostgreSQL + parity with v1)
+        run: node --version && npm test
