@@ -117,3 +117,13 @@ Server: passkeys (WebAuthn) + the existing TOTP, tenant checks in the core plus 
 
 ### ADR-38 Migration path: strangler, module by module, the current system stays live (2026-11-27, proposed)
 v2 is built beside v1; each module (sales & shifts → stock → parties → finance → reports & printing → payroll & admin) passes the acceptance criteria before the next. A migration tool moves a v1 SQLite file into v2 and stops on any difference in ledger totals, every account/box/tank balance, journal and sale counts or the trial balance. Real data moves only at the end and only with the owner's explicit OK each time.
+
+### ADR-39 v2 phase 1: how the core is built and run (2026-11-27, accepted — owner approved ADR-30..38 by merging PR #25)
+- **Place:** `v2/` beside v1 with its own npm workspaces, lock file and CI (`.github/workflows/v2.yml`); v1's code, tests and CI are untouched (strangler, ADR-38).
+- **TypeScript without a server build:** Node ≥ 22.18 runs `.ts` by type stripping (`erasableSyntaxOnly`); `tsc` only checks. The browser editions are bundled with esbuild (`tools/build.ts`).
+- **Same schema names as v1** in the v2 migrations, so parity tests and the migration tool compare rows one-to-one. Timestamps come from the core's clock (text, UTC) instead of `datetime('now')`, so both engines write the same thing.
+- **Local SQLite through our own small bridge, not `tauri-plugin-sql`:** the plugin uses a connection pool, which can run BEGIN and COMMIT on different connections; our Rust command (rusqlite, one connection, a mutex) and the Kysely `BridgeDialect` (one statement at a time, `BEGIN IMMEDIATE`) keep "one operation = one transaction" on the desktop. The phone uses the same dialect over `@capacitor-community/sqlite`.
+- **PostgreSQL concurrency:** pump, tank, shift and customer rows are locked (`FOR UPDATE`) for the write; duplicates of the same `client_id` are stopped by a unique index and answered as "already recorded".
+- **Reversal line order** follows v1's covering index (account, debit, credit) so a void writes identical journal lines on every engine.
+- **Migration tool** copies and proves inside ONE target transaction; any difference rolls back (exit 2). Measured on a demo year: SQLite 3 s, PostgreSQL 13 s.
+

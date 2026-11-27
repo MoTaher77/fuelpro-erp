@@ -165,3 +165,10 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Owner asked for a world-class re-foundation (server / desktop-offline / phone-offline, no sync, shared code) with the old tech limits lifted. Phase 0 only: measured comparisons, no product code.
 - Measured: 6 backend stacks × SQLite/PostgreSQL (`bench/arch-v2/backend`), 6 front-end builds on a throttled phone (`bench/arch-v2/frontend`), current FuelPro baseline (100 users: common ops p95 250–290 ms behind a 3.1 s ledger; cold first screen 2.4 s on a mid phone).
 - Proposed: one TypeScript core with async storage ports (Kysely), PostgreSQL server / SQLite local, vanilla UI + TS + build + virtualization, Tauri desktop, Capacitor phone, reports in worker threads, strangler migration. `docs/ARCHITECTURE-V2.md`, ADR-30..38. Waiting for the owner's review and 3 decisions (§9).
+
+## 2026-11-27 — 0.34.0 v2 phase 1 (cloud, branch `claude/v2-phase1`)
+- Owner approved the v2 architecture (merged PR #25) and asked to start phase 1. Built `v2/` (TypeScript, Kysely): core for sales & shifts, migrations with ledger guards for SQLite and PostgreSQL, async SQLite bridge, shared UI, server / Tauri desktop / Capacitor phone editions, `tools/migrate-v1.ts`, `bench/compare.ts`.
+- Tests: v2 21 pass (parity v1 = v2 on SQLite, bridge and PostgreSQL; invariants; 40 concurrent sales); v1 94 pass + 1 skipped; lint 0 errors. Browser checks of the server edition (SQLite + PG) and of the local path (sql.js) pass; Tauri .deb built and started under Xvfb (DB migrated in 1.6 s).
+- Measured: 100 real users p95 98 → 5.3 (SQLite) / 7.5 ms (PostgreSQL); phone first screen 2.4 → 1.4 s; migration of a demo year 3 s / 13 s with all 7 checks equal.
+- Resume: owner feedback on the APK / Windows artifacts (KI-23), then phase 2 (next module) and the users module (KI-24).
+

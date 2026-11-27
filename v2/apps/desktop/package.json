@@ -1,0 +1,20 @@
+{
+  "name": "@fuelpro/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:web": "node ../../tools/build.ts desktop",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.6"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.5",
+    "@fuelpro/core": "*",
+    "@fuelpro/db": "*",
+    "@fuelpro/ui": "*",
+    "@fuelpro/local": "*"
+  }
+}

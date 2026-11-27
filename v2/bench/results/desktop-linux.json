@@ -1,0 +1,10 @@
+{
+  "what": "Tauri 2 release build on Linux (Ubuntu 24.04 container), started under Xvfb (software rendering)",
+  "deb_installer_mb": 2.1,
+  "binary_mb": 4.6,
+  "start_to_migrated_db_ms": 1624,
+  "main_process_rss_mb": 151,
+  "webkit_process_rss_mb": 156,
+  "db_file": "~/.local/share/com.fuelpro.desktop/fuelpro.db (all 16 v2 tables + kysely_migration)",
+  "note": "Windows (.exe/.msi) and Android (.apk) are built by .github/workflows/v2.yml; their size/start time are read from the CI artifacts"
+}

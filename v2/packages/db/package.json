@@ -1,0 +1,18 @@
+{
+  "name": "@fuelpro/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts"
+  },
+  "dependencies": {
+    "@fuelpro/core": "*",
+    "kysely": "0.29.9",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
+  }
+}

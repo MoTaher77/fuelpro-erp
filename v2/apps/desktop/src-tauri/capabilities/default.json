@@ -1,0 +1,1 @@
+{ "identifier": "default", "description": "The main window may only call the app's own db_exec command.", "windows": ["main"], "permissions": ["core:default"] }

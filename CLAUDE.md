@@ -72,6 +72,9 @@ Windows: `start-fuelpro-online.bat` (project root, online via Cloudflare tunnel)
 - Tables get auto-fit column classes (`fitTables`); print through `printNode` / `F.printDoc`.
 - Add a test in `test/*.test.js` for every accounting rule you touch; record a CHANGELOG entry.
 
+## 7a. v2 (in progress, ADR-30..39)
+`v2/` = the new TypeScript core + three editions (server, Tauri desktop, Capacitor phone), built beside v1 module by module (phase 1: sales & shifts). Own workspace/CI: `cd v2 && npm ci && npm run typecheck && npm test` (add `V2_PG_URL` for PostgreSQL). Every ported module needs a parity scenario against v1 (`v2/tests/parity.test.ts`). Report: `docs/V2-PHASE1.md`; v1 stays the live system until the owner switches.
+
 ## 7b. Artifact edition
 Build: `DEMO_PASSWORD=<pw> node web/build.js` → `web/dist/` (git-ignored), then republish `web/dist/index.html` to the live page (`docs/ARTIFACT-EDITION.md`). Page-engine checks need `npm ci` (sql.js 1.10.3 is a pinned devDependency): `npm run test:artifact`; build with `npm run build:artifact`. `src/` stays engine-neutral: no new Node built-ins without a shim in `web/shims/`.
 

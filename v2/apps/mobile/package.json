@@ -1,0 +1,23 @@
+{
+  "name": "@fuelpro/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:web": "node ../../tools/build.ts mobile",
+    "android:add": "cap add android",
+    "android:sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor-community/sqlite": "^8.1.1",
+    "@capacitor/android": "^8.6.3",
+    "@capacitor/core": "^8.6.3",
+    "@fuelpro/core": "*",
+    "@fuelpro/db": "*",
+    "@fuelpro/local": "*",
+    "@fuelpro/ui": "*"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.3"
+  }
+}

@@ -1,0 +1,1 @@
+{"profile":"phone: CPU x4, 150 ms, 1.6 Mbit/s (same as scripts/bench-pages.js)","v2_server_edition":{"cold_ms":1401,"reload_ms":1140,"transferred_kb":121,"runs":5},"v1_baseline_from_ARCHITECTURE-V2":{"cold_ms":2414,"reload_ms":1234,"js_kb":259}}

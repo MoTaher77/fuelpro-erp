@@ -1,0 +1,20 @@
+{
+  "server": {
+    "ms": 24,
+    "js_kb": 15.4,
+    "js_gzip_kb": 4.9,
+    "total_kb": 151.4
+  },
+  "desktop": {
+    "ms": 64,
+    "js_kb": 227.7,
+    "js_gzip_kb": 49.1,
+    "total_kb": 363.7
+  },
+  "mobile": {
+    "ms": 60,
+    "js_kb": 257,
+    "js_gzip_kb": 55,
+    "total_kb": 393
+  }
+}

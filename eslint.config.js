@@ -5,7 +5,7 @@ const globals = require('globals');
 
 const common = { 'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none', varsIgnorePattern: '^_' }], 'no-empty': ['warn', { allowEmptyCatch: true }], 'no-useless-escape': 'off', 'no-control-regex': 'off', 'no-prototype-builtins': 'off', 'no-cond-assign': ['error', 'except-parens'], 'no-useless-assignment': 'warn' };
 module.exports = [
-  { ignores: ['node_modules/**', 'web/dist*/**', 'dev-data/**', 'data/**', 'bench/**'] },   // bench/: measurement code for decisions (ADR-30..38), not product code
+  { ignores: ['node_modules/**', 'web/dist*/**', 'dev-data/**', 'data/**', 'bench/**', 'v2/**'] },   // bench/: measurement code for decisions (ADR-30..38), not product code
   js.configs.recommended,
   { files: ['src/**/*.js', 'scripts/**/*.js', 'test/**/*.js', 'test-e2e/**/*.js', 'web/build.js', 'web/bundle.js', 'eslint.config.js'], languageOptions: { sourceType: 'commonjs', ecmaVersion: 2023, globals: { ...globals.node } }, rules: common },
   { files: ['web/sqljs-hook.mjs'], languageOptions: { sourceType: 'module', ecmaVersion: 2023, globals: { ...globals.node } }, rules: common },
