@@ -195,6 +195,7 @@
   const printFooter = () => h('div', { class: 'pf' }, h('span', null, (S.brand && S.brand.footer) || ''), h('span', null, T('printedOn'), ': ', F.fdt(new Date().toISOString().slice(0, 19).replace('T', ' ')), S.user ? ' · ' + S.user.name : ''));
   /** Print a finished document (letterhead included) — the browser's "Save as PDF" turns it into a PDF file. */
   function printDoc(fileTitle, node) {
+    if (F.P2) return F.P2.legacy(fileTitle, node);   // 0.32 print kit: same look, page frame and fonts for every document
     let box = document.getElementById('print'); if (!box) { box = h('div', { id: 'print' }); document.body.append(box); }
     box.replaceChildren(node); if (F.fitTables) F.fitTables(box);
     const old = document.title; document.title = fileTitle;

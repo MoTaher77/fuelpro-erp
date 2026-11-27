@@ -310,6 +310,7 @@ window.FP_I18N = {
   docNo: ['رقم المستند', 'Doc no.', 'N° pièce'],
   natDr: ['مدين', 'Dr', 'Déb'], natCr: ['دائن', 'Cr', 'Cré'], acctNo: ['رقم الحساب', 'Account no.', 'N° de compte'], period: ['الفترة', 'Period', 'Période'],
   stmtCust: ['كشف حساب عميل', 'Customer statement', 'Relevé client'], stmtSupp: ['كشف حساب مورد', 'Supplier statement', 'Relevé fournisseur'],
+  rcptPaper: ['ورق الإيصال (الطابعة الحرارية)', 'Receipt paper (thermal printer)', 'Papier du reçu (imprimante thermique)'], rcpt80: ['80 مم', '80 mm', '80 mm'], rcpt58: ['58 مم', '58 mm', '58 mm'], rcptLogo: ['الشعار في الإيصال', 'Logo on receipts', 'Logo sur le reçu'],
   'p2.page': ['صفحة {p} من {n}', 'Page {p} of {n}', 'Page {p} sur {n}'], 'p2.printedBy': ['طبعه {u} · {t}', 'Printed by {u} · {t}', 'Imprimé par {u} · {t}'],
   'p2.void': ['ملغى', 'VOID', 'ANNULÉ'], 'p2.amount': ['المبلغ', 'Amount', 'Montant'], 'p2.period': ['الفترة', 'Period', 'Période'], 'p2.issued': ['تاريخ الإصدار', 'Issued', 'Émis le'], 'p2.account': ['الحساب', 'Account', 'Compte'],
   'p2.totalDr': ['إجمالي المدين', 'Total debit', 'Total débit'], 'p2.totalCr': ['إجمالي الدائن', 'Total credit', 'Total crédit'], 'p2.inWords': ['الرصيد بالحروف', 'Balance in words', 'Solde en lettres'], 'p2.dr': ['مدين', 'Dr', 'Débit'], 'p2.cr': ['دائن', 'Cr', 'Crédit'],
