@@ -56,6 +56,20 @@ systemctl restart fuelpro
 for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/healthz >/dev/null 2>&1 && break; sleep 1; done
 curl -fsS http://127.0.0.1:3000/healthz >/dev/null || { journalctl -u fuelpro -n 30 --no-pager; rollback "health check failed"; }
 
+say "https"
+# FuelPro can answer on 127.0.0.1 while the site is unreachable from outside: Caddy (HTTPS) stopped, e.g. another web
+# server took port 80 after a reboot (2026-11-27: nginx). Not the update's fault, so no rollback — try once, then say how to fix.
+if ! systemctl is-active -q caddy; then
+  systemctl restart caddy 2>/dev/null; sleep 2
+  if systemctl is-active -q caddy; then echo "Caddy was stopped; started again"
+  else
+    echo "!! Caddy (HTTPS) is not running: the site cannot be reached from the internet. Programs holding ports 80/443:"
+    ss -ltnp | grep -E ':(80|443) ' || echo "   (none)"
+    for w in apache2 nginx; do systemctl is-active -q "$w" && echo "   fix: sudo systemctl disable --now $w && sudo systemctl restart caddy"; done
+    journalctl -u caddy -n 5 --no-pager | grep -iE 'error|bind|address' || true
+  fi
+else echo "Caddy running"; fi
+
 say "books"
 sudo -u fuelpro node --disable-warning=ExperimentalWarning scripts/check-books.js "$DATA/fuelpro.db" | tail -3 || echo "!! check the books: node scripts/check-books.js $DATA/fuelpro.db"
 echo; echo "updated to $(git log --oneline -1)"

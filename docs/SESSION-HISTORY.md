@@ -188,3 +188,7 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Parity on SQLite/bridge/PostgreSQL incl. statements (compared by lines + totals: same-second line order follows each system's clock) and ageing at 6 dates; invariants incl. 20 concurrent payments → exactly 14 pass. v2 45 tests, v1 98 + 1 skipped.
 - Bench: ageing 78 → 173/238 req/s; statement throughput +10–20% but p95 at saturation 160 → 206 ms (whole statement sent; paging planned); 100 users p95 29 → 4.6/6.9 ms.
 
+## 2026-11-28 — 0.37.1 site down after VPS reboot (cloud, branch `claude/caddy-port-guard`)
+- Owner's phone: «تعذّر الاتصال بالخادم». Code ruled out (current code on a snapshot copy: v14→v19 migration, healthz 200, login 401 for a wrong password). Over SSH (owner ran the commands): fuelpro active + healthz OK, caddy failed `listen :80 address already in use` — nginx. Owner chose to disable nginx.
+- Fix shipped: update.sh Caddy check, install.sh advice per installed server, VPS.md troubleshooting, KI-25. vps tests 2 pass.
+

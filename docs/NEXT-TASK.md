@@ -1,5 +1,9 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-28 — 0.37.1 site unreachable after a VPS reboot (KI-25, branch `claude/caddy-port-guard`)
+- Cause found with the owner over SSH: nginx (not FuelPro's) held port 80 after a reboot → Caddy failed → no HTTPS; the app was healthy on 127.0.0.1. Owner disabled nginx. Code: update.sh now checks/restarts Caddy and prints the fix; install.sh names only installed web servers; docs/VPS.md row.
+- Watch: one burst of `unable to open database file` (yearClose, 2026-11-27 16:22 CET, before the reboot) — not disk (13%) nor permissions (fuelpro:fuelpro 640); not seen after the reboot. Ask the owner if it recurs (journalctl -u fuelpro | grep -c 'unable to open').
+
 ## 2026-11-28 — 0.37.0 v2 phase 3 parties & collections (branch `claude/v2-phase3`, PR open)
 - Done: `parties.ts` (customer/supplier edit, payments, supplier payments, voids, statements, ageing), migration 003, «العملاء والموردون» tab; parity on 3 engines (45 v2 tests), migrate-v1 22 tables / 12 checks. Report `docs/V2-PHASE3.md`.
 - Next (owner to confirm): phase 4 = finance (boxes & banks, receipt/payment vouchers, expenses, manual journals, period lock). Statement paging for very long statements. Still open: KI-23 (owner's device test), KI-24 (users/sign-in before real data).

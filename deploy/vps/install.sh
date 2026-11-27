@@ -138,7 +138,9 @@ if ! systemctl restart caddy; then
   echo; echo "!! Caddy (HTTPS) did not start. Programs holding ports 80/443:"
   ss -ltnp | grep -E ':(80|443) ' || echo "   (none)"
   journalctl -u caddy -n 15 --no-pager | grep -iE 'error|bind|address|listen' || journalctl -u caddy -n 15 --no-pager
-  echo "If apache2 or nginx holds the ports and hosts nothing you need:  systemctl disable --now apache2 nginx  then run this script again."
+  # one command per web server that is really installed (naming a missing unit makes systemctl stop with an error)
+  for w in apache2 nginx; do systemctl cat "$w" >/dev/null 2>&1 && echo "If $w holds the ports and hosts nothing you need:  systemctl disable --now $w"; done
+  echo "then run this script again."
   exit 1
 fi
 echo "waiting for the HTTPS certificate of $DOMAIN (Let's Encrypt needs ports 80/443 open to the internet)..."
