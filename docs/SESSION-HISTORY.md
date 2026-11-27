@@ -141,3 +141,8 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Owner chose off-site backups on Google Drive + a download-to-device button. Added `deploy/vps/offsite.sh` (+ `.service`/`.timer`, installed by install.sh/update.sh), `BK.offsite()` reader, alert `offsite`, backup-screen status + button, i18n, sw v48; ADR-28, KI-10, VPS.md §4.
 - Tests: 94 unit (+6 in test/offsite.test.js with a stub rclone), 7 e2e, 89 artifact, lint 0 errors, tsc clean. Real Google Drive not reachable from the cloud — the owner's first `fuelpro-offsite setup` is the real test.
 - Resume: NEXT-TASK.
+
+## 2026-11-27 — 0.30.0 UI polish (cloud, branch `claude/ui-polish`)
+- Owner declined both new looks (calm mock-up; «ليل الياقوت», PR #20 closed): keep the original screens and colours, improve only (ADR-29).
+- Done: folding menu groups (remembered, current group always open), calmer phone top bar (Excel/theme/sign-out moved into the menu), one-line bottom-bar names, sticky table headers on desktop, tabular figures, total rows, status dots, empty-state cards, «null» under customers fixed. Screen only; print untouched.
+- Tests: 94 unit + 1 skipped, 7 e2e, 89 artifact, lint 0 errors; fold/phone-menu behaviour checked in Chromium. Before/after page (demo data) in the owner's private artifacts.
