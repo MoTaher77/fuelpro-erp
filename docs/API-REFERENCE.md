@@ -41,6 +41,8 @@ Generated from `src/server.js` on 2026-11-23 (124 routes). VERIFIED route list; 
 | GET | `/api/users` | services.js listUsers |  |
 | POST | `/api/users` | services.js createUser |  |
 | PATCH | `/api/users/:id` | services.js updateUser |  |
+| GET | `/api/users/logins` | services.js loginHistory → logins.js list | owner/admin (`users.manage`); `user_id`, `kind` (login/logout/failed/signed_out), `from`, `to`, `limit`≤500, `before` |
+| POST | `/api/users/:id/signout` | services.js signOutUser | ends every session of that user; recorded + audited |
 
 ### stations
 | Method | Path | Handler | |

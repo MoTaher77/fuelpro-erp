@@ -42,11 +42,11 @@ function createApp({ registration = String(process.env.REGISTRATION || 'open').t
   route('POST', '/api/auth/register', (c) => {
     if (registration === 'closed' || (registration === 'first' && db.prepare('SELECT 1 FROM orgs LIMIT 1').get())) throw new HttpError(403, 'REGISTRATION_CLOSED', 'New organisations cannot be registered on this server');
     const r = S.registerOrg(db, c.body, c.ip);
-    const l = S.login(db, { email: c.body.email, password: c.body.password }, c.ip);
+    const l = S.login(db, { email: c.body.email, password: c.body.password }, c.ip, c.ua);
     c.setSession(l.token); return { status: 201, body: { ...r, user: l.user } };
   }, { public: true });
-  route('POST', '/api/auth/login', (c) => { const l = S.login(db, c.body, c.ip); c.setSession(l.token); return { body: { user: l.user } }; }, { public: true });
-  route('POST', '/api/auth/logout', (c) => { auth.destroySession(db, c.token); c.clearSession(); return { body: { ok: true } }; }, { public: true });
+  route('POST', '/api/auth/login', (c) => { const l = S.login(db, c.body, c.ip, c.ua); c.setSession(l.token); return { body: { user: l.user } }; }, { public: true });
+  route('POST', '/api/auth/logout', (c) => { S.logout(db, c.token, c.ip, c.ua); c.clearSession(); return { body: { ok: true } }; }, { public: true });
   route('POST', '/api/auth/change-password', (c) => ({ body: S.changePassword(db, c.user, c.body) }));
   route('POST', '/api/auth/forgot', (c) => ({ body: S.forgotPassword(db, c.body, c.ip, { mailer, appUrl }) }), { public: true });
   route('POST', '/api/auth/reset', (c) => ({ body: S.resetPassword(db, c.body, c.ip) }), { public: true });
@@ -60,6 +60,8 @@ function createApp({ registration = String(process.env.REGISTRATION || 'open').t
   route('GET', '/api/users', (c) => ({ body: S.listUsers(db, c.user) }));
   route('POST', '/api/users', (c) => ({ status: 201, body: S.createUser(db, c.user, c.body) }));
   route('PATCH', '/api/users/:id', (c) => ({ body: S.updateUser(db, c.user, id(c.p.id), c.body) }));
+  route('GET', '/api/users/logins', (c) => ({ body: S.loginHistory(db, c.user, c.q) }));
+  route('POST', '/api/users/:id/signout', (c) => ({ body: S.signOutUser(db, c.user, id(c.p.id)) }));
   route('POST', '/api/stations', (c) => ({ status: 201, body: S.createStation(db, c.user, c.body) }));
   route('PATCH', '/api/stations/:sid', (c) => ({ body: S.updateStation(db, c.user, id(c.p.sid), c.body) }));
   route('GET', '/api/stations/:sid', (c) => ({ body: S.station(db, c.user, id(c.p.sid)) }));
@@ -335,7 +337,7 @@ function createApp({ registration = String(process.env.REGISTRATION || 'open').t
       const out = { headers: {} };
       const ctx = {
         p: Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1])])),
-        q: Object.fromEntries(url.searchParams), body, ip, token,
+        q: Object.fromEntries(url.searchParams), body, ip, token, ua: String(req.headers['user-agent'] || '').slice(0, 300),
         setSession: (t) => { out.headers['Set-Cookie'] = `${COOKIE}=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${7 * 24 * 3600}${secureCookie ? '; Secure' : ''}`; },
         clearSession: () => { out.headers['Set-Cookie'] = `${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie ? '; Secure' : ''}`; }
       };

@@ -331,17 +331,53 @@
         await api('PATCH', '/api/users/' + u.id, { email: em.value, password: pw.value, role: role.value, station_ids: ids, active: true }); m.remove(); toast(T('saved')); render(); }) },
         h('p', { class: 'hint' }, T('activateHelp')), field(T('email'), em), field(T('password'), pw), field(T('role'), role), h('label', null, T('stations')), boxes, h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('activate')))));
     };
-    main.append(sec(T('users'), table([T('name'), T('email'), T('role'), T('stations'), T('tfa'), ''], users.map(x => [x.name, /@old-system\.invalid$/i.test(x.email) ? h('span', { class: 'chip' }, T('oldUser')) : h('span', { class: 'ltr' }, x.email), T(x.role),
+    const seen = (x) => x.online ? h('span', { class: 'pill ok-pill' }, T('onlineNow'))
+      : x.sessions ? h('span', { class: 'muted small' }, T('lastSeen', { t: fdt(x.last_seen_at) })) : h('span', { class: 'muted' }, '—');
+    const signOut = (x) => guard(async () => { if (!confirm(T('signOutConfirm', { u: x.name }))) return; const r = await api('POST', `/api/users/${x.id}/signout`); toast(T('signedOutN', { n: r.sessions })); render(); });
+    main.append(sec(T('users'), table([T('name'), T('email'), T('role'), T('stations'), T('tfa'), T('lastLogin'), T('uStatus'), ''], users.map(x => [x.name, /@old-system\.invalid$/i.test(x.email) ? h('span', { class: 'chip' }, T('oldUser')) : h('span', { class: 'ltr' }, x.email), T(x.role),
       ['owner', 'admin'].includes(x.role) ? h('span', { class: 'muted' }, T('allStations')) : x.station_ids.map(stName).join('، '),
       x.totp_enabled ? h('span', { class: 'pill ok-pill' }, T('tfaOn')) : h('span', { class: 'muted' }, T('tfaOff')),
+      x.last_login_at ? h('span', null, fdt(x.last_login_at), x.last_login_device ? h('div', { class: 'muted small' }, x.last_login_device) : null) : h('span', { class: 'muted' }, T('neverIn')),
+      h('span', null, seen(x), x.sessions > 1 ? h('div', { class: 'muted small' }, T('sessionsN', { n: x.sessions })) : null),
       x.role === 'owner' || x.id === S.user.id ? '' : /@old-system\.invalid$/i.test(x.email) ? h('button', { class: 'btn sm', onclick: () => activateOld(x) }, T('activate')) : h('div', { class: 'row' }, h('button', { class: 'btn ghost sm', onclick: () => editUser(x) }, T('editAccess')),
         h('button', { class: 'btn ghost sm', onclick: guard(async () => { await api('PATCH', '/api/users/' + x.id, { active: !x.active }); render(); }) }, x.active ? T('disable') : T('enable')),
+        x.sessions ? h('button', { class: 'btn ghost sm', onclick: signOut(x) }, T('signOutAll')) : null,
         x.totp_enabled ? h('button', { class: 'btn ghost sm', onclick: guard(async () => { await api('PATCH', '/api/users/' + x.id, { reset_2fa: true }); toast(T('saved')); render(); }) }, T('reset2fa')) : null)])), h('p', { class: 'hint' }, T('roleHelp'))));
+    main.append(await loginHistorySection(users));
     const n = h('input', { id: 'nuName' }), e = h('input', { id: 'nuEmail', type: 'email' }), pw = h('input', { id: 'nuPass', type: 'password', autocomplete: 'new-password' }), role = sel('nuRole', ROLE_LIST.filter(r => r !== 'admin' || S.user.role === 'owner').map(r => [r, T(r)]), 'cashier');
     const boxes = stationBoxes('nus', [S.sid]);
     main.append(h('form', { class: 'card', onsubmit: guard(async (ev) => { ev.preventDefault(); const ids = [...main.querySelectorAll('.nus:checked')].map(x => +x.value); await api('POST', '/api/users', { name: n.value, email: e.value, password: pw.value, role: role.value, station_ids: ids }); toast(T('saved')); render(); }) },
       h('h2', null, T('addUser')), h('div', { class: 'grid' }, field(T('name'), n), field(T('email'), e), field(T('password'), pw), field(T('role'), role)), h('label', null, T('stations')), boxes, h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('add')))));
   };
+
+  /* sign-in history (owner/admin): who signed in or out, failed attempts, when, from which device and address */
+  async function loginHistorySection(users) {
+    const who = sel('lhUser', [['', T('allUsers')], ...users.map(u => [u.id, u.name])], '');
+    const kind = sel('lhKind', [['', T('allEvents')], ...['login', 'logout', 'failed', 'signed_out'].map(k => [k, T('ev_' + k)])], '');
+    const to = h('input', { id: 'lhTo', type: 'date', value: todayIso() });
+    const from = h('input', { id: 'lhFrom', type: 'date', value: new Date(Date.parse(todayIso() + 'T12:00:00Z') - 6 * 864e5).toISOString().slice(0, 10) });
+    const out = h('div');
+    let rows = [], more = false;
+    const detail = (r) => r.kind === 'failed' && r.reason ? T('rs_' + r.reason) : r.kind === 'signed_out' && r.reason ? T('rsBy', { u: r.reason }) : '';
+    const pill = (k) => h('span', { class: 'pill ' + (k === 'login' ? 'ok-pill' : k === 'failed' ? 'bad-pill' : '') }, T('ev_' + k));
+    const draw = () => out.replaceChildren(rows.length ? table([T('time'), T('name'), T('evKind'), '', T('device'), T('ipAddr')],
+      rows.map(r => [fdt(r.at), r.name, pill(r.kind), h('span', { class: 'muted small' }, detail(r)), r.device || '—', h('span', { class: 'ltr' }, r.ip || '—')])) : h('p', { class: 'muted' }, T('noLogins')),
+      more ? h('div', { class: 'row noprint' }, h('button', { class: 'btn ghost sm', onclick: guard(() => load(true)) }, T('loadMore'))) : null);
+    const load = async (next) => {
+      const q = new URLSearchParams({ limit: '200' });
+      if (who.value) q.set('user_id', who.value); if (kind.value) q.set('kind', kind.value);
+      if (from.value) q.set('from', from.value); if (to.value) q.set('to', to.value);
+      if (next && rows.length) q.set('before', String(rows[rows.length - 1].id));
+      const page = await api('GET', '/api/users/logins?' + q);
+      rows = next ? rows.concat(page) : page; more = page.length === 200; draw();
+    };
+    // the server keeps UTC days; the list is shown in the station's time (fdt)
+    const s = sec(T('loginHistory'), h('p', { class: 'hint' }, T('loginHistoryHint')),
+      h('div', { class: 'row noprint' }, field(T('name'), who), field(T('evKind'), kind), field(T('from'), from), field(T('to'), to),
+        h('button', { class: 'btn', onclick: guard(() => load(false)) }, T('run')), h('button', { class: 'btn ghost sm', onclick: () => printNode(T('loginHistory'), out) }, T('print'))), out);
+    await load(false);
+    return s;
+  }
 
   /* customers: add ageing below the existing customer screen */
   const custView = F.VIEWS.cust;

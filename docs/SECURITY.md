@@ -24,6 +24,8 @@ Every route checks `need(user, perm)` on the server; the menu (`NAV` in `public/
 - 2FA: TOTP RFC 6238 with replay guard (`totp_last_step`), recovery codes stored hashed, secrets sealed with AES-256-GCM using `APP_SECRET`. `scripts/reset-2fa.js` for lock-outs.
 - Password reset: single-use, expiring token; link built from `APP_URL`, never the Host header; same answer for unknown e-mails.
 
+- Sign-in history (0.35.0, `src/logins.js`, table `login_events`): every sign-in, sign-out and failed attempt (wrong password, wrong 2FA code, locked, disabled account) on a **known** account, with UTC time, IP and a short device label (never the raw User-Agent). Attempts on unknown e-mails are not stored. Readable only by owner/admin of the same organisation; kept 365 days. Owner/admin can end all sessions of another user (`POST /api/users/:id/signout`, audited `user.signout`).
+
 ## Request protection (`src/server.js`)
 CSRF: writes must be same-origin and JSON. Static files: path-traversal check. Security headers via `secHeaders()`: CSP `default-src 'self'; script-src 'self'; style-src 'self'` (no inline scripts or styles), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: same-origin`, HSTS when `COOKIE_SECURE=1`. Parameterised SQL only.
 

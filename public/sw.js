@@ -1,6 +1,6 @@
 /* FuelPro service worker: caches the app shell only, so the app opens fast on slow networks.
    API calls are never cached: every number on screen comes from the server. */
-const CACHE = 'fuelpro-shell-v52';
+const CACHE = 'fuelpro-shell-v53';
 const SHELL = ['/', '/app.css', '/print.css', '/print-kit.js', '/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2', '/fonts/ibm-plex-sans-arabic-latin-400-normal.woff2', '/fonts/ibm-plex-sans-arabic-arabic-600-normal.woff2', '/fonts/ibm-plex-sans-arabic-latin-600-normal.woff2', '/fonts/noto-naskh-arabic-arabic-700-normal.woff2', '/fonts/noto-naskh-arabic-latin-700-normal.woff2', '/app.js', '/erp.js', '/books-ui.js', '/stmt-pdf.js', '/more-ui.js', '/analytics-ui.js', '/bank-ui.js', '/alerts-ui.js', '/wizard-ui.js', '/payroll-ui.js', '/i18n-erp.js', '/qr.js', '/xlsx.js', '/icon.svg', '/manifest.webmanifest'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

@@ -1,6 +1,6 @@
 # DATABASE-SCHEMA — FuelPro
 Engine: SQLite (built-in `node:sqlite`), WAL, foreign keys on. One file per install (`DB_PATH`, default `data/fuelpro.db`).
-Migrations: `MIGRATIONS` array in `src/db.js`, applied at startup inside a transaction, tracked by `PRAGMA user_version` (= **18**, VERIFIED 2026-11-24; v17 = employees, employee_moves, payroll_runs, payroll_lines; v18 = employees.legacy_account_id).
+Migrations: `MIGRATIONS` array in `src/db.js`, applied at startup inside a transaction, tracked by `PRAGMA user_version` (= **19**, VERIFIED 2026-11-27; v17 = employees, employee_moves, payroll_runs, payroll_lines; v18 = employees.legacy_account_id; v19 = `login_events` (sign-in history: org_id, user_id, at UTC, kind login/logout/failed/signed_out, reason, ip, device; kept 365 days) + `sessions.device`).
 Migration 3 rebuilt `users` with SQLite's 12-step procedure and opened the books from existing balances (tested: "upgrade from a v2 database").
 
 **Full column list (generated, always exact): [DATABASE-SCHEMA.generated.md](DATABASE-SCHEMA.generated.md)** — refresh with

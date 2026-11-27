@@ -172,3 +172,8 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Measured: 100 real users p95 98 → 5.3 (SQLite) / 7.5 ms (PostgreSQL); phone first screen 2.4 → 1.4 s; migration of a demo year 3 s / 13 s with all 7 checks equal.
 - Resume: owner feedback on the APK / Windows artifacts (KI-23), then phase 2 (next module) and the users module (KI-24).
 
+## 2026-11-27 — 0.35.0 sign-in history (cloud, branch `claude/user-logins`)
+- Owner: «ضيف لي واجهة التحكم بالمستخدمين واعرف من سجل الدخول وفي أي وقت». The users screen already existed; added the history: migration v19 `login_events` + `sessions.device`, recording in `login`/`logout`, `GET /api/users/logins`, `POST /api/users/:id/signout`, presence (last sign-in, online now) in `GET /api/users`.
+- Tests: `test/logins.test.js` (4) → 98 pass + 1 skipped; e2e 8; artifact 93; lint 0 errors. Screen checked in Chromium (Arabic, desktop + phone) on a throwaway demo DB.
+- Resume: owner runs `sudo fuelpro-update`; history starts then.
+
