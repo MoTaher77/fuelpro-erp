@@ -17,7 +17,7 @@ const auth = require('./auth');
 const { HttpError, unauthorized, notFound } = require('./errors');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2' };
 const COOKIE = 'sid';
 const zlib = require('node:zlib');
 const HAS_ZLIB = typeof zlib.gzip === 'function' && typeof zlib.brotliCompress === 'function';   // the Artifact page has no zlib

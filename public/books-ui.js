@@ -388,7 +388,7 @@
     };
     const run = guard(async () => { S.psFrom = from.value; S.psTo = to.value; showN = STEP; r = await cfg.load(from.value, to.value); r.from = r.from || from.value; r.to = r.to || to.value; draw(); title.lastChild.textContent = r.name; });
     q.addEventListener('input', () => { S.psQ = q.value; if (r) draw(); });
-    const doPrint = () => { if (!r) return; printDoc(`${cfg.title} - ${r.name} - ${r.from} - ${r.to}`, classicStatement(cfg, r, shown, nature)); };
+    const doPrint = () => { if (!r) return; if (F.P2) return F.P2.statement(cfg, r, shown, nature); printDoc(`${cfg.title} - ${r.name} - ${r.from} - ${r.to}`, classicStatement(cfg, r, shown, nature)); };
     const exp = h('button', { class: 'btn ghost sm', onclick: () => r && csv(`statement-${r.name}-${r.from}_${r.to}.csv`, ['date', 'doc_no', 'description', 'debit', 'credit', 'balance'],
       [[r.from, '', 'opening', '', '', r.opening / 10 ** dec()], ...r.rows.map(e => [e.date, e.ref || '', e.desc, e.debit ? e.debit / 10 ** dec() : '', e.credit ? e.credit / 10 ** dec() : '', e.voided ? 'voided' : e.balance / 10 ** dec()])]) }, 'CSV');
     const title = h('h2', null, cfg.title, ': ', h('span', { class: 'gold' }, '…'));

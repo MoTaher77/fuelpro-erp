@@ -151,3 +151,8 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 ## 2026-11-27 — 0.31.0 every-screen review (cloud, branch `claude/ui-screens`)
 - Automated audit of all 30 screens at 1366/768/390 px, light + dark (demo data) + contact sheets reviewed by eye. Fixed: «null» text in sales register and currencies (global guard on append/prepend/replaceChildren/before/after), labels tied to every field (`field()` gives an id), price inputs named, `a.btn` sized like buttons, phone dates ≤2 lines.
 - e2e sweep now fails on null/undefined text, page sideways scroll or unlabelled fields. Tests: 94 unit, 8 e2e, 89 artifact, lint 0 errors.
+
+## 2026-11-27 — 0.32.0 printing phase 1 (cloud, branch `claude/print-overhaul`)
+- New print engine (`public/print-kit.js`, `public/print.css`, fonts in `public/fonts`): receipt 80/58 mm sized to its content, A4 account statement, journal book; «page X of Y» via @page margin boxes (CSSOM sheet, CSP-safe); waits for fonts.
+- `scripts/print-check.js` (Chromium → PDF → pdftoppm/pdffonts/pdftotext): receipts 227×326 pt / 164×306 pt, statement 4 p, journal book 105 p, page numbers yes, 0 overflow, only Plex/Naskh embedded, 30–320 ms. Baseline: receipt printed on A4, no page numbers, Arabic fell back to DejaVu in the container.
+- Samples in `docs/print-samples/`; owner to approve before the other documents (day report, boxes, collections, vouchers, payroll) are moved. Tests: 94 unit, 8 e2e, 89 artifact, lint 0 errors.

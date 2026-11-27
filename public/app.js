@@ -712,6 +712,7 @@ window.FPFMT = (function () {
     window.addEventListener('afterprint', done); window.print(); setTimeout(done, 1500);
   }
   function printReceipt(s) {
+    if (window.FP && window.FP.P2) return window.FP.P2.receipt(s);   // 0.32 print kit (thermal 80/58 mm)
     const r = h('div', null, h('table', null, h('tbody', null,
       [[T('receiptNo'), '#' + s.id], [T('time'), fdt(s.created_at)], [T('pump'), s.pump_name], [T('fuel'), s.fuel_name], [T('qty'), vol(s.quantity_ml, 3)], [T('price', { u: uLbl() }), priceShow(s.price_e4)],
         ...(s.vat ? [[T('net'), money(s.net)], [T('vat'), money(s.vat)]] : []), [T('total'), money(s.gross)], [T('payType'), T(s.pay_type) + (s.customer_name ? ' · ' + s.customer_name : '')]]
