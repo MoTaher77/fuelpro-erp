@@ -777,6 +777,16 @@ a.btn.wa-go.sm{min-height:36px;padding:4px 12px;font-size:13px;border-radius:10p
   }
 }
 @media screen{
+  /* a link that looks like a button gets the button's size and shape (download links, «+ new delivery») */
+  a.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:8px 20px;border-radius:12px;font-weight:700;text-decoration:none;
+    background:var(--grad);color:var(--accent-ink);box-shadow:0 8px 20px -10px color-mix(in srgb,var(--accent) 80%,transparent);transition:transform .2s var(--ease),box-shadow .25s}
+  a.btn:hover{transform:translateY(-1px)}
+  a.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+  a.btn.ghost:hover{border-color:var(--gold)}
+  a.btn.sm{min-height:34px;padding:4px 12px;font-size:13px;border-radius:10px}
+  a.btn.gold,a.btn.gold-btn{background:var(--grad-gold);color:#1e1606}
+}
+@media screen{
   /* saving: the pressed button turns into a spinner, then shows a tick for a moment when it worked */
   button[aria-busy=true]{cursor:progress}
   button.btn[aria-busy=true]{opacity:.85}
@@ -808,5 +818,9 @@ a.btn.wa-go.sm{min-height:36px;padding:4px 12px;font-size:13px;border-radius:10p
 @media screen and (min-width:901px){
   /* long tables scroll inside their frame on a computer, so the column titles stay in view */
   main .tw{max-height:min(72vh,880px);overflow:auto;overscroll-behavior:contain}
+}
+@media screen{
+  /* a phone-squeezed table may wrap short columns, but a date keeps at most two lines (day month / year) */
+  table.fit.squeeze2 td.f-tight{min-width:5.6em}
 }
 @media (prefers-reduced-motion:reduce){.side .gi,.side .grp svg{transition:none!important}}

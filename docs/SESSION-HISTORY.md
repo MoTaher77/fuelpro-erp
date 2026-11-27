@@ -147,3 +147,7 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Done: folding menu groups (remembered, current group always open), calmer phone top bar (Excel/theme/sign-out moved into the menu), one-line bottom-bar names, sticky table headers on desktop, tabular figures, total rows, status dots, empty-state cards, «null» under customers fixed. Screen only; print untouched.
 - Tests: 94 unit + 1 skipped, 7 e2e, 89 artifact, lint 0 errors; fold/phone-menu behaviour checked in Chromium. Before/after page (demo data) in the owner's private artifacts.
 - Then (same PR): spinner + tick on save buttons (guard), errors under the field (`.fe`, `aria-invalid`) and a box beside the button (`.form-err`), toast countdown bar + red error toasts. New e2e test (8 total); the dropped-connection test now reads the box beside the button.
+
+## 2026-11-27 — 0.31.0 every-screen review (cloud, branch `claude/ui-screens`)
+- Automated audit of all 30 screens at 1366/768/390 px, light + dark (demo data) + contact sheets reviewed by eye. Fixed: «null» text in sales register and currencies (global guard on append/prepend/replaceChildren/before/after), labels tied to every field (`field()` gives an id), price inputs named, `a.btn` sized like buttons, phone dates ≤2 lines.
+- e2e sweep now fails on null/undefined text, page sideways scroll or unlabelled fields. Tests: 94 unit, 8 e2e, 89 artifact, lint 0 errors.

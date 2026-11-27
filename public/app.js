@@ -150,6 +150,11 @@ window.FPFMT = (function () {
   const todayIso = () => FPFMT.dt('en-CA', { timeZone: S.st.timezone }).format(new Date());
 
   /* ---------- tiny DOM helpers ---------- */
+  /* the DOM writes «null» / «false» as text when either is appended; screens build optional parts as `cond && node`, so drop them */
+  for (const proto of [Element.prototype, DocumentFragment.prototype]) for (const m of ['append', 'prepend', 'replaceChildren']) {
+    const orig = proto[m]; if (typeof orig === 'function') proto[m] = function (...a) { return orig.apply(this, a.filter(x => x != null && x !== false)); };
+  }
+  for (const m of ['before', 'after', 'replaceWith']) { const orig = Element.prototype[m]; if (typeof orig === 'function') Element.prototype[m] = function (...a) { return orig.apply(this, a.filter(x => x != null && x !== false)); }; }
   function h(tag, attrs, ...kids) {
     const e = document.createElement(tag);
     /* style through the CSSOM: the page's Content-Security-Policy (style-src 'self') blocks style="" attributes, so those were silently dropped */
@@ -157,7 +162,8 @@ window.FPFMT = (function () {
     for (const c of kids.flat(Infinity)) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(String(c)));
     return e;
   }
-  const field = (label, input) => h('div', null, h('label', { for: input.id }, label), input);
+  let fieldSeq = 0;   // a box without an id still gets one, so its label is tied to it (screen readers, tapping the label)
+  const field = (label, input) => { if (input && input.tagName && !input.id) input.id = 'fld-' + (++fieldSeq); return h('div', null, h('label', { for: input.id }, label), input); };
   const sel = (id, opts, cur) => h('select', { id }, opts.map(([v, l]) => h('option', { value: v, selected: String(v) === String(cur) }, l)));
   const toast = (m, kind) => { const t = document.getElementById('toast'); t.replaceChildren(h('span', { class: kind || '' }, m)); t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 4500); };
   const table = (heads, rows) => h('div', { class: 'tw' }, h('table', null, h('thead', null, h('tr', null, heads.map(x => h('th', null, x)))), h('tbody', null, rows.map(r => h('tr', null, r.map(c => h('td', null, c)))))));
@@ -580,7 +586,7 @@ window.FPFMT = (function () {
       const canCfg = cd('config.edit'), owner = cd('users.manage'), u = uLbl();
       const mini = (fn, ...kids) => h('form', { class: 'row', autocomplete: 'off', onsubmit: guard(async (e) => { e.preventDefault(); await fn(); await refresh(); }) }, ...kids, h('button', { class: 'btn', type: 'submit' }, T('add')));
       if (canCfg) {
-        const rows = S.fuels.map(f => { const p = h('input', { id: 'pr' + f.id, inputmode: 'decimal', value: priceInput(f.price_e4) }); return [f.name, p, h('button', { class: 'btn sm', onclick: guard(async () => { await api('PATCH', sp('/fuels/' + f.id), { price_e4: num(p.value, priceE4) }); toast(T('saved')); await loadBase(); }) }, T('save'))]; });
+        const rows = S.fuels.map(f => { const p = h('input', { id: 'pr' + f.id, inputmode: 'decimal', value: priceInput(f.price_e4), 'aria-label': T('price', { u: uLbl() }) + ' — ' + f.name }); return [f.name, p, h('button', { class: 'btn sm', onclick: guard(async () => { await api('PATCH', sp('/fuels/' + f.id), { price_e4: num(p.value, priceE4) }); toast(T('saved')); await loadBase(); }) }, T('save'))]; });
         const fn = h('input', { id: 'fName' }), fp = h('input', { id: 'fPrice', inputmode: 'decimal' });
         const tn = h('input', { id: 'tName' }), tf = sel('tFuel', S.fuels.map(f => [f.id, f.name])), tc = h('input', { id: 'tCap', inputmode: 'decimal' }), tl = h('input', { id: 'tLvl', inputmode: 'decimal', value: '0' });
         const pn = h('input', { id: 'pName' }), pt = sel('pTank', S.tanks.map(t => [t.id, `${t.name} — ${t.fuel_name}`])), pm = h('input', { id: 'pMeter', inputmode: 'decimal', value: '0' });
