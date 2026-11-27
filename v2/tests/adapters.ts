@@ -2,7 +2,7 @@
 import { createRequire } from 'node:module';
 import { randomBytes } from 'node:crypto';
 import type { Ctx, User } from '@fuelpro/core';
-import { setup, sales, shifts, stock } from '@fuelpro/core';
+import { setup, sales, shifts, stock, parties } from '@fuelpro/core';
 import type { Api } from './scenario.ts';
 
 const require = createRequire(import.meta.url);
@@ -40,7 +40,13 @@ export function v1Api() {
     openShift: (s, b) => O.openShiftCmd(db, user, s, b), closeShift: (s, id, b) => O.closeShift(db, user, s, id, b),
     createSale: (s, b) => S.createSale(db, user, s, b), createDelivery: (s, b) => S.createDelivery(db, user, s, b), voidDelivery: (s, id, r) => S.voidDelivery(db, user, s, id, r),
     createAdjustment: (s, b) => S.createAdjustment(db, user, s, b), transfer: (s, b) => O.createTransfer(db, user, s, b), voidTransfer: (s, id, b) => O.voidTransfer(db, user, s, id, b),
-    stockReconciliation: (s, q) => O.stockReconciliation(db, user, s, q)
+    stockReconciliation: (s, q) => O.stockReconciliation(db, user, s, q),
+    createCustomer: (s, b) => S.createCustomer(db, user, s, b), updateCustomer: (s, id, b) => O.updateCustomer(db, user, s, id, b), updateSupplier: (s, id, b) => O.updateSupplier(db, user, s, id, b),
+    createPayment: (s, b) => S.createPayment(db, user, s, b), voidPayment: (s, id, r) => S.voidPayment(db, user, s, id, r),
+    supplierPayment: (s, b) => O.supplierPayment(db, user, s, b), voidSupplierPayment: (s, id, r) => O.voidSupplierPayment(db, user, s, id, r),
+    customerStatement: (s, id, q) => S.statement(db, user, s, id, q), supplierStatement: (s, id, q) => O.supplierStatement(db, user, s, id, q),
+    ageing: (s, q) => O.ageing(db, user, s, q), listCustomers: (s) => S.listCustomers(db, user, s),
+    today: (s) => ({ today: S.tzToday(db.prepare('SELECT timezone FROM stations WHERE id=?').get(s).timezone) })
   };
   const stockApi = { register: api.register, call: async (fn: string, ...a: unknown[]) => V1[fn](...a) };
   return { api, stockApi, all, sid: () => sid, close: async () => db.close() };
@@ -72,7 +78,16 @@ export function v2Api(ctx: Ctx) {
     createSale: (s: number, b: sales.SaleInput) => sales.createSale(ctx, user, s, b), createDelivery: (s: number, b: stock.DeliveryInput) => stock.createDelivery(ctx, user, s, b),
     voidDelivery: (s: number, id: number, r: string) => stock.voidDelivery(ctx, user, s, id, r), createAdjustment: (s: number, b: never) => stock.createAdjustment(ctx, user, s, b),
     transfer: (s: number, b: never) => stock.createTransfer(ctx, user, s, b), voidTransfer: (s: number, id: number, b: { reason?: string }) => stock.voidTransfer(ctx, user, s, id, b),
-    stockReconciliation: (s: number, q: Record<string, string>) => stock.stockReconciliation(ctx, user, s, q)
+    stockReconciliation: (s: number, q: Record<string, string>) => stock.stockReconciliation(ctx, user, s, q),
+    createCustomer: (s: number, b: Record<string, unknown>) => setup.createCustomer(ctx, user, s, b),
+    updateCustomer: (s: number, id: number, b: Record<string, unknown>) => parties.updateCustomer(ctx, user, s, id, b),
+    updateSupplier: (s: number, id: number, b: Record<string, unknown>) => parties.updateSupplier(ctx, user, s, id, b),
+    createPayment: (s: number, b: never) => parties.createPayment(ctx, user, s, b), voidPayment: (s: number, id: number, r: string) => parties.voidPayment(ctx, user, s, id, r),
+    supplierPayment: (s: number, b: never) => parties.supplierPayment(ctx, user, s, b), voidSupplierPayment: (s: number, id: number, r: string) => parties.voidSupplierPayment(ctx, user, s, id, r),
+    customerStatement: (s: number, id: number, q: Record<string, string>) => parties.customerStatement(ctx, user, s, id, q),
+    supplierStatement: (s: number, id: number, q: Record<string, string>) => parties.supplierStatement(ctx, user, s, id, q),
+    ageing: (s: number, q: Record<string, string>) => parties.ageing(ctx, user, s, q), listCustomers: (s: number) => setup.listCustomers(ctx, user, s),
+    today: async (s: number) => ({ today: ctx.clock.today((await ctx.db.selectFrom('stations').select('timezone').where('id', '=', s).executeTakeFirstOrThrow()).timezone) })
   };
   const stockApi = { register: api.register, call: async (fn: string, ...a: unknown[]) => V2[fn](...(a as never[])) };
   return { api, stockApi, user: () => user, sid: () => sid };

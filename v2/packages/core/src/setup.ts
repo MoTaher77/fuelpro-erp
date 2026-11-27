@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 /* Organisation and station set-up needed by the sales & shifts module: org, station, fuel, tank (opening stock),
    pump, customer (opening balance). Same validations, postings and audit rows as v1 src/services.js. */
 import { audit, need, scoped, station } from './access.ts';
@@ -105,9 +106,16 @@ export async function listTanks(ctx: Ctx, user: User, sid: number) {
   return ctx.db.selectFrom('tanks as t').innerJoin('fuels as f', 'f.id', 't.fuel_id').selectAll('t').select('f.name as fuel_name')
     .where('t.station_id', '=', sid).where('t.active', '=', 1).orderBy('t.id').execute();
 }
+/** Active customers with their ledger balance (v1 listCustomers: one grouped query, no query per customer). */
 export async function listCustomers(ctx: Ctx, user: User, sid: number) {
   await station(ctx.db, user, sid);
-  return ctx.db.selectFrom('customers').select(['id', 'name', 'phone', 'credit_limit', 'terms_days']).where('station_id', '=', sid).where('active', '=', 1).orderBy('name').execute();
+  const bal = await ctx.db.selectFrom('journal_lines as l').innerJoin('journals as j', 'j.id', 'l.journal_id').innerJoin('accounts as a', 'a.id', 'l.account_id')
+    .select(['l.party_id', sql<number>`sum(l.debit - l.credit)`.as('v')])
+    .where('l.party_type', '=', 'customer').where('a.sys', '=', 'ar').where('j.status', '=', 'posted')
+    .where('l.party_id', 'in', ctx.db.selectFrom('customers').select('id').where('station_id', '=', sid)).groupBy('l.party_id').execute();
+  const m = new Map(bal.map((r) => [Number(r.party_id), Number(r.v)]));
+  const rows = await ctx.db.selectFrom('customers').select(['id', 'name', 'phone', 'credit_limit', 'terms_days', 'opening_balance', 'ref']).where('station_id', '=', sid).where('active', '=', 1).orderBy('name').execute();
+  return rows.map((c) => ({ ...c, balance: m.get(c.id) || 0 }));
 }
 export async function getStation(ctx: Ctx, user: User, sid: number) { return station(ctx.db, user, sid); }
 

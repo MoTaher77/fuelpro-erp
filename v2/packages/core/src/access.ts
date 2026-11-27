@@ -14,7 +14,7 @@ export async function station(q: Q, user: User, sid: number): Promise<Station> {
     !(await q.selectFrom('user_stations').select('user_id').where('user_id', '=', user.id).where('station_id', '=', sid).executeTakeFirst())) throw notFound('Station');
   return s;
 }
-type StationTable = 'pumps' | 'tanks' | 'fuels' | 'customers' | 'sales' | 'shifts' | 'suppliers' | 'deliveries' | 'adjustments';
+type StationTable = 'pumps' | 'tanks' | 'fuels' | 'customers' | 'sales' | 'shifts' | 'suppliers' | 'deliveries' | 'adjustments' | 'payments' | 'supplier_payments';
 /** One row of a station-owned table, or 404. On PostgreSQL `forUpdate` locks it for the rest of the transaction. */
 export async function scoped<T extends StationTable>(ctx: Ctx, q: Q, table: T, id: number, sid: number, what: string, forUpdate = false) {
   // the table name is a fixed union, never user input

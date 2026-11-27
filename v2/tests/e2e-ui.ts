@@ -54,6 +54,25 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 860 }], ['phone', {
     await page.fill('#c-qty', '14900'); await page.click('text=تسجيل الجرد');
     await page.waitForSelector('.toast:has-text("عجز")');
     await page.screenshot({ path: `${out}/6-stock.png`, fullPage: true });
+    // customers & suppliers
+    await page.click('[data-tab=parties]'); await page.waitForSelector('#n-name');
+    await page.fill('#n-name', 'عميل تجريبي'); await page.fill('#n-open', '5000'); await page.click('text=إضافة عميل');
+    await page.waitForSelector('#p-amt');
+    await page.fill('#p-amt', '1200'); await page.selectOption('#p-method', 'bank'); await page.click('text=تسجيل السداد');
+    await page.waitForSelector('.toast:has-text("سُجّل السداد")');
+    await page.waitForFunction(() => !document.querySelector('button.busy'));
+    await page.fill('#p-amt', '999999'); await page.selectOption('#p-method', 'bank'); await page.click('text=تسجيل السداد');
+    await page.waitForSelector('.toast.err:has-text("أكبر من الرصيد")');
+    await page.fill('#sp-amt', '1000'); await page.click('text=سداد للمورد'); await page.waitForSelector('.toast:has-text("المتبقي للمورد")');
+    await page.waitForFunction(() => !document.querySelector('button.busy'));
+    await page.click('text=كشف الحساب'); await page.waitForSelector('text=كشف حساب: عميل تجريبي');
+    await page.waitForSelector('dd.strong');
+    const bal = await page.textContent('dd.strong');
+    if ((bal || '').trim() !== '3,800') errors.push('statement balance ' + bal);
+    page.once('dialog', (d) => d.accept('سداد مكرر'));
+    await page.click('section.wide:has(h2:has-text("كشف حساب")) .btn.link:has-text("إلغاء")'); await page.waitForSelector('.toast:has-text("أُلغي السداد")');
+    await page.waitForFunction(() => !document.querySelector('button.busy'));
+    await page.screenshot({ path: `${out}/7-parties.png`, fullPage: true });
   } else {
     await page.screenshot({ path: `${out}/4-phone.png`, fullPage: true });
     const sideways = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
@@ -65,6 +84,10 @@ const dl = await ctx.db.selectFrom('deliveries').selectAll().execute();
 console.log('deliveries', dl.map((d) => [d.quantity_ml, d.cost_e4, d.net, d.pay_type, d.ref]));
 const adj = await ctx.db.selectFrom('adjustments').selectAll().execute();
 console.log('counts', adj.map((a) => [a.before_ml, a.after_ml]));
+const pm = await ctx.db.selectFrom('payments').selectAll().execute();
+console.log('payments', pm.map((p) => [p.amount, p.method, p.voided_at ? 'void' : 'ok']));
+const spm = await ctx.db.selectFrom('supplier_payments').selectAll().execute();
+console.log('supplier payments', spm.map((p) => [p.amount, p.method]));
 const tb = await ctx.db.selectFrom('sales').selectAll().execute();
 console.log('sales rows', tb.length, 'gross', tb.map((s) => s.gross), 'voided', tb.filter((s) => s.voided_at).length);
 const sh = await ctx.db.selectFrom('shifts').selectAll().execute();
