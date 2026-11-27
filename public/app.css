@@ -736,3 +736,77 @@ a.btn.wa-go.sm{min-height:36px;padding:4px 12px;font-size:13px;border-radius:10p
 .wz-ok{padding:14px;border-radius:14px;background:color-mix(in srgb,var(--ok) 12%,transparent);color:var(--ok);font-size:17px}
 .wz-next{display:flex;flex-direction:column;gap:8px;padding-inline-start:20px;margin:0}.wz-next a{color:var(--accent);font-weight:600}
 .wz-modal>.card{max-width:min(720px,100%);max-height:92vh;overflow:auto}
+
+/* =====================================================================================================
+   0.30 — polish of the same look (owner: keep the original screens and colours, only improve). Screen only: printing is untouched.
+   ===================================================================================================== */
+@media screen{
+  /* menu groups fold; the chevron turns when a group is shut */
+  .side .grp{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .side button.grp{width:100%;background:none;border:0;margin:0;font:inherit;font-size:11px;letter-spacing:.1em;color:var(--gold2);text-align:start;cursor:pointer;border-radius:8px}
+  .side button.grp:hover{opacity:1}
+  .side button.grp:focus-visible{outline:2px solid var(--gold2);outline-offset:-2px}
+  .side .grp svg{opacity:.75;transition:transform .3s var(--ease)}
+  .side .grp[aria-expanded=false] svg{transform:rotate(90deg)}
+  [dir=rtl] .side .grp[aria-expanded=false] svg{transform:rotate(-90deg)}
+  .side .gi{display:grid;grid-template-rows:1fr;transition:grid-template-rows .32s var(--ease)}
+  .side .gi.shut{grid-template-rows:0fr}
+  .side .gi > div{overflow:hidden;min-height:0;display:flex;flex-direction:column;gap:3px}
+  .side .ph-only{display:none}
+
+  /* status badges: a dot plus the word, so colour is never the only sign */
+  .pill{display:inline-flex;align-items:center;gap:6px}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;opacity:.85}
+
+  /* a card that only says «no data» becomes a clear empty state */
+  section.card > h2:first-child + p.muted:last-child,section.card > p.muted:only-child{display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 12px;margin:0;text-align:center}
+  section.card > h2:first-child + p.muted:last-child::before,section.card > p.muted:only-child::before{content:"";width:54px;height:54px;border-radius:16px;
+    background:var(--gold-soft) center/26px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b0832f' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 13l3-8h12l3 8M3 13v6h18v-6M3 13h5l1 3h6l1-3h5'/%3E%3C/svg%3E")}
+
+  /* tables: figures line up; a total row reads as a total */
+  td.num,th.num,td.f-num,th.f-num{font-variant-numeric:tabular-nums}
+  tfoot td{background:var(--surface2);font-weight:700;border-top:1px solid var(--line2)}
+  th{z-index:1}
+
+  /* the phone: a calmer top bar (Excel, theme and sign-out move into the menu) and one-line names in the bottom bar */
+  @media (max-width:900px){
+    .top .tools .xl,.top .tools .iconbtn.theme,.top .tools .iconbtn.out{display:none}
+    .side .ph-only{display:flex}
+    .top select.compact{max-width:42vw;text-overflow:ellipsis}
+    .bottom a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  }
+}
+@media screen{
+  /* saving: the pressed button turns into a spinner, then shows a tick for a moment when it worked */
+  button[aria-busy=true]{cursor:progress}
+  button.btn[aria-busy=true]{opacity:.85}
+  button.btn[aria-busy=true]::before{content:"";display:inline-block;width:14px;height:14px;margin-inline-end:8px;vertical-align:-2px;border-radius:50%;border:2px solid currentColor;border-inline-end-color:transparent;animation:spin .75s linear infinite}
+  button.btn.saved{animation:savedPop .5s var(--ease)}
+  button.btn.saved::before{content:"";display:inline-block;width:14px;height:8px;margin-inline-end:8px;vertical-align:3px;border-inline-start:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:rotate(-45deg);animation:tick .35s var(--ease) both}
+  @keyframes savedPop{40%{transform:scale(1.04)}}
+  @keyframes tick{from{opacity:0;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+
+  /* errors where they happened: under the field, and a box beside the button */
+  input[aria-invalid=true],select[aria-invalid=true],textarea[aria-invalid=true]{border-color:var(--bad)!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 14%,transparent)!important;animation:shake .4s var(--ease)}
+  .fe{display:flex;align-items:flex-start;gap:6px;margin-top:6px;font-size:12.5px;font-weight:600;color:var(--bad);animation:feIn .25s var(--ease) both}
+  .fe::before{content:"!";flex:none;display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--bad);color:#fff;font-size:11px;font-weight:800;line-height:1;margin-top:1px}
+  .form-err{display:flex;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;border-radius:12px;font-size:14px;font-weight:600;color:var(--bad);
+    background:color-mix(in srgb,var(--bad) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--bad) 30%,transparent);animation:shake .45s var(--ease),feIn .25s var(--ease) both}
+  .form-err::before{content:"!";flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--bad);color:#fff;font-size:12px;font-weight:800;line-height:1;margin-top:1px}
+  @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-5px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+  @keyframes feIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+
+  /* messages: a thin bar shows how long the message stays; problems are marked red */
+  .toast span{position:relative;overflow:hidden}
+  .toast span::after{content:"";position:absolute;inset-inline:0;bottom:0;height:3px;background:var(--gold);opacity:.7;transform-origin:left;animation:toastBar 4.5s linear forwards}
+  [dir=rtl] .toast span::after{transform-origin:right}
+  .toast span.err{border-inline-start-color:var(--bad)}
+  .toast span.err::after{background:var(--bad)}
+  @keyframes toastBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+}
+@media (prefers-reduced-motion:reduce){button.btn.saved,input[aria-invalid=true],.form-err,.fe,.toast span::after{animation:none!important}}
+@media screen and (min-width:901px){
+  /* long tables scroll inside their frame on a computer, so the column titles stay in view */
+  main .tw{max-height:min(72vh,880px);overflow:auto;overscroll-behavior:contain}
+}
+@media (prefers-reduced-motion:reduce){.side .gi,.side .grp svg{transition:none!important}}

@@ -40,7 +40,7 @@ Front end stays vanilla JS, no framework/build (ADR-24); SQLite stays the engine
 - **Demo Artifact page deleted 2026-11-23 (owner); only the station page below remains.**
 - **Own VPS allowed (owner, 2026-11-24, ADR-26):** `deploy/vps/` + `docs/VPS.md` (Ubuntu/Debian, systemd, Caddy HTTPS, `REGISTRATION=first`). The agent has no SSH access: it ships code and scripts; the owner runs them. Real data reaches the VPS only through the owner's own `laptop-send-data.ps1` → `sudo fuelpro-restore` (books checked first, old DB kept); afterwards data is entered on one system only.
 - **Online demo = Claude Artifact only (owner, 2026-11-23, ADR-20):** the Artifact edition (`web/`, `docs/ARTIFACT-EDITION.md`) runs the unchanged `src/` in a claude.ai page on **demo data only**, saved in the Artifact's own storage. Do **not** use Render, Railway, ChatGPT Sites or Codex (owner's instruction; supersedes the Render plan in ADR-19). Real station data is allowed **only** in the owner's separate private page «FuelPro المحطة» (https://claude.ai/artifact/Dbe4L4cWnvRSbeswvYAENF, owner's explicit OK 2026-11-23), built from the password-free snapshot with `web/build.js --seed-db` and a throwaway admin from `scripts/dev-admin.js`, and refreshed by the owner himself from a laptop backup (chip menu → «تحديث البيانات من نسخة اللابتوب», 0.17; the file then carries the users' password hashes, which stay in the owner's private page storage); never in the demo page, never shared or made public, never re-seeded over saved data without the owner. It is a copy: it does not sync with the laptop. **Moving real data anywhere off the laptop needs the owner's separate OK each time** (backup first, then `--dry-run`). Never commit or print passwords, keys, `APP_SECRET`, SMTP credentials or real customer/financial data; verify a deployment with `node scripts/smoke-online.js <url> <email> <password>`.
-- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v48`) or users keep the old UI.
+- Any front-end change: bump `CACHE` in `public/sw.js` (now `fuelpro-shell-v49`) or users keep the old UI.
 - **Never cache balances or report totals** (ADR-23). A query rewrite must be proved with `scripts/compare-dump.js` (all responses identical).
 
 ## 6. Commands (verified 2026-11-24)
@@ -48,7 +48,7 @@ Front end stays vanilla JS, no framework/build (ADR-24); SQLite stays the engine
 npm ci                   # installs pg + dev tools (lock file committed); not needed just to run the SQLite app
 npm run lint             # eslint (errors fail CI)
 npm test                 # node:test, 94 pass + 1 skipped (PostgreSQL), ~6 s, in-memory DBs — must stay green
-npm run test:e2e         # Playwright on a seeded demo DB, 7 tests, ~25 s
+npm run test:e2e         # Playwright on a seeded demo DB, 8 tests, ~40 s
 npm run typecheck        # tsc on files marked // @ts-check
 npm start                # PORT=3000, DB_PATH=./data/fuelpro.db by default
 DB_PATH=/tmp/demo.db DEMO_PASSWORD=... node scripts/seed-demo.js --days 365   # throwaway demo DB

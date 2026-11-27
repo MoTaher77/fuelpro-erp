@@ -22,7 +22,8 @@ window.FPFMT = (function () {
     salesToday: ['مبيعات اليوم', 'Sales today', 'Ventes du jour'], volToday: ['الكمية المباعة اليوم', 'Volume sold today', "Volume vendu aujourd'hui"], volSold: ['الكمية المباعة', 'Volume sold', 'Volume vendu'], expToday: ['مصروفات اليوم', 'Expenses today', 'Dépenses du jour'],
     recv: ['ديون العملاء (آجل)', 'Customer credit owed', 'Crédit clients dû'], tanks: ['الخزانات', 'Tanks', 'Cuves'], last7: ['آخر 7 أيام (بالآلاف)', 'Last 7 days (thousands)', '7 derniers jours (milliers)'],
     low: ['مخزون منخفض', 'Low stock', 'Stock bas'], daysLeft: ['يكفي نحو {n} يوم', 'About {n} days left', 'Environ {n} jours restants'], of: ['من', 'of', 'sur'],
-    newSale: ['تسجيل عملية بيع', 'Record a sale', 'Enregistrer une vente'], pump: ['المضخة', 'Pump', 'Pompe'], prevMeter: ['القراءة السابقة ({u})', 'Previous reading ({u})', 'Index précédent ({u})'],
+    'fe.fix': ['لم يُحفظ: صحّح الخانة المعلّمة بالأحمر ثم احفظ مرة أخرى.', 'Not saved: correct the field marked in red, then save again.', 'Non enregistré : corrigez le champ en rouge, puis enregistrez.'], 'fe.num': ['أدخل رقماً صحيحاً، مثل 1500 أو 12.5', 'Enter a valid number, e.g. 1500 or 12.5', 'Saisissez un nombre valide, ex. 1500 ou 12,5'], 'fe.req': ['هذه الخانة مطلوبة', 'This field is required', 'Ce champ est obligatoire'],
+    'bn.shift': ['الوردية', 'Shift', 'Poste'], 'bn.dash': ['الرئيسية', 'Home', 'Accueil'], 'bn.sales': ['المبيعات', 'Sales', 'Ventes'], newSale: ['تسجيل عملية بيع', 'Record a sale', 'Enregistrer une vente'], pump: ['المضخة', 'Pump', 'Pompe'], prevMeter: ['القراءة السابقة ({u})', 'Previous reading ({u})', 'Index précédent ({u})'],
     closeMeter: ['القراءة الحالية ({u})', 'Current reading ({u})', 'Index actuel ({u})'], qtyOr: ['أو الكمية ({u})', 'Or quantity ({u})', 'Ou quantité ({u})'],
     payType: ['طريقة الدفع', 'Payment', 'Paiement'], cash: ['نقدي', 'Cash', 'Comptant'], credit: ['آجل', 'Credit', 'Crédit'], customer: ['العميل', 'Customer', 'Client'],
     save: ['حفظ', 'Save', 'Enregistrer'], saved: ['تم الحفظ', 'Saved', 'Enregistré'], add: ['إضافة', 'Add', 'Ajouter'], day: ['اليوم', 'Day', 'Jour'], date: ['التاريخ', 'Date', 'Date'], time: ['الوقت', 'Time', 'Heure'],
@@ -158,7 +159,7 @@ window.FPFMT = (function () {
   }
   const field = (label, input) => h('div', null, h('label', { for: input.id }, label), input);
   const sel = (id, opts, cur) => h('select', { id }, opts.map(([v, l]) => h('option', { value: v, selected: String(v) === String(cur) }, l)));
-  const toast = (m) => { const t = document.getElementById('toast'); t.replaceChildren(h('span', null, m)); t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 4500); };
+  const toast = (m, kind) => { const t = document.getElementById('toast'); t.replaceChildren(h('span', { class: kind || '' }, m)); t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 4500); };
   const table = (heads, rows) => h('div', { class: 'tw' }, h('table', null, h('thead', null, h('tr', null, heads.map(x => h('th', null, x)))), h('tbody', null, rows.map(r => h('tr', null, r.map(c => h('td', null, c)))))));
   const stat = (k, v) => h('div', { class: 'stat' }, h('div', { class: 'k' }, k), h('div', { class: 'v' }, v));
   const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -203,13 +204,44 @@ window.FPFMT = (function () {
     if (hold && busy) { if (ev.preventDefault) ev.preventDefault(); return; }
     const btns = hold ? (ev.type === 'submit' && ev.target && ev.target.querySelectorAll ? [...ev.target.querySelectorAll('button[type=submit], button:not([type])')] : ev.currentTarget && ev.currentTarget.tagName === 'BUTTON' ? [ev.currentTarget] : []).filter(b => !b.disabled) : [];
     if (hold) { busy = true; btns.forEach(b => { b.disabled = true; b.setAttribute('aria-busy', 'true'); }); }
-    try { await fn(...a); } catch (e) { toast(e.message); if (e.code === 'UNAUTHENTICATED') { S.user = null; authScreen(); } }
-    finally { if (hold) { busy = false; btns.forEach(b => { b.disabled = false; b.removeAttribute('aria-busy'); }); } }
+    let ok = false; const place = hold ? placeOf(ev) : null;   // read now: the event's currentTarget is gone after the first await
+    try { if (place) clearFormError(place); await fn(...a); ok = true; }
+    catch (e) { if (e.code === 'UNAUTHENTICATED') { toast(e.message, 'err'); S.user = null; authScreen(); } else if (!(place && showFormError(place, btns[0], e))) toast(e.message, 'err'); }
+    finally { if (hold) { busy = false; btns.forEach(b => { b.disabled = false; b.removeAttribute('aria-busy'); if (ok && b.isConnected) { b.classList.remove('saved'); void b.offsetWidth; b.classList.add('saved'); setTimeout(() => b.classList.remove('saved'), 1300); } }); } }
   }; };
+  /* 0.30: errors are shown where they happened — under the field that is wrong, and in a box beside the button — instead of only a toast */
+  const looksNumeric = (i) => /^(decimal|numeric)$/.test(i.getAttribute('inputmode') || '') || i.type === 'number';
+  function fieldError(input, msg) {
+    input.setAttribute('aria-invalid', 'true');
+    const box = input.parentElement; if (!box) return;
+    let fe = box.querySelector(':scope > .fe'); if (!fe) { fe = h('div', { class: 'fe', role: 'alert', id: (input.id || 'f' + Math.random().toString(36).slice(2, 8)) + '-err' }); input.after(fe); }
+    fe.textContent = msg; input.setAttribute('aria-describedby', fe.id);
+  }
+  function clearField(input) { input.removeAttribute('aria-invalid'); const fe = input.parentElement && input.parentElement.querySelector(':scope > .fe'); if (fe) fe.remove(); }
+  const placeOf = (ev) => { const t = ev && (ev.type === 'submit' ? ev.target : ev.currentTarget); return t && t.closest ? (t.tagName === 'FORM' ? t : t.closest('form, .modal .card, .card')) : null; };
+  function clearFormError(box) { box.querySelectorAll(':scope .form-err').forEach(x => x.remove()); box.querySelectorAll('[aria-invalid=true]').forEach(clearField); }
+  function showFormError(box, btn, e) {
+    if (!box.isConnected) return false;
+    const inputs = [...box.querySelectorAll('input, select, textarea')].filter(i => i.offsetParent !== null && !i.disabled && i.type !== 'hidden');
+    let first = null;
+    if (num.lastBad != null) for (const i of inputs) if (i.value === num.lastBad) { fieldError(i, e.message); first = first || i; }
+    for (const i of inputs) if (i.required && !String(i.value).trim()) { fieldError(i, T('fe.req')); first = first || i; }
+    for (const i of inputs) if (looksNumeric(i) && String(i.value).trim() && parseDec(i.value, 6) == null && i.getAttribute('aria-invalid') !== 'true') { fieldError(i, T('fe.num')); first = first || i; }
+    num.lastBad = null;
+    const msg = h('div', { class: 'form-err', role: 'alert' }, first ? T('fe.fix') : e.message);   // the exact reason is already under the field
+    const row = btn && btn.closest && btn.closest('.row'); if (row && box.contains(row)) row.before(msg); else box.append(msg);
+    if (first) first.focus({ preventScroll: false });
+    return true;
+  }
+  /* a number box says at once when what was typed is not a number */
+  document.addEventListener('change', (e) => { const i = e.target; if (!(i instanceof HTMLInputElement) || !looksNumeric(i)) return;
+    if (String(i.value).trim() && parseDec(i.value, 6) == null) fieldError(i, T('fe.num')); else if (i.getAttribute('aria-invalid') === 'true') clearField(i); });
+  document.addEventListener('input', (e) => { const i = e.target; if (i && i.getAttribute && i.getAttribute('aria-invalid') === 'true' && (!looksNumeric(i) || !String(i.value).trim() || parseDec(i.value, 6) != null)) clearField(i);
+    const fe = i && i.closest && i.closest('form, .card'); if (fe) fe.querySelectorAll(':scope .form-err').forEach(x => x.remove()); });
   const can = (...roles) => S.user && roles.includes(S.user.role);
   const cd = (...ps) => !!S.perms && (S.perms.includes('*') || ps.some(p => S.perms.includes(p)));   // server-provided permissions (the server enforces them again)
   const mgr = () => cd('config.edit');
-  const num = (v, fn, err = 'err.BAD_NUMBER') => { const r = fn(v); if (r == null) throw new Error(T(err)); return r; };
+  const num = (v, fn, err = 'err.BAD_NUMBER') => { const r = fn(v); if (r == null) { num.lastBad = String(v); throw new Error(T(err)); } return r; };   // lastBad: the form error box marks that field
 
   async function loadBase() {
     const me = await api('GET', '/api/me'); S.user = me.user; S.stations = me.stations; S.perms = me.perms || [];
@@ -345,7 +377,7 @@ window.FPFMT = (function () {
     setup: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4',
     users: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM12 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM8 16a4 4 0 0 1 8 0', audit: 'M9 6h12M9 12h12M9 18h12M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2',
     day: 'M4 5h16v15H4zM4 9h16M8 3v4M16 3v4M8 13h3M8 16h6', col: 'M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', box: 'M3 7h18v12H3zM3 11h18M7 15h3M16 4l-4 3-4-3', jbook: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11M9 8h6', yc: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4M12 15v2',
-    emp: 'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 20v-2a4 4 0 0 0-3-3.9M16 2.1a4 4 0 0 1 0 7.8', menu: 'M3 6h18M3 12h18M3 18h18', theme: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z', out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9'
+    emp: 'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 20v-2a4 4 0 0 0-3-3.9M16 2.1a4 4 0 0 1 0 7.8', menu: 'M3 6h18M3 12h18M3 18h18', chev: 'M6 9l6 6 6-6', xls: 'M4 4h16v16H4zM4 9h16M9 9v11M8 13l3 4M11 13l-3 4', theme: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z', out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9'
   };
   const icon = (k, size = 20) => { const v = document.createElementNS(NS, 'svg'); v.setAttribute('viewBox', '0 0 24 24'); v.setAttribute('width', size); v.setAttribute('height', size); v.setAttribute('aria-hidden', 'true');
     const p = document.createElementNS(NS, 'path'); p.setAttribute('d', PATHS[k] || PATHS.menu); p.setAttribute('fill', 'none'); p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', '1.8'); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); v.append(p); return v; };
@@ -358,6 +390,18 @@ window.FPFMT = (function () {
   ];
   const allowedTabs = () => NAV.flatMap(([, items]) => items.filter(([k, ps]) => VIEWS[k] && cd(...ps)).map(([k]) => k));
   const closeMenu = () => { document.querySelector('.side')?.classList.remove('open'); document.querySelector('.scrim')?.classList.remove('open'); };
+  /* 0.30: menu groups fold (remembered on this device); the group of the open screen always shows */
+  let navShut; try { navShut = new Set(JSON.parse(localStorage.getItem('navShut') || '[]')); } catch { navShut = new Set(); }
+  function navGroup(g, ks, link) {
+    if (!ks.length) return null;
+    const open = !navShut.has(g) || ks.includes(S.tab);
+    const gi = h('div', { class: 'gi' + (open ? '' : ' shut'), id: 'gi-' + g }, h('div', null, ks.map(link)));
+    const btn = h('button', { type: 'button', class: 'grp', 'aria-expanded': String(open), 'aria-controls': 'gi-' + g, onclick: () => {
+      const shut = gi.classList.toggle('shut'); btn.setAttribute('aria-expanded', String(!shut)); if (shut) navShut.add(g); else navShut.delete(g);
+      try { localStorage.setItem('navShut', JSON.stringify([...navShut])); } catch { /* private mode */ } } }, h('span', null, T(g)), icon('chev', 14));
+    return [btn, gi];
+  }
+  const signOut = guard(async () => { await api('POST', '/api/auth/logout'); S.user = null; authScreen(); });
   async function render() {
     applyPrefs(); const main = h('main', { id: 'main' });
     const sideTop = document.querySelector('.side')?.scrollTop || 0;      // keep the menu where it was when a screen is opened
@@ -366,7 +410,7 @@ window.FPFMT = (function () {
     const link = (k) => h('a', { href: '#' + k, 'aria-current': S.tab === k ? 'page' : null, onclick: closeMenu }, icon(k), h('span', null, T(k)));
     const side = h('aside', { class: 'side', 'aria-label': T('menu') },
       h('div', { class: 'brand' }, h('div', { class: 'mark' }, icon('sales', 22)), h('div', null, 'FuelPro', h('small', null, T('tagline2')))),
-      NAV.map(([g, items]) => { const ks = items.map(([k]) => k).filter(k => tabs.includes(k)); return ks.length ? [h('div', { class: 'grp' }, T(g)), ks.map(link)] : null; }));
+      NAV.map(([g, items]) => navGroup(g, items.map(([k]) => k).filter(k => tabs.includes(k)), link)));
     const scrim = h('div', { class: 'scrim', onclick: closeMenu });
     const openMenu = () => { side.classList.add('open'); scrim.classList.add('open'); };
     /* every table on the screen -> one .xlsx workbook, one sheet per table, named after its heading */
@@ -386,14 +430,18 @@ window.FPFMT = (function () {
       h('div', { class: 'tools' },
         S.stations.length > 1 && h('select', { id: 'stSel', class: 'compact', 'aria-label': T('station'), onchange: guard(async (e) => { S.sid = +e.target.value; await loadBase(); render(); }) }, S.stations.map(s => h('option', { value: s.id, selected: s.id === S.sid }, s.name))),
         cd('report.read') ? h('button', { id: 'bell', class: 'iconbtn bell', 'aria-label': T('alerts'), title: T('alerts'), onclick: () => window.FP.showAlerts && window.FP.showAlerts() }, icon('bell'), h('span', { id: 'bellN', class: 'bell-n' })) : null,
-        h('button', { class: 'btn ghost sm', title: T('xlsxHelp'), onclick: exportScreen }, '⇩ Excel'),
+        h('button', { class: 'btn ghost sm xl', title: T('xlsxHelp'), onclick: exportScreen }, '⇩ Excel'),
         h('button', { class: 'iconbtn theme', 'aria-label': T('theme'), title: T('theme'), onclick: toggleTheme }, icon('theme')),
         h('button', { class: 'btn ghost sm wide', onclick: prefsDialog }, T('prefs')),
         h('button', { class: 'btn ghost sm wide', onclick: accountDialog }, S.user.name),
-        h('button', { class: 'iconbtn', 'aria-label': T('signOut'), title: T('signOut'), onclick: guard(async () => { await api('POST', '/api/auth/logout'); S.user = null; authScreen(); }) }, icon('out'))));
-    const bottom = h('nav', { class: 'bottom', 'aria-label': T('menu') }, ['dash', 'sales', 'shift'].filter(k => tabs.includes(k)).map(k => h('a', { href: '#' + k, 'aria-current': S.tab === k ? 'page' : null }, icon(k, 22), T(k))),
+        h('button', { class: 'iconbtn out', 'aria-label': T('signOut'), title: T('signOut'), onclick: signOut }, icon('out'))));
+    const bottom = h('nav', { class: 'bottom', 'aria-label': T('menu') }, ['dash', 'sales', 'shift'].filter(k => tabs.includes(k)).map(k => h('a', { href: '#' + k, 'aria-current': S.tab === k ? 'page' : null, title: T(k) }, icon(k, 22), D['bn.' + k] ? T('bn.' + k) : T(k))),   // short names: one line each
       h('a', { href: '#', onclick: (e) => { e.preventDefault(); openMenu(); } }, icon('menu', 22), T('more')));
-    side.append(h('div', { class: 'grp' }, T('account')), h('a', { href: '#', onclick: (e) => { e.preventDefault(); closeMenu(); accountDialog(); } }, icon('users'), h('span', null, S.user.name)), h('a', { href: '#', onclick: (e) => { e.preventDefault(); closeMenu(); prefsDialog(); } }, icon('setup'), h('span', null, T('prefs'))));
+    side.append(h('div', { class: 'grp' }, T('account')), h('a', { href: '#', onclick: (e) => { e.preventDefault(); closeMenu(); accountDialog(); } }, icon('users'), h('span', null, S.user.name)), h('a', { href: '#', onclick: (e) => { e.preventDefault(); closeMenu(); prefsDialog(); } }, icon('setup'), h('span', null, T('prefs'))),
+      /* on the phone these leave the crowded top bar and live here (app.css: .ph-only) */
+      h('a', { href: '#', class: 'ph-only', onclick: (e) => { e.preventDefault(); closeMenu(); exportScreen(); } }, icon('xls'), h('span', null, 'Excel')),
+      h('a', { href: '#', class: 'ph-only', onclick: (e) => { e.preventDefault(); toggleTheme(); } }, icon('theme'), h('span', null, T('theme'))),
+      h('a', { href: '#', class: 'ph-only', onclick: (e) => { e.preventDefault(); closeMenu(); signOut(); } }, icon('out'), h('span', null, T('signOut'))));
     const skel = h('main', { class: 'skel', 'aria-busy': 'true' }, h('div', { class: 'sk h1' }), h('div', { class: 'row4' }, h('div', { class: 'sk' }), h('div', { class: 'sk' }), h('div', { class: 'sk' }), h('div', { class: 'sk' })), h('div', { class: 'sk big' }));
     root.replaceChildren(h('div', { class: 'layout' }, side, h('div', { class: 'content' }, top, skel)), scrim, bottom);
     side.scrollTop = sideTop;
@@ -506,7 +554,7 @@ window.FPFMT = (function () {
     async cust(main) {
       const nm = h('input', { id: 'cName' }), ph = h('input', { id: 'cPhone', inputmode: 'tel' }), cl = h('input', { id: 'cLimit', inputmode: 'decimal' }), ct = h('input', { id: 'cTerms', inputmode: 'numeric', value: '30' }), co = h('input', { id: 'cOpen', inputmode: 'decimal' }), pm = sel('pMethod', [['cash', T('mCash')], ['bank', T('mBank')]]), pc = sel('pCust', S.customers.map(c => [c.id, c.name])), pa = h('input', { id: 'pAmt', inputmode: 'decimal' });
       if (S.stmt && S.customers.find(c => c.id === S.stmt) && F_STMT && await F_STMT(main, 'customer')) return;
-      const stm = null;
+      const stm = '';   // the old inline statement is shown by F_STMT now ('' appends nothing; null used to print «null»)
       main.append(S.customers.length && window.FP.partyList ? window.FP.partyList('customer', S.customers, (id) => { S.stmt = id; render(); }) : sec(T('cust'), h('p', { class: 'muted' }, T('noData'))),
         stm && sec(T('stmt') + ': ' + stm.customer.name, table([T('date'), T('desc'), T('debit'), T('creditCol'), T('balance'), ''], stm.entries.map(e => [fdate(e.date), e.kind === 'opening' ? T('openingBal') : e.kind === 'sale' ? T('saleRow', { f: e.fuel_name, q: vol(e.quantity_ml) }) : e.kind === 'journal' ? T('src.' + e.source) + (e.ref_no ? ' ' + e.ref_no : '') + (e.note ? ' — ' + e.note : '') : T('payRow') + (e.note ? ' — ' + e.note : ''), e.debit ? money(e.debit) : '', e.credit ? money(e.credit) : '',
           e.voided ? h('span', { class: 'muted' }, T('voided')) : h('b', null, money(e.balance)), e.kind === 'payment' && !e.voided && cd('payment.void') ? voidBtn(() => `/payments/${e.id}/void`) : ''])), h('div', { class: 'row' }, h('b', null, T('totalDue'), ': ', money(stm.balance)), h('button', { class: 'btn ghost sm', onclick: (ev) => printNode(T('stmt') + ': ' + stm.customer.name, ev.target.closest('section')) }, T('print')), h('button', { class: 'btn ghost sm', onclick: () => { S.stmt = null; render(); } }, T('close')))),
