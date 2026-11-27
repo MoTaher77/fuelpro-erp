@@ -160,3 +160,8 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 ## 2026-11-27 — 0.33.0 printing phase 2 (cloud, branch `claude/print-phase2`)
 - Owner approved the phase-1 samples. `F.printDoc` and `printNode` now go through `F.P2.legacy`: the older builders keep their content, the kit swaps in the formal head, `t2` tables, signatures and the page frame; auto landscape for wide tables; A5 rules; arrows → dash (not in the print faces). Receipt paper + logo in Preferences.
 - print-check: 15 documents; all 0 overflow on A4/Letter/A4L/A5L/LetterL, page numbers on every page document, only Plex/Naskh embedded; A5 portrait overflows only for 3 wide registers (documented). en/fr «Page 1 of 4» / «Page 1 sur 4», Arabic-Indic digits OK. Tests: 94 unit, 8 e2e, 89 artifact, lint 0 errors.
+
+## 2026-11-27 — v2 architecture, phase 0 (cloud, branch `claude/arch-v2`)
+- Owner asked for a world-class re-foundation (server / desktop-offline / phone-offline, no sync, shared code) with the old tech limits lifted. Phase 0 only: measured comparisons, no product code.
+- Measured: 6 backend stacks × SQLite/PostgreSQL (`bench/arch-v2/backend`), 6 front-end builds on a throttled phone (`bench/arch-v2/frontend`), current FuelPro baseline (100 users: common ops p95 250–290 ms behind a 3.1 s ledger; cold first screen 2.4 s on a mid phone).
+- Proposed: one TypeScript core with async storage ports (Kysely), PostgreSQL server / SQLite local, vanilla UI + TS + build + virtualization, Tauri desktop, Capacitor phone, reports in worker threads, strangler migration. `docs/ARCHITECTURE-V2.md`, ADR-30..38. Waiting for the owner's review and 3 decisions (§9).
