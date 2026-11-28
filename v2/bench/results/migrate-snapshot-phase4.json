@@ -1,0 +1,17 @@
+{
+  "what": "password-free snapshot of the station (dev-data, cloud copy; never written), migrated to a throwaway v2 SQLite file",
+  "rows_total": 113380,
+  "tables": {
+    "sales": 11881,
+    "journals": 13857,
+    "journal_lines": 61725,
+    "vouchers": 1119,
+    "voucher_lines": 5027,
+    "deliveries": 270,
+    "customers": 148,
+    "suppliers": 5
+  },
+  "checks_equal": true,
+  "checks": 14,
+  "seconds": 2.1
+}

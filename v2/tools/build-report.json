@@ -1,20 +1,20 @@
 {
   "server": {
-    "ms": 945,
-    "js_kb": 17.6,
-    "js_gzip_kb": 5.5,
-    "total_kb": 197.6
+    "ms": 22,
+    "js_kb": 19.2,
+    "js_gzip_kb": 5.9,
+    "total_kb": 244.3
   },
   "desktop": {
-    "ms": 175,
-    "js_kb": 267.1,
-    "js_gzip_kb": 57.1,
-    "total_kb": 447.3
+    "ms": 74,
+    "js_kb": 297.8,
+    "js_gzip_kb": 63.6,
+    "total_kb": 523
   },
   "mobile": {
-    "ms": 767,
-    "js_kb": 286.9,
-    "js_gzip_kb": 61.9,
-    "total_kb": 476.6
+    "ms": 62,
+    "js_kb": 317.5,
+    "js_gzip_kb": 68.5,
+    "total_kb": 552.3
   }
 }

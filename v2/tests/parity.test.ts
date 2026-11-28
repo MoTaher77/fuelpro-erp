@@ -112,3 +112,33 @@ for (const seed of [21, 909]) {
     await withPgDatabase(process.env.V2_PG_URL!, async (url) => { const ctx = await openPostgres(url, { max: 4 }); try { same(a, await v2Parties(ctx, seed)); } finally { await ctx.close(); } });
   });
 }
+
+/* ---------- phase 4: finance ---------- */
+import { playFinance } from './scenario-finance.ts';
+async function v1Fin(seed: number) {
+  const v1 = v1Api(); const out = await playFinance(v1.stockApi, seed);
+  const dump: Record<string, unknown> = {};
+  for (const [k, q] of Object.entries(DUMP_SQL)) dump[k] = norm(await v1.all(q) as Array<Record<string, unknown>>);
+  await v1.close(); return { out: stripTimes(out), dump };
+}
+async function v2Fin(ctx: Ctx, seed: number) {
+  const v2 = v2Api(ctx); const out = await playFinance(v2.stockApi, seed);
+  const dump: Record<string, unknown> = {};
+  for (const [k, q] of Object.entries(DUMP_SQL)) dump[k] = norm((await sql.raw(q).execute(ctx.db)).rows as Array<Record<string, unknown>>);
+  return { out: stripTimes(out), dump };
+}
+for (const seed of [31, 77]) {
+  test(`finance parity seed ${seed}: v1 = v2 on SQLite`, async () => {
+    const a = await v1Fin(seed); const ctx = await openSqlite(':memory:');
+    try { same(a, await v2Fin(ctx, seed)); } finally { await ctx.close(); }
+    assert.ok((a.dump.vouchers as unknown[]).length >= 4, 'vouchers recorded');
+  });
+  test(`finance parity seed ${seed}: v1 = v2 through the desktop/phone bridge`, async () => {
+    const a = await v1Fin(seed); const ctx = await openBridge(nodeBridge());
+    try { same(a, await v2Fin(ctx, seed)); } finally { await ctx.close(); }
+  });
+  test(`finance parity seed ${seed}: v1 = v2 on PostgreSQL`, { skip: !process.env.V2_PG_URL && 'set V2_PG_URL to run' }, async () => {
+    const a = await v1Fin(seed);
+    await withPgDatabase(process.env.V2_PG_URL!, async (url) => { const ctx = await openPostgres(url, { max: 4 }); try { same(a, await v2Fin(ctx, seed)); } finally { await ctx.close(); } });
+  });
+}

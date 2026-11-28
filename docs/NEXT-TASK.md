@@ -1,5 +1,10 @@
 # NEXT-TASK — where to resume
 
+## 2026-11-28 — 0.38.0 v2 phase 4 finance (branch `claude/v2-phase4`, PR open)
+- Done: `finance.ts` (accounts tree & boxes, expenses, cash moves, vouchers, manual journals, period lock, trial balance, ledger), migration 004, «المالية» tab; parity on 3 engines (57 v2 tests); migrate-v1 24 tables / 14 checks, also on the snapshot copy (113k rows, all equal). Report `docs/V2-PHASE4.md`.
+- Deferred: foreign-currency boxes (FOREIGN_CURRENCY until the currencies module). KI-26 (period lock uses the UTC date, v1 too) — fix in both after the owner's OK.
+- Next (owner to choose): phase 5 = financial reports & printing, or currencies first.
+
 ## 2026-11-28 — 0.37.1 site unreachable after a VPS reboot (KI-25, branch `claude/caddy-port-guard`)
 - Cause found with the owner over SSH: nginx (not FuelPro's) held port 80 after a reboot → Caddy failed → no HTTPS; the app was healthy on 127.0.0.1. Owner disabled nginx. Code: update.sh now checks/restarts Caddy and prints the fix; install.sh names only installed web servers; docs/VPS.md row.
 - Watch: one burst of `unable to open database file` (yearClose, 2026-11-27 16:22 CET, before the reboot) — not disk (13%) nor permissions (fuelpro:fuelpro 640); not seen after the reboot. Ask the owner if it recurs (journalctl -u fuelpro | grep -c 'unable to open').

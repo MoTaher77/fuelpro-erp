@@ -28,6 +28,13 @@ export const DUMP_SQL: Record<string, string> = {
   customers: `SELECT id, station_id, name, phone, active, credit_limit, terms_days, opening_balance, created_on FROM customers ORDER BY id`,
   supplier_balances: `SELECT l.party_id, SUM(l.credit - l.debit) balance FROM journal_lines l JOIN journals j ON j.id=l.journal_id JOIN accounts a ON a.id=l.account_id
           WHERE l.party_type='supplier' AND a.sys='ap' AND j.status='posted' GROUP BY l.party_id ORDER BY l.party_id`,
+  expenses: `SELECT id, station_id, business_date, category, gross, vat, note, user_id, method, shift_id, CASE WHEN voided_at IS NULL THEN 0 ELSE 1 END voided, void_reason FROM expenses ORDER BY id`,
+  cash_moves: `SELECT id, station_id, shift_id, business_date, kind, counterpart, amount, note, CASE WHEN voided_at IS NULL THEN 0 ELSE 1 END voided FROM cash_moves ORDER BY id`,
+  vouchers: `SELECT id, station_id, kind, ref_no, business_date, box_account_id, amount, memo, shift_id, user_id, CASE WHEN voided_at IS NULL THEN 0 ELSE 1 END voided, void_reason FROM vouchers ORDER BY id`,
+  voucher_lines: `SELECT id, voucher_id, account_id, party_type, party_id, amount, memo FROM voucher_lines ORDER BY id`,
+  account_tree: `SELECT id, code, type, name_ar, name_en, sys, active, parent_id, is_group, box FROM accounts ORDER BY id`,
+  journal_docs: `SELECT id, doc_type, ref, status FROM journals ORDER BY id`,
+  locks: `SELECT id, locked_through FROM orgs ORDER BY id`,
   journal_refs: `SELECT id, ref FROM journals WHERE ref IS NOT NULL ORDER BY id`,
   counts: `SELECT (SELECT COUNT(*) FROM sales) sales, (SELECT COUNT(*) FROM journals) journals, (SELECT COUNT(*) FROM journal_lines) lines, (SELECT COUNT(*) FROM stock_moves) moves`
 };

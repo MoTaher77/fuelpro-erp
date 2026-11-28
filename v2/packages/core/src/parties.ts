@@ -93,8 +93,11 @@ export async function supplierPayment(ctx: Ctx, user: User, sid: number, b: { su
     return { id, balance: bal - amount };
   });
 }
-/** v1 voidRow for documents whose only side effect is their journal (payments, supplier payments). */
-async function voidJournalDoc(ctx: Ctx, user: User, sid: number, table: 'payments' | 'supplier_payments', source: string, perm: string, id: number, reason: unknown) {
+/** v1 voidRow for documents whose only side effect is their journal (payments, supplier payments, expenses, cash moves,
+    vouchers). `legacy`: refuse when no journal exists (v1 voidRow); v1 voidVoucher skips that check. */
+export type JournalDocTable = 'payments' | 'supplier_payments' | 'expenses' | 'cash_moves' | 'vouchers';
+export async function voidJournalDoc(ctx: Ctx, user: User, sid: number, table: JournalDocTable, source: string, perm: string, id: number, reason: unknown,
+  opt: { legacy?: boolean; action?: string } = {}) {
   need(user, perm);
   const r = V.str(reason, 'reason', { min: 3, max: 200 });
   return tx(ctx, async (q) => {
@@ -106,10 +109,10 @@ async function voidJournalDoc(ctx: Ctx, user: User, sid: number, table: 'payment
       if (sh.status !== 'open') throw conflict('SHIFT_CLOSED', 'This record belongs to a closed shift and cannot be changed');
     }
     await assertOpen(q, user.org_id, row.business_date);
-    if (await countReversible(q, user.org_id, source, id) === 0) throw conflict('LEGACY_DOCUMENT', 'This record predates the general ledger; correct it with a manual journal');
+    if (opt.legacy !== false && await countReversible(q, user.org_id, source, id) === 0) throw conflict('LEGACY_DOCUMENT', 'This record predates the general ledger; correct it with a manual journal');
     await reverseSource(ctx, q, user.org_id, source, id, user.id, 'Void: ' + r);
     await (q as unknown as import('kysely').Kysely<import('./schema.ts').DB>).updateTable(table as 'payments').set({ voided_at: ctx.clock.now(), void_reason: r, void_by: user.id }).where('id', '=', id).execute();
-    await audit(ctx, q, user, sid, `${table}.void`, table, id, { reason: r });
+    await audit(ctx, q, user, sid, opt.action || `${table}.void`, opt.action ? table.replace(/s$/, '') : table, id, { reason: r });
     return { ok: true };
   });
 }
@@ -122,10 +125,12 @@ export interface Entry {
 }
 async function partyExtras(q: Q, type: PartyType, id: number, asOf = '9999-12-31'): Promise<Entry[]> {
   const rows = await q.selectFrom('journal_lines as l').innerJoin('journals as j', 'j.id', 'l.journal_id').innerJoin('accounts as a', 'a.id', 'l.account_id')
-    .select(['j.id', 'j.business_date as date', 'j.created_at', 'j.source', 'j.memo', 'l.memo as lmemo', 'l.debit', 'l.credit', 'j.doc_type', 'j.doc_ref', 'j.ref as ref_no'])
+    .leftJoin('vouchers as v', (jn) => jn.onRef('v.id', '=', 'j.source_id').on('j.source', '=', 'voucher'))
+    .select(['j.id', 'j.business_date as date', 'j.created_at', 'j.source', 'j.memo', 'l.memo as lmemo', 'l.debit', 'l.credit', 'j.doc_type', 'j.doc_ref',
+      sql<string | null>`coalesce(v.ref_no, j.ref)`.as('ref_no')])
     .where('l.party_type', '=', type).where('l.party_id', '=', id).where('a.sys', '=', PARTY_SYS[type]).where('j.status', '=', 'posted').where('j.business_date', '<=', asOf)
     .where('j.source', 'not in', DOC_SOURCES[type]).orderBy('j.business_date').orderBy('j.id').orderBy('l.id').execute();
-  // vouchers carry their own number in v1 (vouchers.ref_no); they move to v2 with the finance module — until then j.ref
+  // a voucher shows its own number (vouchers.ref_no), anything else the journal's reference (v1 partyExtras)
   return rows.map((r) => ({ kind: 'journal', id: r.id, date: r.date, created_at: r.created_at, debit: r.debit, credit: r.credit, source: r.source,
     note: r.lmemo || r.memo || '', ref_no: r.ref_no || null, doc_type: r.doc_type || null, doc_ref: r.doc_ref || null, exact: !!r.lmemo, voided: false }));
 }
@@ -211,7 +216,8 @@ export async function ageing(ctx: Ctx, user: User, sid: number, o: { type?: stri
     .select(['l.party_id as pid', 'j.business_date as date', 'l.debit', 'l.credit'])
     .where('l.party_type', '=', type).where('l.party_id', 'in', ids).where('a.sys', '=', PARTY_SYS[type]).where('j.status', '=', 'posted').where('j.business_date', '<=', asOf)
     .where('j.source', 'not in', DOC_SOURCES[type]).orderBy('l.party_id').orderBy('j.business_date').orderBy('j.id').orderBy('l.id').execute();
-  const extras = group(extraRows.map((r) => ({ ...r, pid: Number(r.pid) })));
+  for (const r of extraRows) r.pid = Number(r.pid);
+  const extras = group(extraRows as Array<(typeof extraRows)[number] & { pid: number }>);
   for (const p of parties) {
     const debts: Array<{ date: string; due: string; amt: number }> = [];   // amounts owed, oldest first, each with a due date
     if (p.opening_balance > 0) debts.push({ date: '', due: p.created_on || asOf, amt: p.opening_balance });

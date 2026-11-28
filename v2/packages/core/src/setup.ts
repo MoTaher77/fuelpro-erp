@@ -115,7 +115,9 @@ export async function listCustomers(ctx: Ctx, user: User, sid: number) {
     .where('l.party_id', 'in', ctx.db.selectFrom('customers').select('id').where('station_id', '=', sid)).groupBy('l.party_id').execute();
   const m = new Map(bal.map((r) => [Number(r.party_id), Number(r.v)]));
   const rows = await ctx.db.selectFrom('customers').select(['id', 'name', 'phone', 'credit_limit', 'terms_days', 'opening_balance', 'ref']).where('station_id', '=', sid).where('active', '=', 1).orderBy('name').execute();
-  return rows.map((c) => ({ ...c, balance: m.get(c.id) || 0 }));
+  // balance set on each row in place (copying database rows with {...row} is slow in V8)
+  for (const c of rows as Array<(typeof rows)[number] & { balance: number }>) c.balance = m.get(c.id) || 0;
+  return rows as Array<(typeof rows)[number] & { balance: number }>;
 }
 export async function getStation(ctx: Ctx, user: User, sid: number) { return station(ctx.db, user, sid); }
 

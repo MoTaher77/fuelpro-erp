@@ -8,6 +8,7 @@ import * as setup from './setup.ts';
 import * as shifts from './shifts.ts';
 import * as stock from './stock.ts';
 import * as parties from './parties.ts';
+import * as finance from './finance.ts';
 
 type Args = { sid: number; id: number; body: Record<string, unknown>; query: Record<string, string> };
 type Op = (ctx: Ctx, user: User, a: Args) => Promise<unknown>;
@@ -51,6 +52,29 @@ export const OPS: Record<string, Op> = {
   'POST /stations/:sid/supplier-payments': (c, u, a) => parties.supplierPayment(c, u, a.sid, a.body as never),
   'POST /stations/:sid/supplier-payments/:id/void': (c, u, a) => parties.voidSupplierPayment(c, u, a.sid, a.id, a.body.reason),
   'GET /stations/:sid/ageing': (c, u, a) => parties.ageing(c, u, a.sid, { type: a.query.type, as_of: a.query.as_of }),
+  'GET /accounts': (c, u) => finance.listAccounts(c, u),
+  'POST /accounts': (c, u, a) => finance.createAccount(c, u, a.body),
+  'PATCH /accounts/:id': (c, u, a) => finance.updateAccount(c, u, a.id, a.body),
+  'GET /boxes': (c, u) => finance.boxes(c, u),
+  'GET /stations/:sid/expenses': (c, u, a) => finance.listExpenses(c, u, a.sid, { from: a.query.from, to: a.query.to, limit: n(a.query.limit), before_id: n(a.query.before_id) }),
+  'POST /stations/:sid/expenses': (c, u, a) => finance.createExpense(c, u, a.sid, a.body),
+  'POST /stations/:sid/expenses/:id/void': (c, u, a) => finance.voidExpense(c, u, a.sid, a.id, a.body.reason),
+  'POST /stations/:sid/cash-moves': (c, u, a) => finance.cashMove(c, u, a.sid, a.body),
+  'POST /stations/:sid/cash-moves/:id/void': (c, u, a) => finance.voidCashMove(c, u, a.sid, a.id, a.body.reason),
+  'GET /stations/:sid/vouchers': (c, u, a) => finance.listVouchers(c, u, a.sid, { from: a.query.from, to: a.query.to, kind: a.query.kind, box_account_id: n(a.query.box_account_id), limit: n(a.query.limit), before_id: n(a.query.before_id) }),
+  'GET /stations/:sid/vouchers/:id': (c, u, a) => finance.getVoucher(c, u, a.sid, a.id),
+  'POST /stations/:sid/vouchers': (c, u, a) => finance.createVoucher(c, u, a.sid, a.body),
+  'POST /stations/:sid/vouchers/:id/void': (c, u, a) => finance.voidVoucher(c, u, a.sid, a.id, a.body.reason),
+  'GET /stations/:sid/journals': (c, u, a) => finance.listJournals(c, u, a.sid, { ...a.query, account_id: n(a.query.account_id), limit: n(a.query.limit), before_id: n(a.query.before_id) }),
+  'POST /stations/:sid/journals': (c, u, a) => finance.createJournal(c, u, a.sid, a.body),
+  'GET /journals/:id': (c, u, a) => finance.getJournal(c, u, a.id),
+  'POST /journals/:id/post': (c, u, a) => finance.postJournal(c, u, a.id),
+  'POST /journals/:id/reverse': (c, u, a) => finance.reverseJournal(c, u, a.id, a.body),
+  'DELETE /journals/:id': (c, u, a) => finance.deleteDraft(c, u, a.id),
+  'GET /period-lock': (c, u) => finance.lockStatus(c, u),
+  'POST /period-lock': (c, u, a) => finance.lockPeriod(c, u, a.body as never),
+  'GET /accounting/trial-balance': (c, u, a) => finance.trialBalanceOrg(c, u, a.query),
+  'GET /accounting/ledger': (c, u, a) => finance.accountLedger(c, u, a.query),
   'GET /stations/:sid/summary': (c, u, a) => reports.daySummary(c, u, a.sid, a.query.date),
   'GET /stations/:sid/trial-balance': (c, u, a) => reports.trialBalance(c, u, a.sid)
 };

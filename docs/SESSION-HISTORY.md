@@ -192,3 +192,9 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - Owner's phone: «تعذّر الاتصال بالخادم». Code ruled out (current code on a snapshot copy: v14→v19 migration, healthz 200, login 401 for a wrong password). Over SSH (owner ran the commands): fuelpro active + healthz OK, caddy failed `listen :80 address already in use` — nginx. Owner chose to disable nginx.
 - Fix shipped: update.sh Caddy check, install.sh advice per installed server, VPS.md troubleshooting, KI-25. vps tests 2 pass.
 
+## 2026-11-28 — 0.38.0 v2 phase 4 (cloud, branch `claude/v2-phase4`)
+- Ported finance to the v2 core (`finance.ts`) + migration 004 + «المالية» tab; generic `voidJournalDoc`; statements now show voucher numbers.
+- Parity scenario-finance on SQLite/bridge/PostgreSQL (all rules incl. DRAFTS_PENDING made time-robust); invariants incl. 10 concurrent withdrawals → 3. v2 57 tests, v1 98 + 1 skipped.
+- migrate-v1: 24 tables / 14 checks; first run on the password-free snapshot copy: 113,380 rows, all checks equal (counts only saved).
+- Perf: found and fixed missing `PRAGMA optimize` on open and slow `{...row}` copies (ledger 12.7 → 8.1 ms = v1). KI-26 recorded.
+

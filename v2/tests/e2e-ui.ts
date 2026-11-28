@@ -73,6 +73,20 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 860 }], ['phone', {
     await page.click('section.wide:has(h2:has-text("كشف حساب")) .btn.link:has-text("إلغاء")'); await page.waitForSelector('.toast:has-text("أُلغي السداد")');
     await page.waitForFunction(() => !document.querySelector('button.busy'));
     await page.screenshot({ path: `${out}/7-parties.png`, fullPage: true });
+    // finance
+    const idle = () => page.waitForFunction(() => !document.querySelector('button.busy'));
+    await page.click('[data-tab=finance]'); await page.waitForSelector('#e-gross');
+    await page.fill('#e-gross', '1500'); await page.selectOption('#e-method', 'bank'); await page.click('text=تسجيل المصروف');
+    await page.waitForSelector('.toast:has-text("سُجّل المصروف")'); await idle();
+    await page.selectOption('#v-kind', 'receipt'); await page.selectOption('#v-acct', { label: '1100 — ذمم العملاء' });
+    await page.waitForSelector('#v-party option', { state: 'attached' }); await page.fill('#v-amt', '1000'); await page.click('text=حفظ السند');
+    await page.waitForSelector('.toast:has-text("حُفظ السند")'); await idle();
+    await page.fill('#j-amt', '250'); await page.fill('#j-memo', 'قيد تجربة'); await page.click('text=حفظ القيد');
+    await page.waitForSelector('.toast:has-text("مسودة")'); await idle();
+    await page.click('section:has(h2:has-text("قيد يدوي")) button:has-text("ترحيل")'); await page.waitForSelector('.toast:has-text("رُحّل القيد")'); await idle();
+    const tbRow = await page.textContent('section:has(h2:has-text("ميزان المراجعة")) tbody tr:last-child');
+    if (!/متوازن ✓/.test(tbRow || '')) errors.push('trial balance not balanced: ' + tbRow);
+    await page.screenshot({ path: `${out}/8-finance.png`, fullPage: true });
   } else {
     await page.screenshot({ path: `${out}/4-phone.png`, fullPage: true });
     const sideways = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
@@ -88,6 +102,9 @@ const pm = await ctx.db.selectFrom('payments').selectAll().execute();
 console.log('payments', pm.map((p) => [p.amount, p.method, p.voided_at ? 'void' : 'ok']));
 const spm = await ctx.db.selectFrom('supplier_payments').selectAll().execute();
 console.log('supplier payments', spm.map((p) => [p.amount, p.method]));
+const ex = await ctx.db.selectFrom('expenses').selectAll().execute(), vo = await ctx.db.selectFrom('vouchers').selectAll().execute();
+const mj = await ctx.db.selectFrom('journals').selectAll().where('source', '=', 'manual').execute();
+console.log('finance', ex.map((e) => [e.gross, e.method]), vo.map((v) => [v.kind, v.amount, v.ref_no]), mj.map((j) => j.status));
 const tb = await ctx.db.selectFrom('sales').selectAll().execute();
 console.log('sales rows', tb.length, 'gross', tb.map((s) => s.gross), 'voided', tb.filter((s) => s.voided_at).length);
 const sh = await ctx.db.selectFrom('shifts').selectAll().execute();

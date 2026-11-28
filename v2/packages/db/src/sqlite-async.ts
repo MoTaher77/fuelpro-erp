@@ -53,5 +53,6 @@ export class BridgeDialect implements Dialect {
 export async function openBridge(bridge: SqliteBridge, opts: { clock?: Clock } = {}): Promise<Ctx & { close(): Promise<void> }> {
   const db = new Kysely<DB>({ dialect: new BridgeDialect(bridge) });
   await migrate(db, 'sqlite');
+  try { await bridge.exec('PRAGMA optimize=0x10002', [], false); } catch { /* statistics are an optimisation only */ }
   return { db, dialect: 'sqlite', clock: opts.clock || systemClock, close: () => db.destroy() };
 }
