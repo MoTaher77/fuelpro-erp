@@ -51,9 +51,9 @@ export function createServer(ctx: Ctx, token: string) {
     }
     return f;
   };
-  const readBody = (req: http.IncomingMessage) => new Promise<unknown>((ok, fail) => {
+  const readBody = (req: http.IncomingMessage, max = 64 * 1024) => new Promise<unknown>((ok, fail) => {
     let n = 0; const parts: Buffer[] = [];
-    req.on('data', (c: Buffer) => { n += c.length; if (n > 64 * 1024) { fail({ status: 413, code: 'TOO_LARGE' }); req.destroy(); } else parts.push(c); });
+    req.on('data', (c: Buffer) => { n += c.length; if (n > max) { fail({ status: 413, code: 'TOO_LARGE' }); req.destroy(); } else parts.push(c); });
     req.on('end', () => { if (!n) return ok({}); try { ok(JSON.parse(Buffer.concat(parts).toString('utf8'))); } catch { fail({ status: 400, code: 'BAD_JSON' }); } });
     req.on('error', fail);
   });
@@ -64,7 +64,8 @@ export function createServer(ctx: Ctx, token: string) {
       if (url.pathname.startsWith('/api/v2/')) {
         if (!authed(req)) return send(res, 401, { error: { code: 'UNAUTHENTICATED', message: 'Sign in required' } });
         const path = url.pathname.slice('/api/v2'.length), method = req.method || 'GET';
-        const body = method === 'GET' ? {} : await readBody(req);
+        // the letterhead carries its logo (up to 600 KB as a data: URL); every other request stays under 64 KB
+        const body = method === 'GET' ? {} : await readBody(req, path === '/brand' ? 700 * 1024 : 64 * 1024);
         if (path === '/state') { const o = await setup.firstOwner(ctx); return send(res, 200, { station_id: o ? o.station_id : null }); }
         if (path === '/first-run' && method === 'POST') return send(res, 200, await setup.firstRun(ctx, body as Record<string, unknown>));
         const owner = await setup.firstOwner(ctx);

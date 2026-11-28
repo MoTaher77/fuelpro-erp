@@ -20,6 +20,9 @@ const reqDate = (v: unknown, name: string) => { const d = V.date(v, name); if (!
 /** text joined from several rows (v1 GROUP_CONCAT(DISTINCT x)); PostgreSQL spells it string_agg */
 const concat = (ctx: Ctx, col: RawBuilder<unknown>) => ctx.dialect === 'postgres' ? sql`string_agg(distinct ${col}, ',')` : sql`group_concat(distinct ${col})`;
 const NORMAL_DEBIT = new Set(['asset', 'expense']);
+/** SQLite's `+col` (do not use this column's index) steers its planner as v1 does; PostgreSQL reads it as an expression and
+    loses its row estimate (a 12k-row join planned as 121 rows), so it gets the plain column */
+const plain = (ctx: Ctx, col: string) => sql.raw(ctx.dialect === 'sqlite' ? '+' + col : col);
 type Bal = { id: number; code: string; name_ar: string; name_en: string | null; type: string; debit: number; credit: number };
 
 /* add the lines up per account first, then name the accounts (v1 ops.balances): same rows, same order */
@@ -88,7 +91,7 @@ export async function cashFlow(ctx: Ctx, user: User, o: IsQ = {}) {
   const out = { operating: sec(), investing: sec(), financing: sec(), opening: sec(), fx: sec() };
   const boxBal = async (cond: RawBuilder<unknown>) => boxIds.length ? new Map((await rows<{ id: number; v: number }>(ctx, sql`select l.account_id id, coalesce(sum(l.debit - l.credit), 0) v
       from journal_lines l join journals j on j.id = l.journal_id
-      where j.org_id = ${user.org_id} and j.status = 'posted' and j.station_id in (${list(sc.ids)}) and +l.account_id in (${list(boxIds)}) and ${cond} group by l.account_id`))
+      where j.org_id = ${user.org_id} and j.status = 'posted' and j.station_id in (${list(sc.ids)}) and ${plain(ctx, 'l.account_id')} in (${list(boxIds)}) and ${cond} group by l.account_id`))
     .map((x) => [Number(x.id), Number(x.v)])) : new Map<number, number>();
   const openMap = await boxBal(sql`j.business_date < ${from}`);
   const moveMap = await boxBal(sql`j.business_date between ${from} and ${to}`);
@@ -176,18 +179,27 @@ export async function boxReport(ctx: Ctx, user: User, sid: number, o: { from?: s
   need(user, 'report.read'); const st = await station(ctx.db, user, sid); const { from, to } = period(ctx, st, o);
   const all = await listBoxes(ctx, user);
   const boxes: BoxRow[] = [];
+  /* one pass over every box's lines (account index), grouped by box and by the foreign currency a line carries;
+     one query instead of one per box (the round trips were most of the time on PostgreSQL) */
+  const agg = new Map<number, Array<Record<string, unknown>>>();
+  if (all.length) for (const r of await rows(ctx, sql`select l.account_id id, l.fc_code fc, coalesce(sum(case when j.business_date < ${from} then l.debit - l.credit end), 0) ob,
+      coalesce(sum(case when j.business_date >= ${from} then l.debit end), 0) dr, coalesce(sum(case when j.business_date >= ${from} then l.credit end), 0) cr,
+      coalesce(sum(case when j.business_date < ${from} then case when l.debit > 0 then l.fc_amount else -l.fc_amount end end), 0) fob,
+      coalesce(sum(case when j.business_date >= ${from} and l.debit > 0 then l.fc_amount end), 0) fdr,
+      coalesce(sum(case when j.business_date >= ${from} and l.credit > 0 then l.fc_amount end), 0) fcr,
+      count(case when j.business_date >= ${from} then 1 end) as n
+    from journal_lines l join journals j on j.id = l.journal_id
+    where l.account_id in (${list(all.map((a) => a.id))}) and ${plain(ctx, 'j.station_id')} = ${sid} and j.status = 'posted' and j.business_date <= ${to} group by l.account_id, l.fc_code`)) {
+    const id = Number(r.id); agg.set(id, [...(agg.get(id) || []), r]);
+  }
   for (const a of all) {
     const fc = a.currency && a.currency !== st.currency ? a.currency : null;
-    // `+j.…`: read this box's own lines (account index), not every journal of the station up to `to`
-    const [r] = await rows<Record<string, number>>(ctx, sql`select coalesce(sum(case when j.business_date < ${from} then l.debit - l.credit end), 0) ob,
-        coalesce(sum(case when j.business_date >= ${from} then l.debit end), 0) dr, coalesce(sum(case when j.business_date >= ${from} then l.credit end), 0) cr,
-        coalesce(sum(case when j.business_date < ${from} and l.fc_code = ${fc} then case when l.debit > 0 then l.fc_amount else -l.fc_amount end end), 0) fob,
-        coalesce(sum(case when j.business_date >= ${from} and l.fc_code = ${fc} and l.debit > 0 then l.fc_amount end), 0) fdr,
-        coalesce(sum(case when j.business_date >= ${from} and l.fc_code = ${fc} and l.credit > 0 then l.fc_amount end), 0) fcr,
-        count(case when j.business_date >= ${from} then 1 end) as n
-      from journal_lines l join journals j on j.id = l.journal_id where l.account_id = ${a.id} and +j.station_id = ${sid} and j.status = 'posted' and j.business_date <= ${to}`);
-    const ob = Number(r.ob), dr = Number(r.dr), cr = Number(r.cr), fob = Number(r.fob), fdr = Number(r.fdr), fcr = Number(r.fcr);
-    const b = { account_id: a.id, code: a.code, name_ar: a.name_ar, name_en: a.name_en, kind: a.box || a.sys, currency: fc, opening: ob, debit: dr, credit: cr, closing: ob + dr - cr, moves: Number(r.n),
+    let ob = 0, dr = 0, cr = 0, n = 0, fob = 0, fdr = 0, fcr = 0;
+    for (const r of agg.get(a.id) || []) {
+      ob += Number(r.ob); dr += Number(r.dr); cr += Number(r.cr); n += Number(r.n);
+      if (fc && r.fc === fc) { fob += Number(r.fob); fdr += Number(r.fdr); fcr += Number(r.fcr); }
+    }
+    const b = { account_id: a.id, code: a.code, name_ar: a.name_ar, name_en: a.name_en, kind: a.box || a.sys, currency: fc, opening: ob, debit: dr, credit: cr, closing: ob + dr - cr, moves: n,
       fc: fc ? { opening: fob, debit: fdr, credit: fcr, closing: fob + fdr - fcr } : null };
     if (b.opening || b.moves || b.closing) boxes.push(b);
   }
@@ -223,19 +235,24 @@ export async function collections(ctx: Ctx, user: User, sid: number, o: { as_of?
       left join accounts a on a.id = l.account_id
     where c.station_id = ${sid} and (l.id is null or (a.sys = 'ar' and j.id is not null)) group by c.id order by c.id`);
   const since = (d: string | null) => d ? Math.round((Date.parse(asOf) - Date.parse(d)) / 864e5) : null;
+  const owing = r.filter((x) => Number(x.balance) > 0);
+  /* the amount of each customer's last payment: one query for all of them (newest journal on that day first). When that journal
+     credits the customer twice (imported M7 entries do), v1 returns the smaller line — the order of its covering index — so v2 does too */
+  const last = new Map<number, number>();
+  const refs = owing.filter((x) => x.last_credit), refDate = new Map(refs.map((x) => [Number(x.id), String(x.last_credit)]));
+  if (refs.length) for (const p of await rows<{ pid: number; d: string; amount: number }>(ctx, sql`select l.party_id pid, j.business_date d, l.credit amount
+      from journal_lines l join journals j on j.id = l.journal_id join accounts a on a.id = l.account_id
+      where l.party_type = 'customer' and l.party_id in (${list(refs.map((x) => Number(x.id)))}) and a.sys = 'ar' and l.credit > 0 and j.status = 'posted'
+        and j.business_date in (${sql.join([...new Set(refs.map((x) => String(x.last_credit)))].map((d) => sql`${d}`))}) and j.reversal_of is null and j.reversed_by is null
+      order by j.id desc, l.credit, l.id`)) {
+    const pid = Number(p.pid);
+    if (refDate.get(pid) === p.d && !last.has(pid)) last.set(pid, Number(p.amount));
+  }
   const out: Array<Row & { balance: number; days_since_payment: number | null; band?: string }> = [];
-  for (const x of r) {
+  for (const x of owing) {
     x.id = Number(x.id); x.balance = Number(x.balance); x.credit_limit = Number(x.credit_limit); x.terms_days = Number(x.terms_days);
-    if (x.balance <= 0) continue;
     const ref = x.last_credit || null, days = since(ref || x.last_debit);
-    let amount = 0;
-    if (ref) {
-      const p = await rows<{ amount: number }>(ctx, sql`select l.credit amount from journal_lines l join journals j on j.id = l.journal_id join accounts a on a.id = l.account_id
-        where l.party_type = 'customer' and l.party_id = ${x.id} and a.sys = 'ar' and l.credit > 0 and j.status = 'posted' and j.business_date = ${ref}
-          and j.reversal_of is null and j.reversed_by is null order by j.id desc limit 1`);
-      amount = Number(p[0].amount);
-    }
-    out.push({ ...x, last_credit_amount: amount, days_since_payment: days, idle_days: since(x.last_move), over_limit: x.credit_limit > 0 && x.balance > x.credit_limit, never_paid: !ref });
+    out.push({ ...x, last_credit_amount: ref ? last.get(x.id) ?? 0 : 0, days_since_payment: days, idle_days: since(x.last_move), over_limit: x.credit_limit > 0 && x.balance > x.credit_limit, never_paid: !ref });
   }
   const shown = out.filter((x) => (x.days_since_payment ?? 99999) >= minDays).sort((a, b) => (b.days_since_payment ?? 99999) - (a.days_since_payment ?? 99999) || b.balance - a.balance);
   const band = (d: number | null) => d == null ? 'b4' : d <= 30 ? 'b1' : d <= 60 ? 'b2' : d <= 90 ? 'b3' : 'b4';
@@ -272,15 +289,17 @@ export async function dailyReport(ctx: Ctx, user: User, sid: number, o: { date?:
     left join suppliers s on s.id = d.supplier_id where d.station_id = ${sid} and d.business_date = ${date} and d.voided_at is null order by d.id`), ['quantity_ml', 'total']);
   const boxes = (await boxReport(ctx, user, sid, { from: date, to: date })).boxes as BoxRow[];
   /* stock: book level at the end of the day = today's level minus everything that moved after that day */
-  const tanks = [];
-  for (const t of await rows<{ id: number; name: string; fuel_name: string; capacity_ml: number; level_ml: number }>(ctx, sql`select t.id, t.name, f.name fuel_name, t.capacity_ml, t.level_ml
-      from tanks t join fuels f on f.id = t.fuel_id where t.station_id = ${sid} and t.active = 1 order by t.id`)) {
-    const [after] = await rows<{ v: number }>(ctx, sql`select coalesce(sum(qty_ml), 0) v from stock_moves where tank_id = ${t.id} and business_date > ${date}`);
-    const [day] = await rows<{ inq: number; outq: number }>(ctx, sql`select coalesce(sum(case when qty_ml > 0 then qty_ml end), 0) inq, coalesce(sum(case when qty_ml < 0 then -qty_ml end), 0) outq
-      from stock_moves where tank_id = ${t.id} and business_date = ${date}`);
-    const close = Number(t.level_ml) - Number(after.v), inq = Number(day.inq), outq = Number(day.outq);
-    tanks.push({ tank_name: t.name, fuel_name: t.fuel_name, capacity_ml: Number(t.capacity_ml), opening_ml: close - inq + outq, in_ml: inq, out_ml: outq, closing_ml: close });
-  }
+  const tankRows = await rows<{ id: number; name: string; fuel_name: string; capacity_ml: number; level_ml: number }>(ctx, sql`select t.id, t.name, f.name fuel_name, t.capacity_ml, t.level_ml
+    from tanks t join fuels f on f.id = t.fuel_id where t.station_id = ${sid} and t.active = 1 order by t.id`);
+  const mv = new Map<number, { after: number; inq: number; outq: number }>();
+  if (tankRows.length) for (const r of await rows<{ id: number; after: number; inq: number; outq: number }>(ctx, sql`select tank_id id,
+      coalesce(sum(case when business_date > ${date} then qty_ml end), 0) after, coalesce(sum(case when business_date = ${date} and qty_ml > 0 then qty_ml end), 0) inq,
+      coalesce(sum(case when business_date = ${date} and qty_ml < 0 then -qty_ml end), 0) outq
+    from stock_moves where tank_id in (${list(tankRows.map((t) => Number(t.id)))}) and business_date >= ${date} group by tank_id`)) mv.set(Number(r.id), { after: Number(r.after), inq: Number(r.inq), outq: Number(r.outq) });
+  const tanks = tankRows.map((t) => {
+    const x = mv.get(Number(t.id)) || { after: 0, inq: 0, outq: 0 }, close = Number(t.level_ml) - x.after;
+    return { tank_name: t.name, fuel_name: t.fuel_name, capacity_ml: Number(t.capacity_ml), opening_ml: close - x.inq + x.outq, in_ml: x.inq, out_ml: x.outq, closing_ml: close };
+  });
   const sum = (a: Row[], k: string) => a.reduce((s, r) => s + (Number(r[k]) || 0), 0);
   return { date, currency: st.currency, cur_dec: st.cur_dec, meters: meters.days[0] || null, fuels, credit, moves, expenses, deliveries, boxes, tanks,
     totals: { qty_ml: sum(fuels, 'qty_ml'), amount: sum(fuels, 'amount'), cash: sum(fuels, 'cash'), credit: sum(fuels, 'credit'), gross_profit: sum(fuels, 'amount') - sum(fuels, 'cogs'),

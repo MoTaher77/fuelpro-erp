@@ -34,7 +34,7 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 860 }], ['phone', {
     await page.selectOption('#s-mode', 'meter'); await page.fill('#s-val', '35.5');
     await page.click('text=تسجيل البيع'); await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 2);
     page.once('dialog', (d) => d.accept('خطأ إدخال'));
-    await page.click('tbody tr:last-child .btn.link'); await page.waitForSelector('tr.void');
+    await page.click('tbody tr:last-child .btn.link:not(.plain)'); await page.waitForSelector('tr.void');
     await page.screenshot({ path: `${out}/2-sales.png`, fullPage: true });
     await page.fill('#sh-count', '13000');
     await page.click('text=إغلاق الوردية'); await page.waitForSelector('#sh-float');
@@ -87,10 +87,43 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 860 }], ['phone', {
     const tbRow = await page.textContent('section:has(h2:has-text("ميزان المراجعة")) tbody tr:last-child');
     if (!/متوازن ✓/.test(tbRow || '')) errors.push('trial balance not balanced: ' + tbRow);
     await page.screenshot({ path: `${out}/8-finance.png`, fullPage: true });
+    // reports & printing: every report on screen, then four documents printed to PDF (A4 report, A4 landscape, statement, receipt)
+    await page.evaluate(() => {
+      window.print = () => { document.body.dataset.printed = String(Number(document.body.dataset.printed || 0) + 1); };
+      const st = window.setTimeout; (window as unknown as { setTimeout: unknown }).setTimeout = (f: () => void, ms?: number) => ms === 2500 ? 0 : st(f, ms);   // keep the print view until the PDF is made
+    });
+    const printed = async (file: string, click: () => Promise<void>) => {
+      const n = Number(await page.evaluate(() => document.body.dataset.printed || 0));
+      await click(); await page.waitForFunction((k) => Number(document.body.dataset.printed || 0) > k, n);
+      await page.pdf({ path: `${out}/${file}`, preferCSSPageSize: true, printBackground: true });
+      await page.evaluate(() => document.body.classList.remove('p2-on'));
+    };
+    await page.waitForFunction(() => !document.querySelector('.toast.err'), undefined, { timeout: 10_000 });   // the refusals shown on purpose above have faded
+    await page.click('[data-tab=reports]'); await page.waitForSelector('#r-kind');
+    for (const k of ['daily', 'income', 'balance', 'cash', 'months', 'boxes', 'collect', 'meters', 'trial']) {
+      await page.selectOption('#r-kind', k); await page.click('#r-kind ~ button[type=submit], form:has(#r-kind) button[type=submit]');
+      await page.waitForSelector('#r-out .doc2'); await idle();
+      if (await page.$('.toast.err')) errors.push('report ' + k + ': ' + await page.textContent('.toast.err'));
+      if (k === 'daily') await page.screenshot({ path: `${out}/9-daily-report.png`, fullPage: true });
+      if (k === 'daily' || k === 'income' || k === 'trial') await printed(`print-${k}.pdf`, () => page.click('form:has(#r-kind) button:has-text("طباعة")'));
+    }
+    await page.selectOption('#r-kind', 'balance'); await page.click('form:has(#r-kind) button[type=submit]'); await page.waitForSelector('#r-out .xtile'); await idle();
+    if (!/متوازنة/.test(await page.textContent('#r-out .xtiles') || '') || /غير متوازنة/.test(await page.textContent('#r-out .xtiles') || '')) errors.push('balance sheet not balanced');
+    await page.fill('#b-name', 'محطة تجريبية للوقود'); await page.fill('#b-act', 'بيع المشتقات النفطية'); await page.fill('#b-addr', 'عدن'); await page.click('text=حفظ الترويسة');
+    await page.waitForSelector('.toast:has-text("حُفظت الترويسة")');
+    await page.click('[data-tab=parties]'); await page.waitForSelector('#n-name'); await page.click('text=كشف الحساب'); await page.waitForSelector('dd.strong');
+    await printed('print-statement.pdf', () => page.click('section.wide:has(h2:has-text("كشف حساب")) button:has-text("طباعة")'));
+    await page.click('[data-tab=sales]'); await page.waitForSelector('tbody tr');
+    await printed('print-receipt.pdf', () => page.click('tbody tr:first-child button:has-text("إيصال")'));
+    const lh = await page.evaluate(() => document.querySelector('#print .rc-name')?.textContent);
+    if (lh !== 'محطة تجريبية للوقود') errors.push('receipt letterhead ' + lh);
   } else {
     await page.screenshot({ path: `${out}/4-phone.png`, fullPage: true });
     const sideways = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
     if (sideways) errors.push('phone: page scrolls sideways');
+    await page.click('[data-tab=reports]'); await page.waitForSelector('#r-kind'); await page.click('form:has(#r-kind) button[type=submit]'); await page.waitForSelector('#r-out .doc2');
+    await page.screenshot({ path: `${out}/10-phone-report.png`, fullPage: true });
+    if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) errors.push('phone: the report screen scrolls sideways');
   }
   await page.close();
 }

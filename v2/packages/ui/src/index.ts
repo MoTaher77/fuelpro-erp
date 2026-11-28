@@ -10,7 +10,7 @@ export interface Backend {
   call<T = unknown>(method: string, path: string, body?: unknown, query?: Record<string, string>): Promise<T>;
   firstRun(b: Record<string, unknown>): Promise<void>;
 }
-export type Station = { id: number; name: string; currency: string; cur_dec: number; disp_dec: number | null; require_shift: number };
+export type Station = { id: number; name: string; currency: string; cur_dec: number; disp_dec: number | null; require_shift: number; timezone?: string };
 type Pump = { id: number; name: string; meter_ml: number; fuel_name: string; price_e4: number; tank_id: number };
 type Customer = { id: number; name: string };
 type Sale = { id: number; pump_name: string; fuel_name: string; quantity_ml: number; gross: number; pay_type: string; customer_name: string | null; voided_at: string | null; created_at: string; business_date: string };
@@ -106,19 +106,21 @@ async function mainView(root: HTMLElement, be: Backend, sid: number) {
   const stockMain = h('main', { class: 'wrap grid', hidden: true });
   const partiesMain = h('main', { class: 'wrap grid', hidden: true });
   const financeMain = h('main', { class: 'wrap grid', hidden: true });
-  const tabs: Array<[string, string]> = [['sales', 'البيع والوردية'], ['stock', 'المخزون والتوريد'], ['parties', 'العملاء والموردون'], ['finance', 'المالية']];
+  const reportsMain = h('main', { class: 'wrap grid', hidden: true });
+  const tabs: Array<[string, string]> = [['sales', 'البيع والوردية'], ['stock', 'المخزون والتوريد'], ['parties', 'العملاء والموردون'], ['finance', 'المالية'], ['reports', 'التقارير']];
   const tabBar = h('nav', { class: 'tabs', role: 'tablist' }, ...tabs.map(([k, label]) => h('button', { type: 'button', role: 'tab', 'data-tab': k, onclick: () => show(k) }, label)));
   const show = async (k: string) => {
     for (const b of tabBar.querySelectorAll('button')) b.setAttribute('aria-selected', String(b.dataset.tab === k));
-    salesMain.hidden = k !== 'sales'; stockMain.hidden = k !== 'stock'; partiesMain.hidden = k !== 'parties'; financeMain.hidden = k !== 'finance';
+    salesMain.hidden = k !== 'sales'; stockMain.hidden = k !== 'stock'; partiesMain.hidden = k !== 'parties'; financeMain.hidden = k !== 'finance'; reportsMain.hidden = k !== 'reports';
     try { history.replaceState(null, '', k === 'sales' ? location.pathname : '#' + k); } catch { /* file:// or sandbox */ }
     // the stock screen is a separate file, fetched the first time its tab opens (smaller first screen)
     if (k === 'stock') await (await import('./stock.ts')).stockView(stockMain, be, st, toast);
     else if (k === 'parties') await (await import('./parties.ts')).partiesView(partiesMain, be, st, toast);
     else if (k === 'finance') await (await import('./finance.ts')).financeView(financeMain, be, st, toast);
+    else if (k === 'reports') await (await import('./reports.ts')).reportsView(reportsMain, be, st, toast);
     else await refresh();
   };
-  root.replaceChildren(head, tabBar, salesMain, stockMain, partiesMain, financeMain);
+  root.replaceChildren(head, tabBar, salesMain, stockMain, partiesMain, financeMain, reportsMain);
 
   let pumps: Pump[] = [], customers: Customer[] = [], shift: ShiftNow = null;
   async function refresh() {
@@ -195,12 +197,15 @@ async function mainView(root: HTMLElement, be: Backend, sid: number) {
     const body = h('tbody', {}, ...rows.map((s) => h('tr', { class: s.voided_at ? 'void' : '' },
       h('td', { class: 'num' }, String(s.id)), h('td', {}, s.pump_name), h('td', {}, s.fuel_name), h('td', { class: 'num' }, fmtLitres(s.quantity_ml)),
       h('td', { class: 'num' }, money(s.gross)), h('td', {}, s.pay_type === 'cash' ? 'نقداً' : 'آجل — ' + (s.customer_name || '')),
+      h('td', {}, h('button', { class: 'btn link plain', type: 'button', title: 'طباعة الإيصال', onclick: async () => {
+        try { await (await import('./print.ts')).receipt(be, st, s as never); } catch (e) { toast(errText(e), 'err'); }
+      } }, 'إيصال')),
       h('td', {}, s.voided_at ? 'ملغى' : h('button', { class: 'btn link', type: 'button', onclick: async (ev: Event) => {
         const reason = prompt('سبب الإلغاء (3 أحرف على الأقل)'); if (!reason) return;
         await run(ev, ev.currentTarget as HTMLButtonElement, async () => { await be.call('POST', `/stations/${sid}/sales/${s.id}/void`, { reason }); toast('أُلغي البيع'); });
       } }, 'إلغاء')))));
     listBox.replaceChildren(h('h2', {}, 'آخر المبيعات'), rows.length
-      ? h('div', { class: 'tablewrap' }, h('table', {}, h('thead', {}, h('tr', {}, ...['#', 'المضخة', 'الوقود', 'لتر', 'المبلغ', 'الدفع', ''].map((x) => h('th', {}, x)))), body))
+      ? h('div', { class: 'tablewrap' }, h('table', {}, h('thead', {}, h('tr', {}, ...['#', 'المضخة', 'الوقود', 'لتر', 'المبلغ', 'الدفع', '', ''].map((x) => h('th', {}, x)))), body))
       : h('p', { class: 'muted' }, 'لا مبيعات بعد.'));
   }
 

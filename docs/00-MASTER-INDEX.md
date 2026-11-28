@@ -14,7 +14,7 @@ Start with [`../CLAUDE.md`](../CLAUDE.md). Read **only** what the task needs.
 | File | Read it when you… |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | need the big picture, request pipeline, sale flow |
-| [ARCHITECTURE-V2.md](ARCHITECTURE-V2.md) · [V2-PHASE1.md](V2-PHASE1.md) · [V2-PHASE2.md](V2-PHASE2.md) · [V2-PHASE3.md](V2-PHASE3.md) · [V2-PHASE4.md](V2-PHASE4.md) | work on v2 (`v2/`: TypeScript core, server/desktop/phone editions), its measurements and migration |
+| [ARCHITECTURE-V2.md](ARCHITECTURE-V2.md) · [V2-PHASE1.md](V2-PHASE1.md) · [V2-PHASE2.md](V2-PHASE2.md) · [V2-PHASE3.md](V2-PHASE3.md) · [V2-PHASE4.md](V2-PHASE4.md) · [V2-PHASE5.md](V2-PHASE5.md) | work on v2 (`v2/`: TypeScript core, server/desktop/phone editions), its measurements and migration |
 | [PROJECT-STRUCTURE.md](PROJECT-STRUCTURE.md) | look for which file does what |
 | [MODULES.md](MODULES.md) | work on a feature area (screen ↔ API ↔ tables ↔ tests) |
 | [API-REFERENCE.md](API-REFERENCE.md) | add/call an endpoint |

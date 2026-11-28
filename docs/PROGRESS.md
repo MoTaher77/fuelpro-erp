@@ -4,6 +4,7 @@ Updated 2026-11-24. No percentages: each line is VERIFIED (code + test), REPORTE
 ## Done
 | Area | Status | Evidence |
 |---|---|---|
+| **v2 phase 5** financial reports & printing (income statement, balance sheet, cash flow, profit by month, daily report, boxes, collections, meter sheet, letterhead; A4 + receipt print kit) | VERIFIED (parity on 3 engines, invariants, browser + PDFs; every report equal after migration on the demo year and the snapshot copy). Android printing not tried (KI-27) | `v2/tests/parity.test.ts`, `v2/tools/compare-reports.ts`, `docs/V2-PHASE5.md` |
 | **v2 phase 4** finance (accounts, expenses, cash moves, vouchers, journals, period lock, trial balance, ledger) | VERIFIED (parity on 3 engines, invariants, browser; migration on the snapshot copy) | `v2/tests/parity.test.ts`, `docs/V2-PHASE4.md` |
 | **v2 phase 3** customers, suppliers & collections (payments, supplier payments, statements, ageing) | VERIFIED (parity on 3 engines, invariants, browser) | `v2/tests/parity.test.ts`, `docs/V2-PHASE3.md` |
 | **v2 phase 2** stock & deliveries (suppliers, deliveries, counts, transfers, reconciliation) | VERIFIED (parity on 3 engines, invariants, browser) | `v2/tests/parity.test.ts`, `docs/V2-PHASE2.md` |
