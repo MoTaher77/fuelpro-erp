@@ -1,6 +1,6 @@
 # FuelPro v2 — المرحلة 5: التقارير المالية والطباعة
 
-التاريخ: 2026-11-28 · الفرع: `claude/v2-phase5` · يكمل `docs/V2-PHASE1.md` … `docs/V2-PHASE4.md`
+التاريخ: 2026-11-28 · الفرع: `claude/wonderful-pascal-jfuqxu` · يكمل `docs/V2-PHASE1.md` … `docs/V2-PHASE4.md`
 
 النظام الحالي (v1) **لم يتغيّر**. كل العمل في `v2/`.
 

@@ -1,6 +1,6 @@
 # NEXT-TASK — where to resume
 
-## 2026-11-28 — 0.39.0 v2 phase 5 financial reports & printing (branch `claude/v2-phase5`, PR open)
+## 2026-11-28 — 0.39.0 v2 phase 5 financial reports & printing (branch `claude/wonderful-pascal-jfuqxu`, PR open)
 - Done: `statements.ts` (income statement, balance sheet, cash flow, profit by month, meter sheet, boxes, collections, daily report, letterhead), migration 005 `org_brand`, «التقارير» tab, `print.ts`/`print.css` (v1 print kit ported), statement + receipt printing; parity on 3 engines (66 v2 tests); `tools/compare-reports.ts` 33/33 on the demo year and 18/18 on the snapshot copy, SQLite and PostgreSQL. Report `docs/V2-PHASE5.md`.
 - Open: KI-27 (Android WebView cannot print: native print / share-PDF with the APK test), fixed assets in the cash flow (no register in v2 yet), cash flow on SQLite ~15% below v1 under saturation (cause not found).
 - Next (owner to choose): phase 6 = currencies & rates (+ year close) or v2 users & sign-in (KI-24). KI-26 still waits for the owner's OK.
