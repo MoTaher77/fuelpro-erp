@@ -144,6 +144,18 @@ for (const t of targets) {
   const shiftPath = t.name.startsWith('v1') ? '/shifts/current' : '/shift';
   const row: Record<string, unknown> = {};
   await load(s.base + s.prefix + '/sales?limit=50', s.headers);                       // warm-up
+  const p5only = process.argv.includes('--reports-only');   // phase 5: only the financial reports, then 100 people
+  const root = s.prefix.replace(/\/stations\/\d+$/, '');
+  if (p5only) {
+    const last = (() => { const d = new DatabaseSync(arg('--v1')!, { readOnly: true }); const r = d.prepare("SELECT MAX(business_date) d FROM sales WHERE station_id=?").get(s.sid) as { d: string }; d.close(); return r.d; })();
+    row.daily = await load(s.base + s.prefix + `/reports/daily?date=${last}`, s.headers);
+    row.income_year = await load(s.base + root + `/accounting/income-statement?from=${last.slice(0, 4)}-01-01&to=${last}&station_id=${s.sid}`, s.headers);
+    row.balance_sheet = await load(s.base + root + `/accounting/balance-sheet?as_of=${last}&station_id=${s.sid}`, s.headers);
+    row.cash_flow_year = await load(s.base + root + `/accounting/cash-flow?from=${last.slice(0, 4)}-01-01&to=${last}&station_id=${s.sid}`, s.headers);
+    row.boxes_month = await load(s.base + s.prefix + `/reports/boxes?from=${last.slice(0, 8)}01&to=${last}`, s.headers);
+    row.collections = await load(s.base + s.prefix + `/reports/collections?as_of=${last}`, s.headers);
+  }
+  if (!p5only) {
   row.list = await load(s.base + s.prefix + '/sales?limit=50', s.headers);
   row.shift = await load(s.base + s.prefix + shiftPath, s.headers);
   row.post = await load(s.base + s.prefix + '/sales', s.headers, (i) => JSON.stringify({ client_id: `bench-${t.name.length}-${process.pid}-${i}`, pump_id: s.pump, quantity_ml: 50, pay_type: 'cash' }));
@@ -157,11 +169,11 @@ for (const t of targets) {
   row.statement = await load(s.base + s.prefix + `/customers/${cid}/statement`, s.headers);
   row.ageing = await load(s.base + s.prefix + '/ageing?type=customer', s.headers);
   // phase 4: finance — the whole demo period's trial balance and the cash ledger for a month
-  const root = s.prefix.replace(/\/stations\/\d+$/, '');
   const cashId = (() => { const d = new DatabaseSync(arg('--v1')!, { readOnly: true }); const r = d.prepare("SELECT id FROM accounts WHERE sys='cash' ORDER BY id LIMIT 1").get() as { id: number }; d.close(); return r.id; })();
   row.trial_balance = await load(s.base + root + `/accounting/trial-balance?from=2025-01-01&to=2026-12-31&station_id=${s.sid}`, s.headers);
   row.ledger = await load(s.base + root + `/accounting/ledger?account_id=${cashId}&from=2026-10-01&to=2026-10-31&station_id=${s.sid}`, s.headers);
   row.mix = await mix(s.base, s.prefix, shiftPath, s.headers, s.pumps, String(t.name.length));
+  }
   // 100 people working: each sends about 2 requests a second (open loop), not as fast as the machine allows
   row.users100 = await people(s.base, s.prefix, shiftPath, s.headers, s.pumps, 'u' + t.name.length, 2 * CONN);
   row.rss_mb = Math.round((rss(s.proc.pid!) || 0) / 1024);

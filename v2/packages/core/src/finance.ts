@@ -354,7 +354,7 @@ async function listStations(q: Q, user: User): Promise<Station[]> {
   return q.selectFrom('stations as s').innerJoin('user_stations as us', 'us.station_id', 's.id').selectAll('s').where('s.org_id', '=', user.org_id).where('us.user_id', '=', user.id).orderBy('s.id').execute();
 }
 /** which stations a report covers; never adds different currencies together (v1 ops.scope) */
-async function scope(ctx: Ctx, user: User, o: { station_id?: number | string; currency?: string }) {
+export async function scope(ctx: Ctx, user: User, o: { station_id?: number | string; currency?: string }) {
   if (o.station_id) { const s = await station(ctx.db, user, V.int(Number(o.station_id), 'station_id', { min: 1 })); return { ids: [s.id], currency: s.currency, cur_dec: s.cur_dec, stations: [s] }; }
   let sts = await listStations(ctx.db, user);
   const curs = [...new Set(sts.map((s) => s.currency))];

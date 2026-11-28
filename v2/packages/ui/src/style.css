@@ -47,3 +47,20 @@ th { color: var(--muted); font-weight: 600; font-size: 13px } tr.void td { color
 .btn.plain { color: var(--accent) } .strike { text-decoration: line-through }
 @media print { .top, .tabs, .noprint, .toasts, main > section:not(.wide), .btn { display: none !important } body { background: #fff } .card { border: 0 } }
 .check { display: flex; gap: 8px; align-items: center; margin-bottom: 10px } .check input { width: auto; min-height: 0 } h3 { font-size: 15px; margin: 14px 0 6px }
+/* reports on screen: the same article that goes to paper, in the screen's colours (print.css dresses it for A4) */
+.paper { margin-top: 12px; overflow-x: auto } .paper:empty { display: none }
+.paper .doc2 { display: flex; flex-direction: column; gap: 12px; min-width: 0 }
+.paper .lh2 { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 2px solid var(--accent) }
+.paper .lh2-logo { width: 48px; height: 48px; object-fit: contain } .paper .lh2-org { display: flex; gap: 10px; align-items: center }
+.paper .lh2-name { font-weight: 700; font-size: 18px; color: var(--accent) } .paper .lh2-act, .paper .lh2-ct, .paper .lh2-sub { color: var(--muted); font-size: 13px } .paper .lh2-ct { display: flex; gap: 12px }
+.paper .lh2-title { font-weight: 700; font-size: 17px } .paper .lh2-meta { display: grid; grid-template-columns: auto auto; gap: 2px 12px; margin: 4px 0 0; font-size: 13px } .paper .lh2-meta dt { color: var(--muted) } .paper .lh2-meta dd { margin: 0 }
+.paper .xtiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px }
+.paper .xtile { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column } .paper .xtile span { color: var(--muted); font-size: 12px } .paper .xtile b { font-size: 16px; text-align: left }
+.paper .xtile.gold { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) } .paper .xtile.gold span { color: inherit; opacity: .85 }
+.paper .xh { font-size: 15px; margin: 6px 0 0; color: var(--accent) }
+.paper .t2 td.n, .paper .t2 th.n { text-align: end } .paper .t2 .c { text-align: center } .paper .t2 td.d { white-space: normal; min-width: 160px }
+.paper .t2 tbody.tot td { font-weight: 700; border-top: 2px solid var(--ink); border-bottom: 3px double var(--line) }
+.paper .grand2 { display: flex; justify-content: space-between; padding: 10px 12px; border-top: 2px solid var(--ink); border-bottom: 3px double var(--line); font-weight: 700 }
+.paper .words2 { padding: 8px 12px; border: 1px solid var(--line); border-inline-start: 3px solid var(--accent2); border-radius: 8px; display: flex; gap: 10px } .paper .words2 span { color: var(--muted) }
+.paper .end2 { display: flex; flex-direction: column; gap: 10px } .paper .sig2 { display: none } .paper .n { direction: ltr; unicode-bidi: isolate; white-space: nowrap; font-variant-numeric: tabular-nums }
+.paper .tw2 { overflow-x: auto; max-width: 100% } .reports-form .field { min-width: 150px }

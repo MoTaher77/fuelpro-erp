@@ -6,7 +6,7 @@ import { errText, field, h, type Backend, type Station } from './index.ts';
 type Customer = { id: number; name: string; phone: string | null; balance: number; credit_limit: number; terms_days: number };
 type Supplier = { id: number; name: string; balance: number; terms_days: number };
 type Entry = { kind: string; id: number; date: string; debit: number; credit: number; balance: number; voided: boolean; quantity_ml?: number; fuel_name?: string; note?: string | null; ref_no?: string };
-type Statement = { balance: number; opening: number; total_debit: number; total_credit: number; entries: Entry[] };
+type Statement = { balance: number; opening: number; total_debit: number; total_credit: number; from?: string | null; to?: string | null; entries: Entry[] };
 type AgeRow = { id: number; name: string; current: number; d30: number; d60: number; d90: number; over90: number; advance: number; balance: number; oldest_due: string | null };
 const KIND: Record<string, string> = { sale: 'بيع آجل', payment: 'سداد', purchase: 'توريد آجل', opening: 'رصيد افتتاحي', journal: 'قيد' };
 
@@ -34,15 +34,27 @@ export async function partiesView(main: HTMLElement, be: Backend, st: Station, t
   async function showStatement(type: 'customer' | 'supplier', id: number, name: string) {
     const from = h('input', { id: 'st-from', type: 'date' }), to = h('input', { id: 'st-to', type: 'date' }), go = h('button', { class: 'btn', type: 'submit' }, 'عرض');
     const out = h('div');
+    let last: Statement | null = null;
+    const desc = (e: Entry) => (KIND[e.kind] || e.kind) + (e.quantity_ml ? ` — ${fmtLitres(e.quantity_ml)} L ${e.fuel_name || ''}` : '') + (e.ref_no ? ` #${e.ref_no}` : '') + (e.note ? ` — ${e.note}` : '');
+    const printIt = async () => {
+      if (!last) return;
+      const s = last;
+      try {
+        await (await import('./print.ts')).statement(be, st, { title: type === 'customer' ? 'كشف حساب عميل' : 'كشف حساب مورد', name, from: s.from || from.value || null, to: s.to || to.value || null,
+          opening: s.opening, total_debit: s.total_debit, total_credit: s.total_credit, balance: s.balance, natural: type === 'customer' ? 'debit' : 'credit',
+          entries: s.entries.map((e) => ({ date: e.date, desc: desc(e), debit: e.debit, credit: e.credit, balance: e.balance, voided: e.voided })) });
+      } catch (e) { toast(errText(e), 'err'); }
+    };
     const draw = async () => {
       const q: Record<string, string> = {}; if (from.value) q.from = from.value; if (to.value) q.to = to.value;
       const s = await be.call<Statement>('GET', `/stations/${sid}/${type === 'customer' ? 'customers' : 'suppliers'}/${id}/statement`, undefined, q);
+      last = s;
       out.replaceChildren(
         h('dl', { class: 'kv' }, h('dt', {}, 'رصيد أول المدة'), h('dd', { class: 'num' }, money(s.opening)), h('dt', {}, 'مدين'), h('dd', { class: 'num' }, money(s.total_debit)),
           h('dt', {}, 'دائن'), h('dd', { class: 'num' }, money(s.total_credit)), h('dt', {}, type === 'customer' ? 'الرصيد (عليه)' : 'الرصيد (له)'), h('dd', { class: 'num strong' }, money(s.balance))),
         s.entries.length ? table(['التاريخ', 'البيان', 'مدين', 'دائن', 'الرصيد', ''], s.entries.map((e) => [
           h('span', { class: 'num' }, e.date || '—'),
-          h('span', { class: e.voided ? 'muted strike' : '' }, (KIND[e.kind] || e.kind) + (e.quantity_ml ? ` — ${fmtLitres(e.quantity_ml)} L ${e.fuel_name || ''}` : '') + (e.ref_no ? ` #${e.ref_no}` : '') + (e.note ? ` — ${e.note}` : '') + (e.voided ? ' (ملغى)' : '')),
+          h('span', { class: e.voided ? 'muted strike' : '' }, desc(e) + (e.voided ? ' (ملغى)' : '')),
           e.debit ? num(e.debit) : '', e.credit ? num(e.credit) : '', e.voided ? '' : num(e.balance),
           e.kind === 'payment' && !e.voided ? h('button', { class: 'btn link', type: 'button', onclick: (ev: Event) => {
             const reason = prompt('سبب إلغاء السداد (3 أحرف على الأقل)'); if (!reason) return;
@@ -54,7 +66,7 @@ export async function partiesView(main: HTMLElement, be: Backend, st: Station, t
     stBox.hidden = false;
     stBox.replaceChildren(h('h2', {}, `كشف حساب: ${name}`),
       h('form', { class: 'row noprint', onsubmit: (ev: Event) => run(ev, go, draw, false) }, field('من', from), field('إلى', to), go,
-        h('button', { class: 'btn', type: 'button', onclick: () => window.print() }, 'طباعة')), out);
+        h('button', { class: 'btn', type: 'button', onclick: printIt }, 'طباعة')), out);
     await draw();
     stBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }

@@ -198,3 +198,8 @@ public/stmt-pdf.js: optional party/summary/total, extra titled `sections`. books
 - migrate-v1: 24 tables / 14 checks; first run on the password-free snapshot copy: 113,380 rows, all checks equal (counts only saved).
 - Perf: found and fixed missing `PRAGMA optimize` on open and slow `{...row}` copies (ledger 12.7 → 8.1 ms = v1). KI-26 recorded.
 
+## 2026-11-28 — 0.39.0 v2 phase 5 (cloud, branch `claude/wonderful-pascal-jfuqxu`)
+- Ported the financial reports to the v2 core (`statements.ts`) + migration 005 (letterhead) + «التقارير» tab + print kit (A4 portrait/landscape, receipt 80/58 mm) from v1 `print-kit.js`/`print.css`.
+- Parity scenario-reports on SQLite/bridge/PostgreSQL (2 seeds); invariants (read-only, isolation, permissions). v2 66 tests, v1 98 + 1 skipped. Browser: every report on desktop + phone, 5 PDFs.
+- New `tools/compare-reports.ts`: demo year 33/33, snapshot copy 18/18 identical on both engines; found and matched v1's choice of «last payment» when one imported journal credits a customer twice.
+- Perf: batched per-box/tank/customer queries; `+col` hints only on SQLite (they misled PostgreSQL's planner). Resume: owner's choice of phase 6; KI-27 with the APK test.

@@ -24,7 +24,7 @@ const { DatabaseSync } = require('node:sqlite') as typeof import('node:sqlite');
 const src = new DatabaseSync(from, { readOnly: true });
 
 /** in foreign-key order; only the columns v2 has */
-const TABLES = ['orgs', 'users', 'stations', 'user_stations', 'fuels', 'tanks', 'pumps', 'customers', 'shifts', 'shift_meters', 'sales',
+const TABLES = ['orgs', 'org_brand', 'users', 'stations', 'user_stations', 'fuels', 'tanks', 'pumps', 'customers', 'shifts', 'shift_meters', 'sales',
   'suppliers', 'deliveries', 'adjustments', 'transfers', 'payments', 'supplier_payments', 'expenses', 'cash_moves', 'stock_moves', 'accounts', 'vouchers', 'voucher_lines', 'journals', 'journal_lines', 'audit'] as const;
 /** v2 columns that v1 may lack in older files; filled with these defaults */
 const DEFAULTS: Record<string, Record<string, unknown>> = {};
@@ -56,6 +56,7 @@ const CHECKS: Record<string, string> = {
            GROUP BY station_id, business_date, method ORDER BY station_id, business_date, method`,
   vouchers_by_day: `SELECT station_id, business_date, kind, box_account_id, COUNT(*) n, SUM(amount) amount FROM vouchers WHERE voided_at IS NULL
            GROUP BY station_id, business_date, kind, box_account_id ORDER BY station_id, business_date, kind, box_account_id`,
+  letterheads: `SELECT org_id, name, activity, address, phones, footer, LENGTH(logo) logo_size FROM org_brand ORDER BY org_id`,
   sales_by_day: `SELECT station_id, business_date, COUNT(*) n, SUM(quantity_ml) qty, SUM(gross) gross, SUM(COALESCE(cogs,0)) cogs FROM sales
            WHERE voided_at IS NULL GROUP BY station_id, business_date ORDER BY station_id, business_date`
 };
@@ -105,7 +106,7 @@ async function main() {
       }
       for (const p of posted) if (p.posted_at) await q.updateTable('journals').set({ posted_at: p.posted_at }).where('id', '=', Number(p.id)).execute();
       if (target.dialect === 'postgres') for (const t of TABLES) {
-        if (t === 'user_stations' || t === 'shift_meters') continue;
+        if (t === 'user_stations' || t === 'shift_meters' || t === 'org_brand') continue;
         await sql.raw(`SELECT setval(pg_get_serial_sequence('${t}','id'), GREATEST((SELECT COALESCE(MAX(id),0) FROM ${t}), 1))`).execute(q);
       }
       // test hook (tests/migrate.test.ts): damage one figure to prove the tool stops and leaves the target empty

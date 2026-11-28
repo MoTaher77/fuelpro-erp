@@ -2,7 +2,7 @@
    esbuild, one file per edition, no runtime CDN. Usage: node tools/build.ts [server|desktop|mobile ...] */
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
-import { cpSync, mkdirSync, readdirSync, statSync, writeFileSync, readFileSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, readdirSync, statSync, writeFileSync, readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
@@ -11,12 +11,15 @@ const editions = process.argv.slice(2).length ? process.argv.slice(2) : ['server
 const report: Record<string, unknown> = {};
 for (const ed of editions) {
   const app = join(root, 'apps', ed), out = join(app, 'dist');
+  rmSync(out, { recursive: true, force: true });   // no stale chunks from an earlier build
   mkdirSync(join(out, 'fonts'), { recursive: true });
   const t0 = performance.now();
   const res = await build({ metafile: true, entryPoints: [join(app, 'web/main.ts')], bundle: true, format: 'esm', target: ['es2022', 'chrome100', 'safari15'], platform: 'browser',
     minify: true, sourcemap: false, legalComments: 'none', outdir: out, entryNames: 'app', chunkNames: 'chunks/[name]-[hash]', splitting: true, logLevel: 'warning' });
   cpSync(join(root, 'packages/ui/src/style.css'), join(out, 'app.css'));
-  for (const f of ['ibm-plex-sans-arabic-arabic-400-normal.woff2', 'ibm-plex-sans-arabic-arabic-600-normal.woff2', 'ibm-plex-sans-arabic-latin-400-normal.woff2', 'ibm-plex-sans-arabic-latin-600-normal.woff2', 'LICENSE-ibm-plex-sans-arabic.txt']) cpSync(join(root, '../public/fonts', f), join(out, 'fonts', f));
+  cpSync(join(root, 'packages/ui/src/print.css'), join(out, 'print.css'));   // fetched the first time something is printed
+  for (const f of ['ibm-plex-sans-arabic-arabic-400-normal.woff2', 'ibm-plex-sans-arabic-arabic-600-normal.woff2', 'ibm-plex-sans-arabic-latin-400-normal.woff2', 'ibm-plex-sans-arabic-latin-600-normal.woff2', 'LICENSE-ibm-plex-sans-arabic.txt',
+    'noto-naskh-arabic-arabic-700-normal.woff2', 'noto-naskh-arabic-latin-700-normal.woff2', 'LICENSE-noto-naskh-arabic.txt']) cpSync(join(root, '../public/fonts', f), join(out, 'fonts', f));
   // the files the first screen needs (app.js + its static imports) are preloaded in parallel; lazy screens are not
   const meta = res.metafile!.outputs, entryKey = Object.keys(meta).find((k) => k.endsWith('/app.js'))!;
   const first = [entryKey, ...meta[entryKey].imports.filter((i) => i.kind === 'import-statement').map((i) => i.path)];

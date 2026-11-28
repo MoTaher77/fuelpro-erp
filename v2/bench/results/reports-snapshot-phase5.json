@@ -1,0 +1,246 @@
+{
+  "what": "password-free snapshot of the station (dev-data, cloud copy; never written): migrated to throwaway v2 databases, then every financial report run on both sides. Counts, yes/no and timings only: no names, no amounts.",
+  "rows_total": 113381,
+  "checks": 15,
+  "checks_equal": true,
+  "migrate_seconds": {
+    "sqlite": 1.9,
+    "postgres": 8.1
+  },
+  "reports": {
+    "sqlite": {
+      "engine": "sqlite",
+      "reports": 18,
+      "identical": 18,
+      "v1_ms_total": 226.5,
+      "v2_ms_total": 245.1,
+      "detail": [
+        {
+          "report": "income YER all",
+          "same": true,
+          "v1_ms": 13.8,
+          "v2_ms": 15.2
+        },
+        {
+          "report": "balance YER end",
+          "same": true,
+          "v1_ms": 12.5,
+          "v2_ms": 13
+        },
+        {
+          "report": "cash flow YER all",
+          "same": true,
+          "v1_ms": 34.1,
+          "v2_ms": 40.1
+        },
+        {
+          "report": "trial balance YER all",
+          "same": true,
+          "v1_ms": 14,
+          "v2_ms": 14.4
+        },
+        {
+          "report": "income last month",
+          "same": true,
+          "v1_ms": 0.8,
+          "v2_ms": 1
+        },
+        {
+          "report": "balance mid",
+          "same": true,
+          "v1_ms": 6.2,
+          "v2_ms": 6.3
+        },
+        {
+          "report": "cash flow last month",
+          "same": true,
+          "v1_ms": 10.1,
+          "v2_ms": 10.4
+        },
+        {
+          "report": "profit by month 2026",
+          "same": true,
+          "v1_ms": 29.6,
+          "v2_ms": 35
+        },
+        {
+          "report": "meters last month",
+          "same": true,
+          "v1_ms": 1,
+          "v2_ms": 1
+        },
+        {
+          "report": "boxes all",
+          "same": true,
+          "v1_ms": 12.7,
+          "v2_ms": 16
+        },
+        {
+          "report": "boxes cash by day",
+          "same": true,
+          "v1_ms": 13.4,
+          "v2_ms": 16.4
+        },
+        {
+          "report": "collections end",
+          "same": true,
+          "v1_ms": 16.1,
+          "v2_ms": 13.2
+        },
+        {
+          "report": "daily last",
+          "same": true,
+          "v1_ms": 18.8,
+          "v2_ms": 24
+        },
+        {
+          "report": "collections mid",
+          "same": true,
+          "v1_ms": 12.3,
+          "v2_ms": 9.2
+        },
+        {
+          "report": "daily mid",
+          "same": true,
+          "v1_ms": 15.1,
+          "v2_ms": 13.1
+        },
+        {
+          "report": "collections start",
+          "same": true,
+          "v1_ms": 4.5,
+          "v2_ms": 4.7
+        },
+        {
+          "report": "daily first",
+          "same": true,
+          "v1_ms": 11.2,
+          "v2_ms": 11.8
+        },
+        {
+          "report": "letterhead",
+          "same": true,
+          "v1_ms": 0.3,
+          "v2_ms": 0.3
+        }
+      ]
+    },
+    "postgres": {
+      "engine": "postgres",
+      "reports": 18,
+      "identical": 18,
+      "v1_ms_total": 312.6,
+      "v2_ms_total": 1057.8,
+      "detail": [
+        {
+          "report": "income YER all",
+          "same": true,
+          "v1_ms": 21.2,
+          "v2_ms": 27
+        },
+        {
+          "report": "balance YER end",
+          "same": true,
+          "v1_ms": 17.2,
+          "v2_ms": 19.8
+        },
+        {
+          "report": "cash flow YER all",
+          "same": true,
+          "v1_ms": 52.6,
+          "v2_ms": 459.3
+        },
+        {
+          "report": "trial balance YER all",
+          "same": true,
+          "v1_ms": 15.4,
+          "v2_ms": 24.9
+        },
+        {
+          "report": "income last month",
+          "same": true,
+          "v1_ms": 1.7,
+          "v2_ms": 7.4
+        },
+        {
+          "report": "balance mid",
+          "same": true,
+          "v1_ms": 12.9,
+          "v2_ms": 13.4
+        },
+        {
+          "report": "cash flow last month",
+          "same": true,
+          "v1_ms": 20.3,
+          "v2_ms": 38.5
+        },
+        {
+          "report": "profit by month 2026",
+          "same": true,
+          "v1_ms": 58.9,
+          "v2_ms": 131
+        },
+        {
+          "report": "meters last month",
+          "same": true,
+          "v1_ms": 1.4,
+          "v2_ms": 3.9
+        },
+        {
+          "report": "boxes all",
+          "same": true,
+          "v1_ms": 21.1,
+          "v2_ms": 41.2
+        },
+        {
+          "report": "boxes cash by day",
+          "same": true,
+          "v1_ms": 16.3,
+          "v2_ms": 39.8
+        },
+        {
+          "report": "collections end",
+          "same": true,
+          "v1_ms": 15.4,
+          "v2_ms": 56.1
+        },
+        {
+          "report": "daily last",
+          "same": true,
+          "v1_ms": 18.2,
+          "v2_ms": 49.6
+        },
+        {
+          "report": "collections mid",
+          "same": true,
+          "v1_ms": 13,
+          "v2_ms": 47.1
+        },
+        {
+          "report": "daily mid",
+          "same": true,
+          "v1_ms": 12.9,
+          "v2_ms": 39.6
+        },
+        {
+          "report": "collections start",
+          "same": true,
+          "v1_ms": 4,
+          "v2_ms": 12.8
+        },
+        {
+          "report": "daily first",
+          "same": true,
+          "v1_ms": 9.8,
+          "v2_ms": 45
+        },
+        {
+          "report": "letterhead",
+          "same": true,
+          "v1_ms": 0.3,
+          "v2_ms": 1.4
+        }
+      ]
+    }
+  }
+}
