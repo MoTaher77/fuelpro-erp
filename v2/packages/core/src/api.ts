@@ -9,6 +9,7 @@ import * as shifts from './shifts.ts';
 import * as stock from './stock.ts';
 import * as parties from './parties.ts';
 import * as finance from './finance.ts';
+import * as statements from './statements.ts';
 
 type Args = { sid: number; id: number; body: Record<string, unknown>; query: Record<string, string> };
 type Op = (ctx: Ctx, user: User, a: Args) => Promise<unknown>;
@@ -75,6 +76,16 @@ export const OPS: Record<string, Op> = {
   'POST /period-lock': (c, u, a) => finance.lockPeriod(c, u, a.body as never),
   'GET /accounting/trial-balance': (c, u, a) => finance.trialBalanceOrg(c, u, a.query),
   'GET /accounting/ledger': (c, u, a) => finance.accountLedger(c, u, a.query),
+  'GET /accounting/income-statement': (c, u, a) => statements.incomeStatement(c, u, a.query),
+  'GET /accounting/balance-sheet': (c, u, a) => statements.balanceSheet(c, u, a.query),
+  'GET /accounting/cash-flow': (c, u, a) => statements.cashFlow(c, u, a.query),
+  'GET /accounting/profit-by-month': (c, u, a) => statements.profitByMonth(c, u, a.query),
+  'GET /stations/:sid/reports/meters': (c, u, a) => statements.meterSheet(c, u, a.sid, a.query),
+  'GET /stations/:sid/reports/boxes': (c, u, a) => statements.boxReport(c, u, a.sid, a.query),
+  'GET /stations/:sid/reports/collections': (c, u, a) => statements.collections(c, u, a.sid, a.query),
+  'GET /stations/:sid/reports/daily': (c, u, a) => statements.dailyReport(c, u, a.sid, a.query),
+  'GET /brand': (c, u) => statements.getBrand(c, u),
+  'PATCH /brand': (c, u, a) => statements.setBrand(c, u, a.body),
   'GET /stations/:sid/summary': (c, u, a) => reports.daySummary(c, u, a.sid, a.query.date),
   'GET /stations/:sid/trial-balance': (c, u, a) => reports.trialBalance(c, u, a.sid)
 };

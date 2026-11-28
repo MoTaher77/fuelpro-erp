@@ -98,6 +98,9 @@ export interface VouchersT extends Voidable {
 export interface VoucherLinesT {
   id: Id; voucher_id: number; account_id: number; party_type: string | null; party_id: number | null; amount: number; memo: string | null; fc_amount: number | null;
 }
+export interface OrgBrandT {
+  org_id: number; name: string | null; activity: string | null; address: string | null; phones: string | null; footer: string | null; logo: string | null; updated_at: string | null;
+}
 
 export interface DB {
   orgs: OrgsT; users: UsersT; user_stations: UserStationsT; stations: StationsT; fuels: FuelsT; tanks: TanksT; pumps: PumpsT;
@@ -106,6 +109,7 @@ export interface DB {
   suppliers: SuppliersT; deliveries: DeliveriesT; adjustments: AdjustmentsT; transfers: TransfersT;
   payments: PaymentsT; supplier_payments: SupplierPaymentsT;
   expenses: ExpensesT; cash_moves: CashMovesT; vouchers: VouchersT; voucher_lines: VoucherLinesT;
+  org_brand: OrgBrandT;
 }
 export type Station = Selectable<StationsT>;
 export type Sale = Selectable<SalesT>;

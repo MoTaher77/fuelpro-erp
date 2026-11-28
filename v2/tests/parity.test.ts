@@ -142,3 +142,33 @@ for (const seed of [31, 77]) {
     await withPgDatabase(process.env.V2_PG_URL!, async (url) => { const ctx = await openPostgres(url, { max: 4 }); try { same(a, await v2Fin(ctx, seed)); } finally { await ctx.close(); } });
   });
 }
+
+/* ---------- phase 5: financial reports ---------- */
+import { playReports } from './scenario-reports.ts';
+async function v1Rep(seed: number) {
+  const v1 = v1Api(); const out = await playReports(v1.stockApi, seed);
+  const dump: Record<string, unknown> = {};
+  for (const [k, q] of Object.entries(DUMP_SQL)) dump[k] = norm(await v1.all(q) as Array<Record<string, unknown>>);
+  await v1.close(); return { out: stripTimes(out), dump };
+}
+async function v2Rep(ctx: Ctx, seed: number) {
+  const v2 = v2Api(ctx); const out = await playReports(v2.stockApi, seed);
+  const dump: Record<string, unknown> = {};
+  for (const [k, q] of Object.entries(DUMP_SQL)) dump[k] = norm((await sql.raw(q).execute(ctx.db)).rows as Array<Record<string, unknown>>);
+  return { out: stripTimes(out), dump };
+}
+for (const seed of [51, 808]) {
+  test(`reports parity seed ${seed}: v1 = v2 on SQLite`, async () => {
+    const a = await v1Rep(seed); const ctx = await openSqlite(':memory:');
+    try { same(a, await v2Rep(ctx, seed)); } finally { await ctx.close(); }
+    const okCount = (a.out as Array<{ ok?: unknown }>).filter((o) => o.ok).length; assert.ok(okCount > 80, 'operations succeeded: ' + okCount);
+  });
+  test(`reports parity seed ${seed}: v1 = v2 through the desktop/phone bridge`, async () => {
+    const a = await v1Rep(seed); const ctx = await openBridge(nodeBridge());
+    try { same(a, await v2Rep(ctx, seed)); } finally { await ctx.close(); }
+  });
+  test(`reports parity seed ${seed}: v1 = v2 on PostgreSQL`, { skip: !process.env.V2_PG_URL && 'set V2_PG_URL to run' }, async () => {
+    const a = await v1Rep(seed);
+    await withPgDatabase(process.env.V2_PG_URL!, async (url) => { const ctx = await openPostgres(url, { max: 4 }); try { same(a, await v2Rep(ctx, seed)); } finally { await ctx.close(); } });
+  });
+}

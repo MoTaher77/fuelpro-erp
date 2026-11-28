@@ -209,3 +209,37 @@ for (const [name, withDb, skip] of engines) {
     assert.equal(cur!.totals.expected_cash, 10_000);
   }));
 }
+
+/* ---------- phase 5: financial reports ---------- */
+import { statements } from '@fuelpro/core';
+for (const [name, withDb, skip] of engines) {
+  test(`${name}: reports read only, stay inside the org, and are checked in the core`, { skip }, async () => withDb(async (ctx) => {
+    const a = await station(ctx, 'r1@example.test'), b = await station(ctx, 'r2@example.test');
+    for (let i = 0; i < 5; i++) await sales.createSale(ctx, a.u, a.sid, { client_id: `rep-inv-a-${i}`, pump_id: a.pump, quantity_ml: 10_000 + i });
+    await sales.createSale(ctx, b.u, b.sid, { client_id: 'rep-inv-b-0', pump_id: b.pump, quantity_ml: 99_000 });
+    const today = ctx.clock.today('Asia/Aden');
+    const count = async () => (await sql<{ n: number }>`select (select count(*) from journals) + (select count(*) from journal_lines) + (select count(*) from stock_moves) + (select count(*) from audit) as n`.execute(ctx.db)).rows[0].n;
+    const before = Number(await count());
+    const is = await statements.incomeStatement(ctx, a.u, { to: today });
+    const bs = await statements.balanceSheet(ctx, a.u, { as_of: today });
+    const cf = await statements.cashFlow(ctx, a.u, { to: today });
+    await statements.dailyReport(ctx, a.u, a.sid, {}); await statements.boxReport(ctx, a.u, a.sid, {}); await statements.collections(ctx, a.u, a.sid, {});
+    await statements.meterSheet(ctx, a.u, a.sid, {}); await statements.profitByMonth(ctx, a.u, { station_id: a.sid });
+    assert.equal(Number(await count()), before, 'a report writes nothing');
+    // org a's books only: org b's 99 litres never show
+    const salesA = await ctx.db.selectFrom('sales').select(sql<number>`sum(gross)`.as('g')).where('station_id', '=', a.sid).executeTakeFirstOrThrow();
+    assert.equal(is.revenue, Number(salesA.g), 'revenue = this org\'s sales (no VAT configured)');
+    assert.ok(bs.balanced && cf.reconciled);
+    assert.equal(cf.net_change, Number(salesA.g), 'cash sales reach the drawer');
+    await assert.rejects(statements.dailyReport(ctx, a.u, b.sid, {}), { status: 404 });
+    await assert.rejects(statements.incomeStatement(ctx, a.u, { to: today, station_id: b.sid }), { status: 404 });
+    await assert.rejects(statements.profitByMonth(ctx, a.u, { station_id: b.sid }), { status: 404 });
+    // a cashier sees no reports; a viewer does; only config.edit changes the letterhead
+    await assert.rejects(statements.incomeStatement(ctx, { ...a.u, role: 'cashier' }, { to: today }), { status: 403 });
+    await assert.rejects(statements.dailyReport(ctx, { ...a.u, role: 'cashier' }, a.sid, {}), { status: 403 });
+    await assert.rejects(statements.setBrand(ctx, { ...a.u, role: 'accountant' }, { name: 'x' }), { status: 403 });
+    await statements.setBrand(ctx, a.u, { name: 'ترويسة أ' });
+    assert.equal((await statements.getBrand(ctx, b.u)).name, 'Org r2@example.test', 'a letterhead belongs to one org');
+    assert.equal((await statements.getBrand(ctx, a.u)).name, 'ترويسة أ');
+  }));
+}

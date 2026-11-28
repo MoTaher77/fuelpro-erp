@@ -2,7 +2,7 @@
 import { createRequire } from 'node:module';
 import { randomBytes } from 'node:crypto';
 import type { Ctx, User } from '@fuelpro/core';
-import { setup, sales, shifts, stock, parties, finance } from '@fuelpro/core';
+import { setup, sales, shifts, stock, parties, finance, statements } from '@fuelpro/core';
 import type { Api } from './scenario.ts';
 
 const require = createRequire(import.meta.url);
@@ -10,7 +10,7 @@ const ORG = { org_name: 'محطة تجريبية', name: 'Demo Owner', email: 'o
 
 export function v1Api() {
   const { openDb } = require('../../src/db.js');
-  const S = require('../../src/services.js'), O = require('../../src/ops.js'), B = require('../../src/books.js');
+  const S = require('../../src/services.js'), O = require('../../src/ops.js'), B = require('../../src/books.js'), R = require('../../src/reports.js');
   const db = openDb(':memory:');
   let user: { id: number; org_id: number; role: string }, sid = 0;
   const api: Api = {
@@ -53,7 +53,12 @@ export function v1Api() {
     createVoucher: (s, b) => B.createVoucher(db, user, s, b), voidVoucher: (s, id, r) => B.voidVoucher(db, user, s, id, r), listVouchers: (s, q) => B.listVouchers(db, user, s, q),
     createJournal: (s, b) => O.createJournal(db, user, s, b), postJournal: (id) => O.postJournal(db, user, id), deleteDraft: (id) => O.deleteDraft(db, user, id),
     reverseJournal: (id, b) => O.reverseJournal(db, user, id, b), getJournal: (id) => O.getJournal(db, user, id), listJournals: (s, q) => O.listJournals(db, user, s, q),
-    lockPeriod: (b) => O.lockPeriod(db, user, b), trialBalance: (q) => O.trialBalance(db, user, q), ledger: (q) => O.accountLedger(db, user, q)
+    lockPeriod: (b) => O.lockPeriod(db, user, b), trialBalance: (q) => O.trialBalance(db, user, q), ledger: (q) => O.accountLedger(db, user, q),
+    voidSale: (s, id, r) => S.voidSale(db, user, s, id, r),
+    incomeStatement: (q) => O.incomeStatement(db, user, q), balanceSheet: (q) => O.balanceSheet(db, user, q), cashFlow: (q) => O.cashFlow(db, user, q),
+    profitByMonth: (q) => B.profitByMonth(db, user, q), meterSheet: (s, q) => B.meterSheet(db, user, s, q), boxReport: (s, q) => R.boxReport(db, user, s, q),
+    collections: (s, q) => R.collections(db, user, s, q), dailyReport: (s, q) => R.dailyReport(db, user, s, q),
+    getBrand: () => B.getBrand(db, user), setBrand: (b) => B.setBrand(db, user, b)
   };
   const stockApi = { register: api.register, call: async (fn: string, ...a: unknown[]) => V1[fn](...a) };
   return { api, stockApi, all, sid: () => sid, close: async () => db.close() };
@@ -106,7 +111,13 @@ export function v2Api(ctx: Ctx) {
     deleteDraft: (id: number) => finance.deleteDraft(ctx, user, id), reverseJournal: (id: number, b: { reason?: string }) => finance.reverseJournal(ctx, user, id, b),
     getJournal: (id: number) => finance.getJournal(ctx, user, id), listJournals: (s: number, q: Record<string, never>) => finance.listJournals(ctx, user, s, q),
     lockPeriod: (b: { through: string | null }) => finance.lockPeriod(ctx, user, b), trialBalance: (q: Record<string, never>) => finance.trialBalanceOrg(ctx, user, q),
-    ledger: (q: Record<string, never>) => finance.accountLedger(ctx, user, q)
+    ledger: (q: Record<string, never>) => finance.accountLedger(ctx, user, q),
+    voidSale: (s: number, id: number, r: string) => sales.voidSale(ctx, user, s, id, r),
+    incomeStatement: (q: Record<string, never>) => statements.incomeStatement(ctx, user, q), balanceSheet: (q: Record<string, never>) => statements.balanceSheet(ctx, user, q),
+    cashFlow: (q: Record<string, never>) => statements.cashFlow(ctx, user, q), profitByMonth: (q: Record<string, never>) => statements.profitByMonth(ctx, user, q),
+    meterSheet: (s: number, q: Record<string, never>) => statements.meterSheet(ctx, user, s, q), boxReport: (s: number, q: Record<string, never>) => statements.boxReport(ctx, user, s, q),
+    collections: (s: number, q: Record<string, never>) => statements.collections(ctx, user, s, q), dailyReport: (s: number, q: Record<string, never>) => statements.dailyReport(ctx, user, s, q),
+    getBrand: () => statements.getBrand(ctx, user), setBrand: (b: Record<string, unknown>) => statements.setBrand(ctx, user, b)
   };
   const stockApi = { register: api.register, call: async (fn: string, ...a: unknown[]) => V2[fn](...(a as never[])) };
   return { api, stockApi, user: () => user, sid: () => sid };
